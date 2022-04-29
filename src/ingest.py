@@ -21,7 +21,7 @@ def make_tables(con: sqlite3.Connection):
         CREATE TABLE dumps (
             container VARCHAR,
             date DATE,
-            qty INT,
+            bag_size INT,
             commercial BOOLEAN
         );
     """
@@ -61,7 +61,7 @@ def insert_dumps(con: sqlite3.Connection, dumps: pd.DataFrame):
     con.executemany("""INSERT INTO dumps (
                             container, 
                             date, 
-                            qty, 
+                            bag_size, 
                             commercial
                         ) VALUES (?, ?, ?, ?)""",
                     values)
