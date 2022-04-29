@@ -48,6 +48,8 @@ def insert_containers(con: sqlite3.Connection, containers: pd.DataFrame):
                         ) VALUES (?, ?, ?, ?, ?, ?)""",
                     values)
 
+    con.commit()
+
 
 def insert_dumps(con: sqlite3.Connection, dumps: pd.DataFrame):
     values = [(d.Container,
@@ -64,6 +66,8 @@ def insert_dumps(con: sqlite3.Connection, dumps: pd.DataFrame):
                         ) VALUES (?, ?, ?, ?)""",
                     values)
 
+    con.commit()
+
 
 def main():
     # Remove existing database, if any - ingest starts from scratch.
@@ -74,15 +78,13 @@ def main():
     con = sqlite3.connect("data/waste.db")
     make_tables(con)
 
-    # Import data from raw Excel files, starting with the container data.
+    # Import data from raw data files into the database.
     containers = pd.read_excel("data/Containers/Containergegevens.xlsx")
     insert_containers(con, containers)
 
     for dump_loc in glob.iglob("data/Stortingen/*.csv"):
         dumps = pd.read_csv(dump_loc, sep=";")
         insert_dumps(con, dumps)
-
-    con.commit()
 
 
 if __name__ == "__main__":
