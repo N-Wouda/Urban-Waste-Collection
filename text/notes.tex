@@ -44,20 +44,18 @@
     In practice, the outputs of that tool result in strange assignments that often require manual tweaking (e.g., containers across a canal are assigned to the same truck, but getting there is much slower than assigning the containers to two different trucks).
     Furthermore, this route is not often followed: the garbage truck drives make their own routes, given the assigned containers.
 
-    \paragraph{Improvement directions}
-    The first improvement direction concerns the forecasts.
+    Summarising, there are two obvious directions for improvement.
+    The first improvement direction concerns the forecasts and the selection of containers to empty today.
+    The second problem concerns the efficient assignment of containers to garbage trucks.
 
-    TODO is this separation into two problems (rather than integrating it into one big problem) OK-ish?
-    Or do we lose a lot along the way?
+    TODO balance number of kilometers driven against the service level of available containers.
+    Variant of a (team) orienteering problem?
 
-    Municipality is faced with two problems.
-    The first is that they would like to forecast full containers more reliably.
-    Using that forecast of a set of nearly full containers, they then want to cluster the container set into a number of groups, such that one garbage truck can visit one group in a single day.
-    This is the second problem: how to efficiently cluster containers?
+    \paragraph{Improving forecasting}
+    TODO
 
-    TODO forecast
-
-    TODO clustering
+    \paragraph{Assigning containers}
+    TODO
 
     \clearpage
     \printbibliography
