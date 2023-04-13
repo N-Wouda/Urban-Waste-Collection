@@ -12,7 +12,7 @@ def parse_args():
     parser.add_argument(
         "--horizon",
         required=True,
-        type=float,
+        type=int,
         help="Time horizon for the simulation (in hours).",
     )
     parser.add_argument("--seed", required=True, type=int)

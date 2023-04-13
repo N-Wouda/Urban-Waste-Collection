@@ -15,7 +15,7 @@ class Environment:
         self.vehicles = vehicles
         self.time = 0.0  # hours
 
-    def simulate(self, horizon: float, strategy: Strategy):
+    def simulate(self, horizon: int, strategy: Strategy):
         """
         Applies the given strategy for a simulation lasting horizon hours.
         """
