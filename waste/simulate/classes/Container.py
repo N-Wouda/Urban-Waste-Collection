@@ -2,7 +2,7 @@ from .Event import Event
 
 
 class Container:
-    rates: list[float]
+    rates: list[float]  # arrival rates, per clock hour ([0 - 23])
 
     def arrivals_until(self, until: float) -> list[Event]:
         """
