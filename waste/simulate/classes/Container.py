@@ -18,10 +18,10 @@ class Container:
             # the rates list for this container.
             rate = self.rates[hour % 24]
             num_arrivals = poisson.rvs(rate)  # arrivals this hour
-            arrivals = hour + uniform.rvs(size=num_arrivals)
+
             events += [
                 Event(arrival, EventType.ARRIVAL, container=self)
-                for arrival in arrivals
+                for arrival in uniform.rvs(loc=hour, size=num_arrivals)
             ]
 
         return events
