@@ -123,6 +123,10 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# IDE stuff
 .idea/
+.vscode/
+
+# Data and output files
 data/
 out/
