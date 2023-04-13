@@ -4,12 +4,13 @@ version = "0.1.0"
 description = ""
 authors = [
     "Niels A. Wouda <n.a.wouda@rug.nl>",
+    "Marjolein Aerts-Veenstra <m.aerts-veenstra@rug.nl>",
     "Nicky van Foreest <n.d.van.foreest@rug.nl>"
 ]
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.9,<4.0"
 pandas = "^1.4.2"
 numpy = "^1.22.3"
 openpyxl = "^3.0.9"
@@ -20,6 +21,7 @@ tomli = "^2.0.1"
 
 [tool.poetry.scripts]
 ingest = "waste.ingest:main"
+simulate = "waste.run:main"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
