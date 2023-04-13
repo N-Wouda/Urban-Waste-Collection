@@ -48,7 +48,7 @@ def insert_containers(con: sqlite3.Connection, containers: pd.DataFrame):
                 capacity,
                 latitude,
                 longitude
-            ) VALUES (?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?);
         """,
         values,
     )
@@ -72,7 +72,7 @@ def insert_arrivals(con: sqlite3.Connection, arrivals: pd.DataFrame):
                 container,
                 date,
                 succesful
-            ) VALUES (?, ?, ?)
+            ) VALUES (?, ?, ?);
         """,
         values,
     )
@@ -91,7 +91,7 @@ def insert_services(con: sqlite3.Connection, services: pd.DataFrame):
             INSERT INTO services (
                 container,
                 date
-            ) VALUES (?, ?)
+            ) VALUES (?, ?);
         """,
         values,
     )
