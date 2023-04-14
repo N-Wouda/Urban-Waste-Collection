@@ -22,7 +22,7 @@ def make_tables(con: sqlite3.Connection):
         CREATE TABLE arrivals (
             container VARCHAR,
             date DATE,
-            succesful BOOLEAN
+            successful BOOLEAN
         );
 
         CREATE TABLE services (
@@ -71,7 +71,7 @@ def insert_arrivals(con: sqlite3.Connection, arrivals: pd.DataFrame):
             INSERT INTO arrivals (
                 container,
                 date,
-                succesful
+                successful
             ) VALUES (?, ?, ?);
         """,
         values,
