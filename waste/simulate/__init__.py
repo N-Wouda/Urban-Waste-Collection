@@ -11,5 +11,5 @@ from .classes import (
 from .random import random
 
 STRATEGIES: dict[str, Strategy] = {
-    "random": random,  # type: ignore
+    "random": random,
 }
