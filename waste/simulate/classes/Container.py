@@ -4,9 +4,12 @@ from .Event import Event, EventType
 
 
 class Container:
-    def __init__(self, rates: list[float], capacity: float, rnd: Generator):
+    def __init__(
+        self, name: str, rates: list[float], capacity: float, rnd: Generator
+    ):
         assert len(rates) == 24
 
+        self.name = name
         self.rates = rates  # arrival rates, per clock hour ([0 - 23])
         self.capacity = capacity  # in volume, liters
         self.rnd = rnd
@@ -56,5 +59,14 @@ class Container:
         """
         self.deposits = 0
         self._volume = 0.0
+
+    def __str__(self) -> str:
+        return (
+            "Container("
+            f"name={self.name}, "
+            f"deposits={self.deposits}, "
+            f"capacity={self.capacity}"
+            ")"
+        )
 
     # TODO

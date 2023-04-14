@@ -5,4 +5,5 @@ def random(env: Environment, event: Event) -> list[Event]:
     """
     Random routing and dispatch strategy.
     """
+    # TODO
     return []

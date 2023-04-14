@@ -1,16 +1,12 @@
-# isort: off
-
 from .classes import (
     Container,
     Environment,
     Event,
+    EventType,
     RandomStream,
     Strategy,
     Vehicle,
 )
-
-# isort: on
-
 from .random import random
 
 STRATEGIES: dict[str, Strategy] = {

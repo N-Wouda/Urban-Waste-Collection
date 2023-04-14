@@ -16,8 +16,8 @@ class Event:
     def __str__(self) -> str:
         return (
             "Event("
-            f"t = {self.time:.2f}, "
-            f"{self.type.name}, "
+            f"time={self.time:.2f}, "
+            f"type={self.type.name}, "
             f"{len(self.kwargs)} kwargs"
             ")"
         )
