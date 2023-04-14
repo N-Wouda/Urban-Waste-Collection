@@ -1,13 +1,16 @@
 import argparse
 import logging
 
-from waste.simulate import STRATEGIES, Environment
+from waste.simulate import STRATEGIES, Database, RandomStream, Simulator
 
 logger = logging.getLogger(__name__)
 
 
 def parse_args():
     parser = argparse.ArgumentParser(prog="run")
+
+    parser.add_argument("src_db", help="Location of the input database.")
+    parser.add_argument("res_db", help="Location of the output database.")
 
     parser.add_argument(
         "--horizon",
@@ -25,16 +28,17 @@ def main():
     args = parse_args()
     logger.info(f"Running simulation with arguments {vars(args)}.")
 
-    # Set up simulation environment
-    containers = []  # TODO
-    vehicles = []  # TODO
-    env = Environment(containers, vehicles)
+    # Set up simulation environment and data
+    rnd = RandomStream(args.seed)
+    db = Database(args.src_db, args.res_db)
 
-    # Simulate
-    env.simulate(args.horizon, STRATEGIES[args.strategy])
+    containers = db.get_containers()
+    vehicles = db.get_vehicles()
 
-    # Compute and store performance measures
-    # TODO
+    # Simulate and store results
+    sim = Simulator(containers, vehicles, rnd)
+    res = sim(args.horizon, STRATEGIES[args.strategy])
+    db.store(res)
 
 
 if __name__ == "__main__":

@@ -1,14 +1,15 @@
 from .classes import (
     Container,
-    Environment,
+    Database,
     Event,
     EventType,
     RandomStream,
+    Simulator,
     Strategy,
     Vehicle,
 )
 from .random import random
 
 STRATEGIES: dict[str, Strategy] = {
-    "random": random,
+    "random": random,  # type: ignore
 }

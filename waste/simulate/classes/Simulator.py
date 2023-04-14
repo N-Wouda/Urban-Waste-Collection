@@ -3,6 +3,8 @@ import logging
 
 from .Container import Container
 from .Event import Event, EventType
+from .RandomStream import RandomStream
+from .Result import Result
 from .Strategy import Strategy
 from .Vehicle import Vehicle
 
@@ -29,12 +31,18 @@ class _EventQueue:
         return event
 
 
-class Environment:
-    def __init__(self, containers: list[Container], vehicles: list[Vehicle]):
+class Simulator:
+    def __init__(
+        self,
+        containers: list[Container],
+        vehicles: list[Vehicle],
+        rnd: RandomStream,
+    ):
         self.containers = containers
         self.vehicles = vehicles
+        self.rnd = rnd
 
-    def simulate(self, horizon: int, strategy: Strategy):
+    def __call__(self, horizon: int, strategy: Strategy) -> Result:
         """
         Applies the given strategy for a simulation lasting horizon hours.
         """
@@ -44,7 +52,8 @@ class Environment:
         # This is good for performance because sampling crosses the C/Python
         # barrier, and can be a bit slow.
         for container in self.containers:
-            for event in container.arrivals_until(horizon):
+            generator = self.rnd(container.name)
+            for event in container.arrivals_until(horizon, generator):
                 queue.add(event)
 
         # Insert the shift planning moments over the time horizon.
@@ -52,8 +61,7 @@ class Environment:
             if hour % 24 in [6, 12]:  # TODO config
                 queue.add(Event(hour, EventType.SHIFT_PLAN))
 
-        # TODO track statistics
-
+        res = Result()
         time = 0.0
 
         while queue and time <= horizon:
@@ -77,3 +85,5 @@ class Environment:
                     queue.add(event)
             else:
                 raise ValueError(f"Unhandled event of type {event.type.name}.")
+
+        return res

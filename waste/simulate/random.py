@@ -1,7 +1,7 @@
-from waste.simulate import Environment, Event
+from waste.simulate import Event, Simulator
 
 
-def random(env: Environment, event: Event) -> list[Event]:
+def random(env: Simulator, event: Event) -> list[Event]:
     """
     Random routing and dispatch strategy.
     """

@@ -1,4 +1,9 @@
 class Vehicle:
-    capacity: float
+    def __init__(self, name: str, capacity: float):
+        self.name = name
+        self.capacity = capacity
+
+    def __str__(self) -> str:
+        return f"Vehicle(name={self.name}, capacity={self.capacity})"
 
     # TODO
