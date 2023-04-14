@@ -1,4 +1,4 @@
-from numpy.random import Generator
+from numpy.random import poisson, uniform
 
 from .Event import Event, EventType
 
@@ -14,7 +14,7 @@ class Container:
         self.deposits = 0  # number of arrivals since last service
         self._volume = 0.0  # current volume in container, in liters
 
-    def arrivals_until(self, until: int, rnd: Generator) -> list[Event]:
+    def arrivals_until(self, until: int) -> list[Event]:
         """
         Returns arrivals (events) for the period [0, until], where until is
         assumed to be in hours.
@@ -25,11 +25,11 @@ class Container:
             # Non-homogeneous Poisson arrivals, with hourly rates as given by
             # the rates list for this container.
             rate = self.rates[hour % 24]
-            num_arrivals = rnd.poisson(rate)
-            arrivals = hour + rnd.uniform(size=num_arrivals)
+            num_arrivals = poisson(rate)
+            arrivals = hour + uniform(size=num_arrivals)
 
             # TODO parametrise 30 and 65
-            volumes = rnd.uniform(low=30, high=65, size=num_arrivals)
+            volumes = uniform(low=30, high=65, size=num_arrivals)
 
             events += [
                 Event(

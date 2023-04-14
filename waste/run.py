@@ -1,7 +1,9 @@
 import argparse
 import logging
 
-from waste.simulate import STRATEGIES, Database, RandomStream, Simulator
+import numpy as np
+
+from waste.simulate import STRATEGIES, Database, Simulator
 
 logger = logging.getLogger(__name__)
 
@@ -28,15 +30,16 @@ def main():
     args = parse_args()
     logger.info(f"Running simulation with arguments {vars(args)}.")
 
+    np.random.seed(args.seed)
+
     # Set up simulation environment and data
-    rnd = RandomStream(args.seed)
     db = Database(args.src_db, args.res_db)
 
-    containers = db.get_containers()
-    vehicles = db.get_vehicles()
+    containers = db.containers()
+    vehicles = db.vehicles()
 
     # Simulate and store results
-    sim = Simulator(containers, vehicles, rnd)
+    sim = Simulator(containers, vehicles)
     res = sim(args.horizon, STRATEGIES[args.strategy])
     db.store(res)
 

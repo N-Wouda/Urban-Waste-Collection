@@ -3,7 +3,6 @@ import logging
 
 from .Container import Container
 from .Event import Event, EventType
-from .RandomStream import RandomStream
 from .Result import Result
 from .Strategy import Strategy
 from .Vehicle import Vehicle
@@ -32,15 +31,9 @@ class _EventQueue:
 
 
 class Simulator:
-    def __init__(
-        self,
-        containers: list[Container],
-        vehicles: list[Vehicle],
-        rnd: RandomStream,
-    ):
+    def __init__(self, containers: list[Container], vehicles: list[Vehicle]):
         self.containers = containers
         self.vehicles = vehicles
-        self.rnd = rnd
 
     def __call__(self, horizon: int, strategy: Strategy) -> Result:
         """
@@ -48,15 +41,13 @@ class Simulator:
         """
         queue = _EventQueue()
 
-        # We sample all arrival events once at the start of the simulation.
-        # This is good for performance because sampling crosses the C/Python
-        # barrier, and can be a bit slow.
+        # Insert all arrival events into the event queue. We note that this
+        # is the only source of uncertainty in the simulation.
         for container in self.containers:
-            generator = self.rnd(container.name)
-            for event in container.arrivals_until(horizon, generator):
+            for event in container.arrivals_until(horizon):
                 queue.add(event)
 
-        # Insert the shift planning moments over the time horizon.
+        # Insert the shift planning moments into the event queue.
         for hour in range(horizon):
             if hour % 24 in [6, 12]:  # TODO config
                 queue.add(Event(hour, EventType.SHIFT_PLAN))

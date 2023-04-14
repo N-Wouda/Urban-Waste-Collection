@@ -10,14 +10,14 @@ class Database:
         self.read = sqlite3.connect(src_db)
         self.write = sqlite3.connect(res_db)
 
-    def get_containers(self) -> list[Container]:
-        return []
+    def containers(self) -> list[Container]:
+        return []  # TODO
 
-    def get_vehicles(self) -> list[Vehicle]:
-        return []
+    def vehicles(self) -> list[Vehicle]:
+        return []  # TODO
 
     def store(self, res: Result):
-        pass
+        pass  # TODO
 
     def __del__(self):
         self.read.close()
