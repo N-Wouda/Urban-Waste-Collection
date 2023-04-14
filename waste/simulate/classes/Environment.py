@@ -2,7 +2,7 @@ import heapq
 import logging
 
 from .Container import Container
-from .Event import Event
+from .Event import Event, EventType
 from .Strategy import Strategy
 from .Vehicle import Vehicle
 
@@ -28,20 +28,31 @@ class Environment:
             for event in container.arrivals_until(horizon):
                 heapq.heappush(events, (event.time, event))
 
-        _info(self, f"There are {len(events)} arrivals in queue.")
+        logger.info(f"There are {len(events)} arrivals in queue.")
+
+        # Insert the shift planning moments over the time horizon.
+        for hour in range(horizon):
+            if hour % 24 in [6, 12]:  # TODO config
+                event = Event(hour, EventType.SHIFT_PLAN)
+                heapq.heappush(events, (event.time, event))
+
+        # TODO track statistics
 
         while events and self.time <= horizon:
             self.time, event = heapq.heappop(events)
-            _info(self, f"Handling {event}.")
+            logger.debug(f"Handling {event}.")
 
-            for event in strategy(self, event):
-                _debug(self, f"Adding event {event}.")
-                heapq.heappush(events, (event.time, event))
+            if event.type == EventType.ARRIVAL:
+                container = event.kwargs["container"]
+                container.arrive(event)
+            elif event.type == EventType.SERVICE:
+                container = event.kwargs["container"]
+                container.service()
+            elif event.type == EventType.SHIFT_PLAN:
+                logger.info(f"Generating shift plan at t = {event.time:.2f}.")
 
-
-def _debug(env: Environment, msg: str):
-    logger.debug(f"[t = {env.time}] {msg}")
-
-
-def _info(env: Environment, msg: str):
-    logger.info(f"[t = {env.time}] {msg}")
+                for event in strategy(self, event):
+                    logger.debug(f"Adding event {event}.")
+                    heapq.heappush(events, (event.time, event))
+            else:
+                raise ValueError(f"Unhandled event of type {event.type.name}.")

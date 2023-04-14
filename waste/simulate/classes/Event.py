@@ -1,7 +1,7 @@
-from enum import IntEnum
+from enum import Enum
 
 
-class EventType(IntEnum):
+class EventType(Enum):
     ARRIVAL = 0
     SERVICE = 1
     SHIFT_PLAN = 2
@@ -14,4 +14,10 @@ class Event:
         self.kwargs = kwargs
 
     def __str__(self) -> str:
-        return f"Event({self.time = }, {self.type = }, {self.kwargs = })"
+        return (
+            "Event("
+            f"t = {self.time:.2f}, "
+            f"{self.type.name}, "
+            f"{len(self.kwargs)} kwargs"
+            ")"
+        )

@@ -14,7 +14,7 @@ class Strategy(Protocol):
 
     def __call__(self, env: Environment, event: Event) -> list[Event]:
         """
-        Called for each event. This should handle the event, and return new
-        events based on handling.
+        Called for each SHIFT_PLAN event. This should handle the event, and
+        return new events based on handling.
         """
         pass
