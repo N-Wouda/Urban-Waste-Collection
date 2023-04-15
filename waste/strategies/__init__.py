@@ -8,8 +8,7 @@ if TYPE_CHECKING:
     from waste.classes.Event import Event
     from waste.classes.Simulator import Simulator
 
-
-Strategy = Callable[[Simulator, Event], list[Event]]
+    Strategy = Callable[[Simulator, Event], list[Event]]
 
 STRATEGIES: dict[str, Strategy] = {
     "random": random,
