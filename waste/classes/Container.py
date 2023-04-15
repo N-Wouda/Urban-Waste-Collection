@@ -14,7 +14,9 @@ class Container:
         self.deposits = 0  # number of arrivals since last service
         self.volume = 0.0  # current volume in container, in liters
 
-    def arrivals_until(self, until: int) -> list[Event]:
+    def arrivals_until(
+        self, until: int, volume_range: tuple[float, float]
+    ) -> list[Event]:
         """
         Returns arrivals (events) for the period [0, until], where until is
         assumed to be in hours.
@@ -27,8 +29,7 @@ class Container:
             rate = self.rates[hour % len(self.rates)]
             num_arrivals = poisson(rate)
 
-            # TODO parametrise 30 and 65
-            volumes = uniform(low=30, high=65, size=num_arrivals)  # in liters
+            volumes = uniform(*volume_range, size=num_arrivals)  # in liters
             arrivals = hour + uniform(size=num_arrivals)
 
             events += [

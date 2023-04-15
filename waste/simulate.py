@@ -3,7 +3,7 @@ import logging
 
 import numpy as np
 
-from waste.classes import Database, Simulator
+from waste.classes import Configuration, Database, Simulator
 from waste.measures import MEASURES
 from waste.strategies import STRATEGIES
 
@@ -16,6 +16,7 @@ def parse_args():
     parser.add_argument("src_db", help="Location of the input database.")
     parser.add_argument("res_db", help="Location of the output database.")
 
+    parser.add_argument("--config", help="Configuration file (toml) location.")
     parser.add_argument(
         "--horizon",
         required=True,
@@ -35,11 +36,21 @@ def main():
     np.random.seed(args.seed)
 
     # Set up simulation environment and data
+    config = Configuration()
+    if args.config:
+        config = Configuration.from_file(args.config)
+
     db = Database(args.src_db, args.res_db)
     sim = Simulator(db.containers(), db.vehicles())
 
     # Simulate and store results
-    sim(args.horizon, db.store, STRATEGIES[args.strategy])
+    sim(
+        args.horizon,
+        db.store,
+        STRATEGIES[args.strategy],
+        config.shift_plan,
+        config.volume_range,
+    )
 
     # Compute performance measures from stored data
     res = {name: db.compute(func) for name, func in MEASURES.items()}

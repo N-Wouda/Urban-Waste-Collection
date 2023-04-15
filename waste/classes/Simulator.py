@@ -44,6 +44,8 @@ class Simulator:
         horizon: int,
         store: Callable[[Event], None],
         strategy: Strategy,
+        shift_plan: list[float],
+        volume_range: tuple[float, float],
     ):
         """
         Applies the given strategy for a simulation lasting horizon hours.
@@ -53,13 +55,13 @@ class Simulator:
         # Insert all arrival events into the event queue. This is the only
         # source of uncertainty in the simulation.
         for container in self.containers:
-            for event in container.arrivals_until(horizon):
+            for event in container.arrivals_until(horizon, volume_range):
                 queue.add(event)
 
         # Insert the shift planning moments into the event queue.
-        for hour in range(horizon):
-            if hour % 24 in [6, 12]:  # TODO config
-                queue.add(Event(hour, EventType.SHIFT_PLAN))
+        for day in range(0, horizon, 24):
+            for hour in shift_plan:
+                queue.add(Event(day + hour, EventType.SHIFT_PLAN))
 
         time = 0.0
 
