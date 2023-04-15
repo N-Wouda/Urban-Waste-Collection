@@ -12,12 +12,13 @@ if TYPE_CHECKING:
     from waste.classes.Event import Event
     from waste.classes.Simulator import Simulator
 
-    class Strategy(Protocol):
-        def __init__(self, gen: Generator):
-            pass
 
-        def __call__(self, sim: Simulator, event: Event) -> list[Event]:
-            pass
+class Strategy(Protocol):
+    def __init__(self, gen: Generator):
+        pass
+
+    def __call__(self, sim: Simulator, event: Event) -> list[Event]:
+        pass
 
 
 STRATEGIES: dict[str, Strategy] = {
