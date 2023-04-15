@@ -1,8 +1,7 @@
 import sqlite3
-from typing import Optional
 
 
-def avg_fill_factor(con: sqlite3.Connection) -> Optional[float]:
+def avg_fill_factor(con: sqlite3.Connection) -> float:
     """
     This measure computes the average fill factor of serviced containers.
     """
