@@ -4,6 +4,7 @@ import logging
 import numpy as np
 
 from waste.classes import Database, Simulator
+from waste.measures import MEASURES
 from waste.strategies import STRATEGIES
 
 logger = logging.getLogger(__name__)
@@ -38,8 +39,11 @@ def main():
     sim = Simulator(db.containers(), db.vehicles())
 
     # Simulate and store results
-    res = sim(args.horizon, STRATEGIES[args.strategy])
-    db.store(res)
+    sim(args.horizon, db.store, STRATEGIES[args.strategy])
+
+    # Compute performance measures from stored data
+    res = {name: db.compute(func) for name, func in MEASURES.items()}
+    print(res)
 
 
 if __name__ == "__main__":

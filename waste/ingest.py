@@ -20,6 +20,11 @@ def make_tables(con: sqlite3.Connection):
             longitude FLOAT
         );
 
+        CREATE TABLE vehicles (
+            vehicle VARCHAR,
+            capacity INT
+        );
+
         CREATE TABLE arrivals (
             container VARCHAR,
             date DATE,
@@ -47,7 +52,7 @@ def insert_containers(con: sqlite3.Connection, containers: pd.DataFrame):
             r.DumpLocationName,
             r.Street,
             r.City,
-            r.PitCapacity,
+            1000 * r.PitCapacity,  # in liters
             r.Latitude,
             r.Longitude,
         )
@@ -57,6 +62,12 @@ def insert_containers(con: sqlite3.Connection, containers: pd.DataFrame):
     cols = ["container", "street", "city", "capacity", "latitude", "longitude"]
     df = pd.DataFrame(columns=cols, data=values)
     df.to_sql("containers", con, index=False, if_exists="append")
+
+
+def insert_vehicles(con: sqlite3.Connection, vehicles: pd.DataFrame):
+    values = [(r.Naam, r.Capaciteit) for _, r in vehicles.iterrows()]
+    df = pd.DataFrame(columns=["vehicle", "capacity"], data=values)
+    df.to_sql("vehicles", con, index=False, if_exists="append")
 
 
 def insert_arrivals(con: sqlite3.Connection, arrivals: pd.DataFrame):
@@ -75,21 +86,21 @@ def insert_arrivals(con: sqlite3.Connection, arrivals: pd.DataFrame):
 
 def insert_arrival_rates(con: sqlite3.Connection):
     sql = "SELECT JULIANDAY(MAX(date)) - JULIANDAY(MIN(date)) FROM arrivals;"
-    horizon = con.execute(sql).fetchone()[0]
+    horizon = con.execute(sql).fetchone()
 
-    sql = f"""-- sql
+    sql = """-- sql
         INSERT INTO container_rates
         SELECT *
         FROM (
             SELECT container,
                    STRFTIME('%H', date) AS hour,
-                   COUNT(date) / {horizon} AS rate
+                   COUNT(date) / ? AS rate
             FROM arrivals
             WHERE container NOTNULL
             GROUP BY container, hour
         );
     """
-    con.execute(sql)
+    con.execute(sql, horizon)
     con.commit()
 
 
@@ -117,6 +128,11 @@ def main():
         logger.info("Inserting containers.")
         containers = pd.read_excel("data/Containergegevens.xlsx")
         insert_containers(con, containers)
+
+        # Vehicle data
+        logger.info("Inserting vehicles.")
+        vehicles = pd.read_csv("data/Voertuigen.csv", sep=";")
+        insert_vehicles(con, vehicles)
 
         # Arrivals ("stortingen")
         for where in glob.iglob("data/Overzicht stortingen*.csv"):

@@ -1,11 +1,15 @@
+from __future__ import annotations
+
 import heapq
 import logging
+from typing import TYPE_CHECKING, Callable
 
 from .Container import Container
 from .Event import Event, EventType
-from .Result import Result
-from .Strategy import Strategy
 from .Vehicle import Vehicle
+
+if TYPE_CHECKING:
+    from waste.strategies import Strategy
 
 logger = logging.getLogger(__name__)
 
@@ -35,14 +39,19 @@ class Simulator:
         self.containers = containers
         self.vehicles = vehicles
 
-    def __call__(self, horizon: int, strategy: Strategy) -> Result:
+    def __call__(
+        self,
+        horizon: int,
+        store: Callable[[Event], None],
+        strategy: Strategy,
+    ):
         """
         Applies the given strategy for a simulation lasting horizon hours.
         """
         queue = _EventQueue()
 
-        # Insert all arrival events into the event queue. We note that this
-        # is the only source of uncertainty in the simulation.
+        # Insert all arrival events into the event queue. This is the only
+        # source of uncertainty in the simulation.
         for container in self.containers:
             for event in container.arrivals_until(horizon):
                 queue.add(event)
@@ -52,12 +61,13 @@ class Simulator:
             if hour % 24 in [6, 12]:  # TODO config
                 queue.add(Event(hour, EventType.SHIFT_PLAN))
 
-        res = Result()
         time = 0.0
 
         while queue and time <= horizon:
             event = queue.pop()
             time = event.time
+
+            store(event)
 
             if event.type == EventType.ARRIVAL:
                 container = event.kwargs["container"]
@@ -76,5 +86,3 @@ class Simulator:
                     queue.add(event)
             else:
                 raise ValueError(f"Unhandled event of type {event.type.name}.")
-
-        return res

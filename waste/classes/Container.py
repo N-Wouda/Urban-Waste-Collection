@@ -12,7 +12,7 @@ class Container:
         self.capacity = capacity  # in volume, liters
 
         self.deposits = 0  # number of arrivals since last service
-        self._volume = 0.0  # current volume in container, in liters
+        self.volume = 0.0  # current volume in container, in liters
 
     def arrivals_until(self, until: int) -> list[Event]:
         """
@@ -48,14 +48,14 @@ class Container:
         Registers an arrival at this container.
         """
         self.deposits += 1
-        self._volume += event.kwargs["volume"]
+        self.volume += event.kwargs["volume"]
 
     def service(self):
         """
         Services this container.
         """
         self.deposits = 0
-        self._volume = 0.0
+        self.volume = 0.0
 
     def __str__(self) -> str:
         return (

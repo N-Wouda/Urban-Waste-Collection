@@ -4,6 +4,6 @@ class Vehicle:
         self.capacity = capacity
 
     def __str__(self) -> str:
-        return f"Vehicle(name={self.name}, capacity={self.capacity})"
+        return f"Vehicle(name={self.name}, capacity={self.capacity:.2f})"
 
     # TODO

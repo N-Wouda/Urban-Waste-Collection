@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import IntEnum
 
 
-class EventType(Enum):
+class EventType(IntEnum):
     ARRIVAL = 0
     SERVICE = 1
     SHIFT_PLAN = 2
