@@ -22,8 +22,9 @@ def parse_args():
         type=int,
         help="Time horizon for the simulation (in hours).",
     )
-    parser.add_argument("--seed", required=True, type=int)
+    parser.add_argument("--seed", type=int, required=True)
     parser.add_argument("--strategy", choices=STRATEGIES.keys(), required=True)
+    parser.add_argument("--strategy_seed", type=int, required=True)
 
     return parser.parse_args()
 
@@ -38,8 +39,11 @@ def main():
     db = Database(args.src_db, args.res_db)
     sim = Simulator(db.containers(), db.vehicles())
 
+    generator = np.random.default_rng(args.strategy_seed)
+    strategy = STRATEGIES[args.strategy](generator)
+
     # Simulate and store results
-    sim(args.horizon, db.store, STRATEGIES[args.strategy])
+    sim(args.horizon, db.store, strategy)
 
     # Compute performance measures from stored data
     res = {name: db.compute(func) for name, func in MEASURES.items()}

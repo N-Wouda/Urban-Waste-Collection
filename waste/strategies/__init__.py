@@ -1,19 +1,27 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Protocol
 
-from .baseline import baseline
-from .prize import prize
-from .random import random
+from .BaselineStrategy import BaselineStrategy
+from .PrizeCollectingStrategy import PrizeCollectingStrategy
+from .RandomStrategy import RandomStrategy
 
 if TYPE_CHECKING:
+    from numpy.random import Generator
+
     from waste.classes.Event import Event
     from waste.classes.Simulator import Simulator
 
-    Strategy = Callable[[Simulator, Event], list[Event]]
+    class Strategy(Protocol):
+        def __init__(self, gen: Generator):
+            pass
+
+        def __call__(self, sim: Simulator, event: Event) -> list[Event]:
+            pass
+
 
 STRATEGIES: dict[str, Strategy] = {
-    "baseline": baseline,
-    "prize": prize,
-    "random": random,
+    "baseline": BaselineStrategy,
+    "prize": PrizeCollectingStrategy,
+    "random": RandomStrategy,
 }
