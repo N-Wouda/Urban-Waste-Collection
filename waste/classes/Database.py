@@ -1,9 +1,9 @@
 import sqlite3
-from collections import defaultdict
 from typing import Any
 
 import numpy as np
 
+from waste.constants import BUFFER_SIZE, HOURS_IN_DAY
 from waste.measures import Measure
 
 from .Container import Container
@@ -16,8 +16,6 @@ class Database:
     Simple database wrapper/model class for interacting with the static and
     simulation data.
     """
-
-    BUFFER_SIZE: int = 999
 
     def __init__(self, src_db: str, res_db: str):
         self.buffer: list[Event] = []
@@ -56,8 +54,12 @@ class Database:
             ORDER BY cr.container, cr.hour;
         """
         capacities: dict[str, float] = {}
-        rates: dict[str, np.ndarray] = defaultdict(lambda: np.zeros(24))
+        rates: dict[str, np.ndarray] = {}
+
         for name, capacity, hour, rate in self.read.execute(sql):
+            if name not in rates:
+                rates[name] = np.zeros(HOURS_IN_DAY)
+
             capacities[name] = capacity
             rates[name][hour] = rate
 
@@ -85,7 +87,7 @@ class Database:
     def store(self, event: Event):
         self.buffer.append(event)
 
-        if len(self.buffer) >= self.BUFFER_SIZE:
+        if len(self.buffer) >= BUFFER_SIZE:
             self._commit()
 
     def _commit(self):

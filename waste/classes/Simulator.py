@@ -4,6 +4,8 @@ import heapq
 import logging
 from typing import TYPE_CHECKING, Callable
 
+from waste.constants import HOURS_IN_DAY, SHIFT_PLAN
+
 from .Container import Container
 from .Event import Event, EventType
 from .Vehicle import Vehicle
@@ -44,8 +46,6 @@ class Simulator:
         horizon: int,
         store: Callable[[Event], None],
         strategy: Strategy,
-        shift_plan: list[float],
-        volume_range: tuple[float, float],
     ):
         """
         Applies the given strategy for a simulation lasting horizon hours.
@@ -55,12 +55,12 @@ class Simulator:
         # Insert all arrival events into the event queue. This is the only
         # source of uncertainty in the simulation.
         for container in self.containers:
-            for event in container.arrivals_until(horizon, volume_range):
+            for event in container.arrivals_until(horizon):
                 queue.add(event)
 
         # Insert the shift planning moments into the event queue.
-        for day in range(0, horizon, 24):
-            for hour in shift_plan:
+        for day in range(0, horizon, HOURS_IN_DAY):
+            for hour in SHIFT_PLAN:
                 queue.add(Event(day + hour, EventType.SHIFT_PLAN))
 
         time = 0.0

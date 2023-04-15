@@ -1,11 +1,13 @@
 from numpy.random import poisson, uniform
 
+from waste.constants import HOURS_IN_DAY, VOLUME_RANGE
+
 from .Event import Event, EventType
 
 
 class Container:
     def __init__(self, name: str, rates: list[float], capacity: float):
-        assert len(rates) == 24
+        assert len(rates) == HOURS_IN_DAY
 
         self.name = name
         self.rates = rates  # arrival rates, per clock hour ([0 - 23])
@@ -14,9 +16,7 @@ class Container:
         self.deposits = 0  # number of arrivals since last service
         self.volume = 0.0  # current volume in container, in liters
 
-    def arrivals_until(
-        self, until: int, volume_range: tuple[float, float]
-    ) -> list[Event]:
+    def arrivals_until(self, until: int) -> list[Event]:
         """
         Returns arrivals (events) for the period [0, until], where until is
         assumed to be in hours.
@@ -29,7 +29,7 @@ class Container:
             rate = self.rates[hour % len(self.rates)]
             num_arrivals = poisson(rate)
 
-            volumes = uniform(*volume_range, size=num_arrivals)  # in liters
+            volumes = uniform(*VOLUME_RANGE, size=num_arrivals)  # in liters
             arrivals = hour + uniform(size=num_arrivals)
 
             events += [
