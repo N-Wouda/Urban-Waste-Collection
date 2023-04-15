@@ -24,12 +24,12 @@ class Container:
         for hour in range(until):
             # Non-homogeneous Poisson arrivals, with hourly rates as given by
             # the rates list for this container.
-            rate = self.rates[hour % 24]
+            rate = self.rates[hour % len(self.rates)]
             num_arrivals = poisson(rate)
-            arrivals = hour + uniform(size=num_arrivals)
 
             # TODO parametrise 30 and 65
-            volumes = uniform(low=30, high=65, size=num_arrivals)
+            volumes = uniform(low=30, high=65, size=num_arrivals)  # in liters
+            arrivals = hour + uniform(size=num_arrivals)
 
             events += [
                 Event(

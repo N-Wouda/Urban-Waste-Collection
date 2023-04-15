@@ -1,4 +1,4 @@
-from waste.simulate import Event, Simulator
+from waste.classes import Event, Simulator
 
 
 def random(sim: Simulator, event: Event) -> list[Event]:

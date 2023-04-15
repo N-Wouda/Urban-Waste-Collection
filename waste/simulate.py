@@ -3,13 +3,14 @@ import logging
 
 import numpy as np
 
-from waste.simulate import STRATEGIES, Database, Simulator
+from waste.classes import Database, Simulator
+from waste.strategies import STRATEGIES
 
 logger = logging.getLogger(__name__)
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(prog="run")
+    parser = argparse.ArgumentParser(prog="simulate")
 
     parser.add_argument("src_db", help="Location of the input database.")
     parser.add_argument("res_db", help="Location of the output database.")
@@ -34,12 +35,9 @@ def main():
 
     # Set up simulation environment and data
     db = Database(args.src_db, args.res_db)
-
-    containers = db.containers()
-    vehicles = db.vehicles()
+    sim = Simulator(db.containers(), db.vehicles())
 
     # Simulate and store results
-    sim = Simulator(containers, vehicles)
     res = sim(args.horizon, STRATEGIES[args.strategy])
     db.store(res)
 

@@ -10,10 +10,11 @@ logger = logging.getLogger(__name__)
 
 
 def make_tables(con: sqlite3.Connection):
-    sql = """
+    sql = """-- sql
         CREATE TABLE containers (
             container VARCHAR,
-            cluster VARCHAR,
+            street VARCHAR,
+            city VARCHAR,
             capacity INT,
             latitude FLOAT,
             longitude FLOAT
@@ -23,6 +24,12 @@ def make_tables(con: sqlite3.Connection):
             container VARCHAR,
             date DATE,
             successful BOOLEAN
+        );
+
+        CREATE TABLE container_rates (
+            container VARCHAR,
+            hour INT,
+            rate FLOAT
         );
 
         CREATE TABLE services (
@@ -36,67 +43,64 @@ def make_tables(con: sqlite3.Connection):
 
 def insert_containers(con: sqlite3.Connection, containers: pd.DataFrame):
     values = [
-        (c.Container, c.ClusterName, c.PitCapacity, c.Latitude, c.Longitude)
-        for _, c in containers.iterrows()
+        (
+            r.DumpLocationName,
+            r.Street,
+            r.City,
+            r.PitCapacity,
+            r.Latitude,
+            r.Longitude,
+        )
+        for _, r in containers.iterrows()
     ]
 
-    con.executemany(
-        """
-            INSERT INTO containers (
-                container,
-                cluster,
-                capacity,
-                latitude,
-                longitude
-            ) VALUES (?, ?, ?, ?, ?);
-        """,
-        values,
-    )
-
-    con.commit()
+    cols = ["container", "street", "city", "capacity", "latitude", "longitude"]
+    df = pd.DataFrame(columns=cols, data=values)
+    df.to_sql("containers", con, index=False, if_exists="append")
 
 
 def insert_arrivals(con: sqlite3.Connection, arrivals: pd.DataFrame):
     values = [
         (
-            d.DumpLocationNr,
-            datetime.strptime(d.RegMoment, "%d-%m-%Y %H:%M"),
-            int(d.Successful) == 1,
+            r.DumpLocationNr,
+            datetime.strptime(r.RegMoment, "%d-%m-%Y %H:%M"),
+            int(r.Successful) == 1,
         )
-        for _, d in arrivals.iterrows()
+        for _, r in arrivals.iterrows()
     ]
 
-    con.executemany(
-        """
-            INSERT INTO arrivals (
-                container,
-                date,
-                successful
-            ) VALUES (?, ?, ?);
-        """,
-        values,
-    )
+    df = pd.DataFrame(columns=["container", "date", "successful"], data=values)
+    df.to_sql("arrivals", con, index=False, if_exists="append")
 
+
+def insert_arrival_rates(con: sqlite3.Connection):
+    sql = "SELECT JULIANDAY(MAX(date)) - JULIANDAY(MIN(date)) FROM arrivals;"
+    horizon = con.execute(sql).fetchone()[0]
+
+    sql = f"""-- sql
+        INSERT INTO container_rates
+        SELECT *
+        FROM (
+            SELECT container,
+                   STRFTIME('%H', date) AS hour,
+                   COUNT(date) / {horizon} AS rate
+            FROM arrivals
+            WHERE container NOTNULL
+            GROUP BY container, hour
+        );
+    """
+    con.execute(sql)
     con.commit()
 
 
 def insert_services(con: sqlite3.Connection, services: pd.DataFrame):
     values = [
-        (d.DumpLocationName, datetime.strptime(d.DATETIME, "%d-%m-%Y %H:%M"))
-        for _, d in services.iterrows()
+        (r.DumpLocationName, datetime.strptime(r.DATETIME, "%d-%m-%Y %H:%M"))
+        for _, r in services.iterrows()
     ]
 
-    con.executemany(
-        """
-            INSERT INTO services (
-                container,
-                date
-            ) VALUES (?, ?);
-        """,
-        values,
-    )
-
-    con.commit()
+    df = pd.DataFrame(columns=["container", "date"], data=values)
+    df.to_sql("services", con, index=False, if_exists="append")
 
 
 def main():
@@ -119,6 +123,11 @@ def main():
             logger.info(f"Inserting arrivals from '{where}'.")
             arrivals = pd.read_csv(where, sep=";", dtype=object)
             insert_arrivals(con, arrivals)
+
+        # Pre-compute hourly arrival rates for each container, based on the
+        # current arrivals table.
+        logger.info("Inserting hourly arrival rates.")
+        insert_arrival_rates(con)
 
         # Servicing ("ledigingen")
         logger.info("Inserting services.")
