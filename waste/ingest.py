@@ -10,19 +10,31 @@ logger = logging.getLogger(__name__)
 
 
 def make_tables(con: sqlite3.Connection):
-    sql = """
+    sql = """-- sql
         CREATE TABLE containers (
             container VARCHAR,
-            cluster VARCHAR,
+            street VARCHAR,
+            city VARCHAR,
             capacity INT,
             latitude FLOAT,
             longitude FLOAT
         );
 
+        CREATE TABLE vehicles (
+            vehicle VARCHAR,
+            capacity INT
+        );
+
         CREATE TABLE arrivals (
             container VARCHAR,
             date DATE,
-            succesful BOOLEAN
+            successful BOOLEAN
+        );
+
+        CREATE TABLE container_rates (
+            container VARCHAR,
+            hour INT,
+            rate FLOAT
         );
 
         CREATE TABLE services (
@@ -36,67 +48,70 @@ def make_tables(con: sqlite3.Connection):
 
 def insert_containers(con: sqlite3.Connection, containers: pd.DataFrame):
     values = [
-        (c.Container, c.ClusterName, c.PitCapacity, c.Latitude, c.Longitude)
-        for _, c in containers.iterrows()
+        (
+            r.DumpLocationName,
+            r.Street,
+            r.City,
+            1000 * r.PitCapacity,  # in liters
+            r.Latitude,
+            r.Longitude,
+        )
+        for _, r in containers.iterrows()
     ]
 
-    con.executemany(
-        """
-            INSERT INTO containers (
-                container,
-                cluster,
-                capacity,
-                latitude,
-                longitude
-            ) VALUES (?, ?, ?, ?, ?);
-        """,
-        values,
-    )
+    cols = ["container", "street", "city", "capacity", "latitude", "longitude"]
+    df = pd.DataFrame(columns=cols, data=values)
+    df.to_sql("containers", con, index=False, if_exists="append")
 
-    con.commit()
+
+def insert_vehicles(con: sqlite3.Connection, vehicles: pd.DataFrame):
+    values = [(r.Naam, r.Capaciteit) for _, r in vehicles.iterrows()]
+    df = pd.DataFrame(columns=["vehicle", "capacity"], data=values)
+    df.to_sql("vehicles", con, index=False, if_exists="append")
 
 
 def insert_arrivals(con: sqlite3.Connection, arrivals: pd.DataFrame):
     values = [
         (
-            d.DumpLocationNr,
-            datetime.strptime(d.RegMoment, "%d-%m-%Y %H:%M"),
-            int(d.Successful) == 1,
+            r.DumpLocationNr,
+            datetime.strptime(r.RegMoment, "%d-%m-%Y %H:%M"),
+            int(r.Successful) == 1,
         )
-        for _, d in arrivals.iterrows()
+        for _, r in arrivals.iterrows()
     ]
 
-    con.executemany(
-        """
-            INSERT INTO arrivals (
-                container,
-                date,
-                succesful
-            ) VALUES (?, ?, ?);
-        """,
-        values,
-    )
+    df = pd.DataFrame(columns=["container", "date", "successful"], data=values)
+    df.to_sql("arrivals", con, index=False, if_exists="append")
 
+
+def insert_arrival_rates(con: sqlite3.Connection):
+    sql = "SELECT JULIANDAY(MAX(date)) - JULIANDAY(MIN(date)) FROM arrivals;"
+    horizon = con.execute(sql).fetchone()
+
+    sql = """-- sql
+        INSERT INTO container_rates
+        SELECT *
+        FROM (
+            SELECT container,
+                   STRFTIME('%H', date) AS hour,
+                   COUNT(date) / ? AS rate
+            FROM arrivals
+            WHERE container NOTNULL
+            GROUP BY container, hour
+        );
+    """
+    con.execute(sql, horizon)
     con.commit()
 
 
 def insert_services(con: sqlite3.Connection, services: pd.DataFrame):
     values = [
-        (d.DumpLocationName, datetime.strptime(d.DATETIME, "%d-%m-%Y %H:%M"))
-        for _, d in services.iterrows()
+        (r.DumpLocationName, datetime.strptime(r.DATETIME, "%d-%m-%Y %H:%M"))
+        for _, r in services.iterrows()
     ]
 
-    con.executemany(
-        """
-            INSERT INTO services (
-                container,
-                date
-            ) VALUES (?, ?);
-        """,
-        values,
-    )
-
-    con.commit()
+    df = pd.DataFrame(columns=["container", "date"], data=values)
+    df.to_sql("services", con, index=False, if_exists="append")
 
 
 def main():
@@ -114,11 +129,21 @@ def main():
         containers = pd.read_excel("data/Containergegevens.xlsx")
         insert_containers(con, containers)
 
+        # Vehicle data
+        logger.info("Inserting vehicles.")
+        vehicles = pd.read_csv("data/Voertuigen.csv", sep=";")
+        insert_vehicles(con, vehicles)
+
         # Arrivals ("stortingen")
         for where in glob.iglob("data/Overzicht stortingen*.csv"):
             logger.info(f"Inserting arrivals from '{where}'.")
             arrivals = pd.read_csv(where, sep=";", dtype=object)
             insert_arrivals(con, arrivals)
+
+        # Pre-compute hourly arrival rates for each container, based on the
+        # current arrivals table.
+        logger.info("Inserting hourly arrival rates.")
+        insert_arrival_rates(con)
 
         # Servicing ("ledigingen")
         logger.info("Inserting services.")

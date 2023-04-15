@@ -10,11 +10,20 @@ The code includes:
 ## Installation
 
 Update or get `poetry`, and then simply use `poetry install` from the repository root.
-Scripts can be ran as `poetry run <script name>`, for example:
-```
+
+## Programs
+
+The following programs are currently available:
+
+- `ingest`, the ingestion script.
+  This script ingests raw data files into an SQL database.
+- `simulate`, the simulation runscript.
+  This script runs a single simulation using a given collection strategy.
+
+These programs can be ran as `poetry run <script name>`, for example:
+```shell
 poetry run ingest
 ```
-will run the `waste/ingest.py` script.
 
-> *Note* that most programs depend on data available in the `data/` directory.
-> This directory is not on GitHub.
+Note that most programs depend on data available in the `data/` directory.
+This directory is not on GitHub.
