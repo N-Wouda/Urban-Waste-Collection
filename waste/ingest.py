@@ -15,14 +15,14 @@ def make_tables(con: sqlite3.Connection):
             container VARCHAR,
             street VARCHAR,
             city VARCHAR,
-            capacity INT,
+            capacity FLOAT,
             latitude FLOAT,
             longitude FLOAT
         );
 
         CREATE TABLE vehicles (
             vehicle VARCHAR,
-            capacity INT
+            capacity FLOAT
         );
 
         CREATE TABLE arrivals (
@@ -124,9 +124,11 @@ def main():
         logger.info("Creating tables.")
         make_tables(con)
 
-        # Container data
+        # Container data. For now skip containers w/o (lat, long). I checked
+        # those containers, and they are not in Groningen.
         logger.info("Inserting containers.")
         containers = pd.read_excel("data/Containergegevens.xlsx")
+        containers = containers.dropna(subset=["Latitude", "Longitude"])
         insert_containers(con, containers)
 
         # Vehicle data
