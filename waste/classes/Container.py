@@ -6,6 +6,12 @@ from .Event import Event, EventType
 
 
 class Container:
+    """
+    Models an underground container. This container registers arrivals and
+    services, and maintains the currently used volume and number of arrivals
+    since last service.
+    """
+
     def __init__(self, name: str, rates: list[float], capacity: float):
         assert len(rates) == HOURS_IN_DAY
 
@@ -13,7 +19,7 @@ class Container:
         self.rates = rates  # arrival rates, per clock hour ([0 - 23])
         self.capacity = capacity  # in volume, liters
 
-        self.deposits = 0  # number of arrivals since last service
+        self.num_arrivals = 0  # number of arrivals since last service
         self.volume = 0.0  # current volume in container, in liters
 
     def arrivals_until(self, until: int) -> list[Event]:
@@ -48,21 +54,21 @@ class Container:
         """
         Registers an arrival at this container.
         """
-        self.deposits += 1
+        self.num_arrivals += 1
         self.volume += event.kwargs["volume"]
 
     def service(self):
         """
         Services this container.
         """
-        self.deposits = 0
+        self.num_arrivals = 0
         self.volume = 0.0
 
     def __str__(self) -> str:
         return (
             "Container("
             f"name={self.name}, "
-            f"deposits={self.deposits}, "
+            f"num_arrivals={self.num_arrivals}, "
             f"capacity={self.capacity}"
             ")"
         )

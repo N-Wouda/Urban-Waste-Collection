@@ -22,10 +22,11 @@ class Database:
 
         self.read = sqlite3.connect(src_db)
         self.write = sqlite3.connect(res_db)
-        self.write.executescript(  # prepare the result database
-            f"""-- sql
-                ATTACH DATABASE '{src_db}' AS source;
 
+        # Prepare the result database
+        self.write.execute("ATTACH DATABASE ? AS source;", (src_db,))
+        self.write.executescript(
+            """-- sql
                 CREATE TABLE arrival_events (
                     time FLOAT,
                     container VARCHAR,
@@ -36,7 +37,7 @@ class Database:
                     time FLOAT,
                     container VARCHAR,
                     vehicle VARCHAR,
-                    deposits INT,
+                    num_arrivals INT,
                     volume FLOAT
                 );
             """
@@ -119,7 +120,7 @@ class Database:
                 event.time,
                 event.kwargs["container"].name,
                 event.kwargs["vehicle"].name,
-                event.kwargs["container"].deposits,
+                event.kwargs["container"].num_arrivals,
                 event.kwargs["container"].volume,
             )
             for event in self.buffer
@@ -132,7 +133,7 @@ class Database:
                     time,
                     container,
                     vehicle,
-                    deposits,
+                    num_arrivals,
                     volume
                 ) VALUES (?, ?, ?, ?, ?)
             """,

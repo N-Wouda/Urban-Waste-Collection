@@ -8,6 +8,11 @@ class EventType(IntEnum):
 
 
 class Event:
+    """
+    Event class. Events have a time at which they are fired, and a type. The
+    type determines the additional kwargs present.
+    """
+
     def __init__(self, time: float, type: EventType, **kwargs):
         self.time = time
         self.type = type
