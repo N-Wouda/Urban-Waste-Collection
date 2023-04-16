@@ -21,7 +21,7 @@ def query(
     base_url: str,
     points: str,
     source: int,
-) -> tuple[list[float], list[float]]:
+) -> tuple[list[int], list[int]]:
     params = dict(
         annotations="duration,distance",
         skip_waypoints="true",
@@ -43,8 +43,11 @@ def query(
         logger.error(msg)
         raise ValueError(msg)
 
-    # Only return the first value since we have only one source.
-    return data["distances"][0], data["durations"][0]
+    # Round values to nearest integers. As distance is in meters and duration
+    # in seconds, this won't have much of an impact on quality.
+    distances = [round(max(dist, 0)) for dist in data["distances"][0]]
+    durations = [round(max(dur, 0)) for dur in data["durations"][0]]
+    return distances, durations
 
 
 def main():
@@ -55,13 +58,13 @@ def main():
             CREATE TABLE distances (
                 a VARCHAR,
                 b VARCHAR,
-                distance FLOAT -- in meters
+                distance INT -- in meters
             );
 
             CREATE TABLE durations (
                 a VARCHAR,
                 b VARCHAR,
-                duration FLOAT -- in seconds
+                duration INT -- in seconds
             )
         """
         con.executescript(sql)
