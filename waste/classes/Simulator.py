@@ -72,7 +72,9 @@ class Simulator:
             if event.time >= time:
                 time = event.time
             else:
-                raise ValueError("Event time is before current time!")
+                msg = f"Event {event}: time is before current time!"
+                logger.error(msg)
+                raise ValueError(msg)
 
             if event.type == EventType.ARRIVAL:
                 container = event.kwargs["container"]
@@ -93,4 +95,6 @@ class Simulator:
                 for event in events:
                     queue.add(event)
             else:
-                raise ValueError(f"Unhandled event of type {event.type.name}.")
+                msg = f"Unhandled event of type {event.type.name}."
+                logger.error(msg)
+                raise ValueError(msg)
