@@ -1,0 +1,4 @@
+# GraphHopper related files that do not need to be in the repository
+graph-cache/
+*.jar
+*.pbf
