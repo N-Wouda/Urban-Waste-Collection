@@ -4,7 +4,7 @@ import heapq
 import logging
 from typing import TYPE_CHECKING, Callable
 
-from waste.constants import HOURS_IN_DAY, SHIFT_PLAN
+from waste.constants import HOURS_IN_DAY, SHIFT_PLANNING_HOURS
 
 from .Container import Container
 from .Event import Event, EventType
@@ -60,16 +60,19 @@ class Simulator:
 
         # Insert the shift planning moments into the event queue.
         for day in range(0, horizon, HOURS_IN_DAY):
-            for hour in SHIFT_PLAN:
+            for hour in SHIFT_PLANNING_HOURS:
                 queue.add(Event(day + hour, EventType.SHIFT_PLAN))
 
         time = 0.0
 
         while queue and time <= horizon:
             event = queue.pop()
-            time = event.time
-
             store(event)
+
+            if event.time >= time:
+                time = event.time
+            else:
+                raise ValueError("Event time is before current time!")
 
             if event.type == EventType.ARRIVAL:
                 container = event.kwargs["container"]
@@ -83,8 +86,11 @@ class Simulator:
                 logger.info(f"Service at {container} at t = {time:.2f}.")
             elif event.type == EventType.SHIFT_PLAN:
                 logger.info(f"Generating shift plan at t = {event.time:.2f}.")
+                events = strategy(self, event)
 
-                for event in strategy(self, event):
+                # TODO determine routes, store stats?
+
+                for event in events:
                     queue.add(event)
             else:
                 raise ValueError(f"Unhandled event of type {event.type.name}.")
