@@ -1,8 +1,9 @@
 from numpy.random import poisson, uniform
 
 from waste.constants import HOURS_IN_DAY, VOLUME_RANGE
+from waste.enums import EventType
 
-from .Event import Event, EventType
+from .Event import Event
 
 
 class Container:

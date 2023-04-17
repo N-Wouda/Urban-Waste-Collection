@@ -5,9 +5,10 @@ import logging
 from typing import TYPE_CHECKING, Callable
 
 from waste.constants import HOURS_IN_DAY, SHIFT_PLANNING_HOURS
+from waste.enums import EventType
 
 from .Container import Container
-from .Event import Event, EventType
+from .Event import Event
 from .Vehicle import Vehicle
 
 if TYPE_CHECKING:

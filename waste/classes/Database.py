@@ -4,10 +4,11 @@ from typing import Any
 import numpy as np
 
 from waste.constants import BUFFER_SIZE, HOURS_IN_DAY
+from waste.enums import EventType
 from waste.measures import Measure
 
 from .Container import Container
-from .Event import Event, EventType
+from .Event import Event
 from .Vehicle import Vehicle
 
 
@@ -51,7 +52,7 @@ class Database:
                    cr.rate
             FROM container_rates AS cr
                     INNER JOIN containers AS c
-                                ON c.container = cr.container
+                                ON c.name = cr.container
             ORDER BY cr.container, cr.hour;
         """
         capacities: dict[str, float] = {}
@@ -70,7 +71,7 @@ class Database:
         ]
 
     def vehicles(self) -> list[Vehicle]:
-        sql = "SELECT vehicle, capacity FROM vehicles;"
+        sql = "SELECT name, capacity FROM vehicles;"
         return [
             Vehicle(name, capacity)
             for name, capacity in self.read.execute(sql)
