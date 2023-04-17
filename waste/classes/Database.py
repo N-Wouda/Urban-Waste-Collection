@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import sqlite3
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 
@@ -9,6 +11,7 @@ from waste.measures import Measure
 
 from .Container import Container
 from .Event import Event
+from .Route import Route
 from .Vehicle import Vehicle
 
 
@@ -34,13 +37,20 @@ class Database:
                     volume FLOAT
                 );
 
+                CREATE TABLE routes (
+                    id_route INTEGER PRIMARY KEY,
+                    vehicle NAME
+                );
+
                 CREATE TABLE service_events (
                     time FLOAT,
                     container VARCHAR,
+                    id_route INTEGER references routes,
                     vehicle VARCHAR,
                     num_arrivals INT,
                     volume FLOAT
                 );
+
             """
         )
 
@@ -86,11 +96,25 @@ class Database:
         self._commit()
         return measure(self.write)
 
-    def store(self, event: Event):
-        self.buffer.append(event)
+    def store(self, item: Event | Route) -> Optional[int]:
+        if isinstance(item, Event):
+            if item.type == EventType.SERVICE:
+                item.kwargs["num_arrivals"] = item.kwargs[
+                    "container"
+                ].num_arrivals
+                item.kwargs["volume"] = item.kwargs["container"].volume
 
-        if len(self.buffer) >= BUFFER_SIZE:
-            self._commit()
+            self.buffer.append(item)
+
+            if len(self.buffer) >= BUFFER_SIZE:
+                self._commit()
+        elif isinstance(item, Route):
+            sql = "INSERT INTO routes (vehicle) VALUES (?)"
+            cursor = self.write.execute(sql, (item.vehicle.name,))
+            self.write.commit()
+            return cursor.lastrowid
+
+        return None
 
     def _commit(self):
         self.write.execute("BEGIN TRANSACTION;")
@@ -120,9 +144,10 @@ class Database:
             (
                 event.time,
                 event.kwargs["container"].name,
+                event.kwargs["id_route"],
                 event.kwargs["vehicle"].name,
-                event.kwargs["container"].num_arrivals,
-                event.kwargs["container"].volume,
+                event.kwargs["num_arrivals"],
+                event.kwargs["volume"],
             )
             for event in self.buffer
             if event.type == EventType.SERVICE
@@ -133,10 +158,11 @@ class Database:
                 INSERT INTO service_events (
                     time,
                     container,
+                    id_route,
                     vehicle,
                     num_arrivals,
                     volume
-                ) VALUES (?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?)
             """,
             services,
         )

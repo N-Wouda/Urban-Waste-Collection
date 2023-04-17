@@ -36,52 +36,52 @@ def query(base_url: str, points: str, **query) -> tuple[list[int], list[int]]:
 
 def main():
     args = parse_args()
+    con = sqlite3.connect(args.database)
 
-    with sqlite3.connect(args.database) as con:
-        sql = """-- sql
-            CREATE TABLE distances (
-                from_location INTEGER REFERENCES locations,
-                to_location INTEGER REFERENCES locations,
-                distance INT -- in meters
-            );
+    sql = """-- sql
+        CREATE TABLE distances (
+            from_location INTEGER REFERENCES locations,
+            to_location INTEGER REFERENCES locations,
+            distance INT -- in meters
+        );
 
-            CREATE TABLE durations (
-                from_location INTEGER REFERENCES locations,
-                to_location INTEGER REFERENCES locations,
-                duration INT -- in seconds
-            )
-        """
-        con.executescript(sql)
+        CREATE TABLE durations (
+            from_location INTEGER REFERENCES locations,
+            to_location INTEGER REFERENCES locations,
+            duration INT -- in seconds
+        )
+    """
+    con.executescript(sql)
 
-        sql = """-- sql
-            SELECT id_location, name, longitude, latitude
-            FROM locations
-            ORDER BY id_location;
-        """
-        data = [tuple(datum) for datum in con.execute(sql)]
-        ids = [id_location for id_location, *_ in data]
-        points = ";".join(f"{lon},{lat}" for *_, lon, lat in data)
+    sql = """-- sql
+        SELECT id_location, name, longitude, latitude
+        FROM locations
+        ORDER BY id_location;
+    """
+    data = [tuple(datum) for datum in con.execute(sql)]
+    ids = [id_location for id_location, *_ in data]
+    points = ";".join(f"{lon},{lat}" for *_, lon, lat in data)
 
-        for idx, (id_loc, name, *_) in enumerate(data):
-            logging.info(f"[#{id_loc:>4}] Computing routing data for {name}.")
-            distances, durations = query(
-                args.api_url,
-                points,
-                annotations="duration,distance",
-                skip_waypoints="true",
-                sources=idx,  # OSRM takes an index into the points list
-            )
+    for idx, (id_location, name, *_) in enumerate(data):
+        logging.info(f"[#{id_location:>4}] Computing routing data for {name}.")
+        dists, durs = query(
+            args.api_url,
+            points,
+            annotations="duration,distance",
+            skip_waypoints="true",
+            sources=idx,  # OSRM takes an index into the points list
+        )
 
-            con.execute("BEGIN TRANSACTION;")
-            con.executemany(
-                "INSERT INTO distances VALUES (?, ?, ?)",
-                [(id_loc, other, dist) for other, dist in zip(ids, distances)],
-            )
-            con.executemany(
-                "INSERT INTO durations VALUES (?, ?, ?)",
-                [(id_loc, other, dur) for other, dur in zip(ids, durations)],
-            )
-            con.commit()
+        con.execute("BEGIN TRANSACTION;")
+        con.executemany(
+            "INSERT INTO distances VALUES (?, ?, ?)",
+            [(id_location, other, dist) for other, dist in zip(ids, dists)],
+        )
+        con.executemany(
+            "INSERT INTO durations VALUES (?, ?, ?)",
+            [(id_location, other, dur) for other, dur in zip(ids, durs)],
+        )
+        con.commit()
 
 
 if __name__ == "__main__":

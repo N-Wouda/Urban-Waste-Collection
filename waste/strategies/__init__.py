@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from numpy.random import Generator
 
     from waste.classes.Event import Event
+    from waste.classes.Route import Route
     from waste.classes.Simulator import Simulator
 
 
@@ -17,7 +18,7 @@ class Strategy(Protocol):
     def __init__(self, gen: Generator):
         pass
 
-    def __call__(self, sim: Simulator, event: Event) -> list[Event]:
+    def __call__(self, sim: Simulator, event: Event) -> list[Route]:
         pass
 
 

@@ -139,41 +139,42 @@ def main():
     db = Path("data/waste.db")
     db.unlink(missing_ok=True)
 
-    with sqlite3.connect("data/waste.db") as con:
-        # Set-up database connection and table structure.
-        logger.info("Creating tables.")
-        make_tables(con)
+    con = sqlite3.connect("data/waste.db")
 
-        # Depot and container data. For now skip containers w/o (lat, long). I
-        # checked those containers, and they are not in Groningen.
-        logger.info("Inserting depot and containers.")
-        containers = pd.read_excel("data/Containergegevens.xlsx")
-        containers = containers.dropna(subset=["Latitude", "Longitude"])
-        insert_locations(con, containers)
-        insert_containers(con, containers)
+    # Set-up database connection and table structure.
+    logger.info("Creating tables.")
+    make_tables(con)
 
-        # Vehicle data
-        logger.info("Inserting vehicles.")
-        vehicles = pd.read_csv("data/Voertuigen.csv", sep=";")
-        insert_vehicles(con, vehicles)
+    # Depot and container data. For now skip containers w/o (lat, long). I
+    # checked those containers, and they are not in Groningen.
+    logger.info("Inserting depot and containers.")
+    containers = pd.read_excel("data/Containergegevens.xlsx")
+    containers = containers.dropna(subset=["Latitude", "Longitude"])
+    insert_locations(con, containers)
+    insert_containers(con, containers)
 
-        # Arrivals ("stortingen")
-        for where in glob.iglob("data/Overzicht stortingen*.csv"):
-            logger.info(f"Inserting arrivals from '{where}'.")
-            arrivals = pd.read_csv(where, sep=";", dtype=object)
-            insert_arrivals(con, arrivals)
+    # Vehicle data
+    logger.info("Inserting vehicles.")
+    vehicles = pd.read_csv("data/Voertuigen.csv", sep=";")
+    insert_vehicles(con, vehicles)
 
-        # Pre-compute hourly arrival rates for each container, based on the
-        # current arrivals table.
-        logger.info("Inserting hourly arrival rates.")
-        insert_arrival_rates(con)
+    # Arrivals ("stortingen")
+    for where in glob.iglob("data/Overzicht stortingen*.csv"):
+        logger.info(f"Inserting arrivals from '{where}'.")
+        arrivals = pd.read_csv(where, sep=";", dtype=object)
+        insert_arrivals(con, arrivals)
 
-        # Servicing ("ledigingen")
-        logger.info("Inserting services.")
-        where = "data/Overzicht ledigingen Q1 2023.csv"
-        services = pd.read_csv(where, sep=";")
-        services = services[services.FractionName == "RST"]  # only residential
-        insert_services(con, services)
+    # Pre-compute hourly arrival rates for each container, based on the
+    # current arrivals table.
+    logger.info("Inserting hourly arrival rates.")
+    insert_arrival_rates(con)
+
+    # Servicing ("ledigingen")
+    logger.info("Inserting services.")
+    where = "data/Overzicht ledigingen Q1 2023.csv"
+    services = pd.read_csv(where, sep=";")
+    services = services[services.FractionName == "RST"]  # only residential
+    insert_services(con, services)
 
 
 if __name__ == "__main__":

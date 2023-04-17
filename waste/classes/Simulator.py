@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import heapq
 import logging
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, Optional
 
 from waste.constants import HOURS_IN_DAY, SHIFT_PLANNING_HOURS
 from waste.enums import EventType
 
 from .Container import Container
 from .Event import Event
+from .Route import Route
 from .Vehicle import Vehicle
 
 if TYPE_CHECKING:
@@ -45,7 +46,7 @@ class Simulator:
     def __call__(
         self,
         horizon: int,
-        store: Callable[[Event], None],
+        store: Callable[[Event | Route], Optional[int]],
         strategy: Strategy,
     ):
         """
@@ -56,8 +57,8 @@ class Simulator:
         # Insert all arrival events into the event queue. This is the only
         # source of uncertainty in the simulation.
         for container in self.containers:
-            for event in container.arrivals_until(horizon):
-                queue.add(event)
+            for arrival in container.arrivals_until(horizon):
+                queue.add(arrival)
 
         # Insert the shift planning moments into the event queue.
         for day in range(0, horizon, HOURS_IN_DAY):
@@ -81,20 +82,22 @@ class Simulator:
                 container = event.kwargs["container"]
                 container.arrive(event)
 
-                logger.debug(f"Arrival at {container} at t = {time:.2f}.")
+                logger.debug(f"Arrival at {container.name} at t = {time:.2f}.")
             elif event.type == EventType.SERVICE:
                 container = event.kwargs["container"]
                 container.service()
 
-                logger.info(f"Service at {container} at t = {time:.2f}.")
+                logger.debug(f"Service at {container.name} at t = {time:.2f}.")
             elif event.type == EventType.SHIFT_PLAN:
                 logger.info(f"Generating shift plan at t = {event.time:.2f}.")
-                events = strategy(self, event)
+                routes = strategy(self, event)
 
-                # TODO determine routes, store stats?
+                for route in routes:
+                    id_route = store(route)
 
-                for event in events:
-                    queue.add(event)
+                    for service in route.services():
+                        service.kwargs["id_route"] = id_route
+                        queue.add(service)
             else:
                 msg = f"Unhandled event of type {event.type.name}."
                 logger.error(msg)
