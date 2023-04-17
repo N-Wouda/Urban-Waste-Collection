@@ -9,7 +9,7 @@ def avg_fill_factor(con: sqlite3.Connection) -> float:
         SELECT AVG(se.volume / c.capacity)
         FROM service_events AS se
             INNER JOIN source.containers AS c
-                ON se.container = c.container;
+                ON se.container = c.name;
     """
     row = con.execute(sql).fetchone()
     return row[0]

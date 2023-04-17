@@ -6,22 +6,31 @@ from pathlib import Path
 
 import pandas as pd
 
+from waste.constants import DEPOT
+from waste.enums import LocationType
+
 logger = logging.getLogger(__name__)
 
 
 def make_tables(con: sqlite3.Connection):
     sql = """-- sql
-        CREATE TABLE containers (
-            container VARCHAR,
+        CREATE TABLE locations (
+            id_location INTEGER PRIMARY KEY,
+            name varchar UNIQUE,
             street VARCHAR,
             city VARCHAR,
-            capacity FLOAT,
             latitude FLOAT,
-            longitude FLOAT
+            longitude FLOAT,
+            type INT  -- see LocationType enum
+        );
+
+        CREATE TABLE containers (
+            name VARCHAR UNIQUE,
+            capacity FLOAT
         );
 
         CREATE TABLE vehicles (
-            vehicle VARCHAR,
+            name VARCHAR UNIQUE,
             capacity FLOAT
         );
 
@@ -46,27 +55,38 @@ def make_tables(con: sqlite3.Connection):
     con.executescript(sql)
 
 
-def insert_containers(con: sqlite3.Connection, containers: pd.DataFrame):
-    values = [
+def insert_locations(con: sqlite3.Connection, containers: pd.DataFrame):
+    values = [DEPOT]
+    values += [
         (
             r.DumpLocationName,
             r.Street,
             r.City,
-            1000 * r.PitCapacity,  # in liters
             r.Latitude,
             r.Longitude,
+            LocationType.CONTAINER,
         )
         for _, r in containers.iterrows()
     ]
 
-    cols = ["container", "street", "city", "capacity", "latitude", "longitude"]
-    df = pd.DataFrame(columns=cols, data=values)
+    columns = ["name", "street", "city", "latitude", "longitude", "type"]
+    df = pd.DataFrame(columns=columns, data=values)
+    df.to_sql("locations", con, index=False, if_exists="append")
+
+
+def insert_containers(con: sqlite3.Connection, containers: pd.DataFrame):
+    values = [
+        (r.DumpLocationName, 1000 * r.PitCapacity)  # capacity in liters
+        for _, r in containers.iterrows()
+    ]
+
+    df = pd.DataFrame(columns=["name", "capacity"], data=values)
     df.to_sql("containers", con, index=False, if_exists="append")
 
 
 def insert_vehicles(con: sqlite3.Connection, vehicles: pd.DataFrame):
     values = [(r.Naam, r.Capaciteit) for _, r in vehicles.iterrows()]
-    df = pd.DataFrame(columns=["vehicle", "capacity"], data=values)
+    df = pd.DataFrame(columns=["name", "capacity"], data=values)
     df.to_sql("vehicles", con, index=False, if_exists="append")
 
 
@@ -124,11 +144,12 @@ def main():
         logger.info("Creating tables.")
         make_tables(con)
 
-        # Container data. For now skip containers w/o (lat, long). I checked
-        # those containers, and they are not in Groningen.
-        logger.info("Inserting containers.")
+        # Depot and container data. For now skip containers w/o (lat, long). I
+        # checked those containers, and they are not in Groningen.
+        logger.info("Inserting depot and containers.")
         containers = pd.read_excel("data/Containergegevens.xlsx")
         containers = containers.dropna(subset=["Latitude", "Longitude"])
+        insert_locations(con, containers)
         insert_containers(con, containers)
 
         # Vehicle data
