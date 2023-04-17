@@ -15,6 +15,8 @@ Update or get `poetry`, and then simply use `poetry install` from the repository
 
 The following programs are currently available:
 
+- `distance`, the distance and duration matrix calculation script.
+  This relies on OSRM; see the `osrm/` directory for details.
 - `ingest`, the ingestion script.
   This script ingests raw data files into an SQL database.
 - `simulate`, the simulation runscript.
