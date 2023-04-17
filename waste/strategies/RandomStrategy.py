@@ -1,7 +1,11 @@
+from typing import Iterator
+
 import numpy as np
 from numpy.random import Generator
 
-from waste.classes import Event, Route, Simulator
+from waste.classes import Route
+from waste.classes import ShiftPlanEvent as ShiftPlan
+from waste.classes import Simulator
 
 
 class RandomStrategy:
@@ -12,26 +16,22 @@ class RandomStrategy:
     def __init__(self, gen: Generator):
         self.gen = gen
 
-    def __call__(self, sim: Simulator, event: Event) -> list[Route]:
+    def __call__(self, sim: Simulator, event: ShiftPlan) -> Iterator[Route]:
         NUM = 40
 
         p = np.array([c.num_arrivals for c in sim.containers], dtype=float)
         p /= p.sum()
 
         containers = self.gen.choice(
-            sim.containers, size=NUM * len(sim.vehicles), replace=False, p=p
+            sim.containers,
+            size=(len(sim.vehicles), NUM),
+            replace=False,
+            p=p,
         )
 
-        routes = []
-
         for idx, vehicle in enumerate(sim.vehicles):
-            times = np.linspace(event.time, event.time + 6, num=NUM)
-            plan = containers[idx * NUM : (idx + 1) * NUM]
-            routes.append(
-                Route(
-                    plan=[(t, c) for t, c in zip(times, plan)],
-                    vehicle=vehicle,
-                )
+            times = sorted(np.random.uniform(event.time, event.time + 6, NUM))
+            yield Route(
+                plan=[(t, c) for t, c in zip(times, containers[idx])],
+                vehicle=vehicle,
             )
-
-        return routes

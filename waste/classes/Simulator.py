@@ -5,10 +5,9 @@ import logging
 from typing import TYPE_CHECKING, Callable, Optional
 
 from waste.constants import HOURS_IN_DAY, SHIFT_PLANNING_HOURS
-from waste.enums import EventType
 
 from .Container import Container
-from .Event import Event
+from .Event import ArrivalEvent, Event, ServiceEvent, ShiftPlanEvent
 from .Route import Route
 from .Vehicle import Vehicle
 
@@ -63,42 +62,55 @@ class Simulator:
         # Insert the shift planning moments into the event queue.
         for day in range(0, horizon, HOURS_IN_DAY):
             for hour in SHIFT_PLANNING_HOURS:
-                queue.add(Event(day + hour, EventType.SHIFT_PLAN))
+                queue.add(ShiftPlanEvent(day + hour))
 
         time = 0.0
 
         while queue and time <= horizon:
             event = queue.pop()
-            store(event)
 
             if event.time >= time:
                 time = event.time
             else:
-                msg = f"Event {event}: time is before current time!"
+                msg = f"{event} time is before current time {time:.2f}!"
                 logger.error(msg)
                 raise ValueError(msg)
 
-            if event.type == EventType.ARRIVAL:
-                container = event.kwargs["container"]
-                container.arrive(event)
+            # First seal the event. This ensures all data that was previously
+            # linked to changing objects is made static at their current
+            # values ("sealed"). After sealing, an event's state has become
+            # independent from that of the objects it references.
+            event.seal()
+            store(event)
+
+            if isinstance(event, ArrivalEvent):
+                container = event.container
+                container.arrive(event.volume)
 
                 logger.debug(f"Arrival at {container.name} at t = {time:.2f}.")
-            elif event.type == EventType.SERVICE:
-                container = event.kwargs["container"]
+            elif isinstance(event, ServiceEvent):
+                container = event.container
                 container.service()
 
                 logger.debug(f"Service at {container.name} at t = {time:.2f}.")
-            elif event.type == EventType.SHIFT_PLAN:
+            elif isinstance(event, ShiftPlanEvent):
                 logger.info(f"Generating shift plan at t = {event.time:.2f}.")
                 routes = strategy(self, event)
 
                 for route in routes:
                     id_route = store(route)
+                    assert id_route is not None
 
-                    for service in route.services():
-                        service.kwargs["id_route"] = id_route
-                        queue.add(service)
+                    for service_time, service_container in route.plan:
+                        queue.add(
+                            ServiceEvent(
+                                service_time,
+                                id_route=id_route,
+                                container=service_container,
+                                vehicle=route.vehicle,
+                            )
+                        )
             else:
-                msg = f"Unhandled event of type {event.type.name}."
+                msg = f"Unhandled event of type {type(event)}."
                 logger.error(msg)
                 raise ValueError(msg)

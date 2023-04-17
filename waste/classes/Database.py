@@ -6,11 +6,10 @@ from typing import Any, Optional
 import numpy as np
 
 from waste.constants import BUFFER_SIZE, HOURS_IN_DAY
-from waste.enums import EventType
 from waste.measures import Measure
 
 from .Container import Container
-from .Event import Event
+from .Event import ArrivalEvent, Event, ServiceEvent
 from .Route import Route
 from .Vehicle import Vehicle
 
@@ -22,7 +21,7 @@ class Database:
     """
 
     def __init__(self, src_db: str, res_db: str):
-        self.buffer: list[Event] = []
+        self.buffer: list[ArrivalEvent | ServiceEvent] = []
 
         self.read = sqlite3.connect(src_db)
         self.write = sqlite3.connect(res_db)
@@ -97,13 +96,9 @@ class Database:
         return measure(self.write)
 
     def store(self, item: Event | Route) -> Optional[int]:
-        if isinstance(item, Event):
-            if item.type == EventType.SERVICE:
-                item.kwargs["num_arrivals"] = item.kwargs[
-                    "container"
-                ].num_arrivals
-                item.kwargs["volume"] = item.kwargs["container"].volume
-
+        # Only arrival and service events are logged; other events are
+        # currently an intended no-op.
+        if isinstance(item, (ArrivalEvent, ServiceEvent)):
             self.buffer.append(item)
 
             if len(self.buffer) >= BUFFER_SIZE:
@@ -122,11 +117,11 @@ class Database:
         arrivals = [
             (
                 event.time,
-                event.kwargs["container"].name,
-                event.kwargs["volume"],
+                event.container.name,
+                event.volume,
             )
             for event in self.buffer
-            if event.type == EventType.ARRIVAL
+            if isinstance(event, ArrivalEvent)
         ]
 
         self.write.executemany(
@@ -143,14 +138,14 @@ class Database:
         services = [
             (
                 event.time,
-                event.kwargs["container"].name,
-                event.kwargs["id_route"],
-                event.kwargs["vehicle"].name,
-                event.kwargs["num_arrivals"],
-                event.kwargs["volume"],
+                event.container.name,
+                event.id_route,
+                event.vehicle.name,
+                event.num_arrivals,
+                event.volume,
             )
             for event in self.buffer
-            if event.type == EventType.SERVICE
+            if isinstance(event, ServiceEvent)
         ]
 
         self.write.executemany(
