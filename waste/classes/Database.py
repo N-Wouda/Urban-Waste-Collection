@@ -1,14 +1,16 @@
+from __future__ import annotations
+
 import sqlite3
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 
 from waste.constants import BUFFER_SIZE, HOURS_IN_DAY
-from waste.enums import EventType
 from waste.measures import Measure
 
 from .Container import Container
-from .Event import Event
+from .Event import ArrivalEvent, Event, ServiceEvent
+from .Route import Route
 from .Vehicle import Vehicle
 
 
@@ -19,7 +21,7 @@ class Database:
     """
 
     def __init__(self, src_db: str, res_db: str):
-        self.buffer: list[Event] = []
+        self.buffer: list[ArrivalEvent | ServiceEvent] = []
 
         self.read = sqlite3.connect(src_db)
         self.write = sqlite3.connect(res_db)
@@ -34,13 +36,20 @@ class Database:
                     volume FLOAT
                 );
 
+                CREATE TABLE routes (
+                    id_route INTEGER PRIMARY KEY,
+                    vehicle NAME
+                );
+
                 CREATE TABLE service_events (
                     time FLOAT,
                     container VARCHAR,
+                    id_route INTEGER references routes,
                     vehicle VARCHAR,
                     num_arrivals INT,
                     volume FLOAT
                 );
+
             """
         )
 
@@ -86,11 +95,21 @@ class Database:
         self._commit()
         return measure(self.write)
 
-    def store(self, event: Event):
-        self.buffer.append(event)
+    def store(self, item: Event | Route) -> Optional[int]:
+        # Only arrival and service events are logged; other events are
+        # currently an intended no-op.
+        if isinstance(item, (ArrivalEvent, ServiceEvent)):
+            self.buffer.append(item)
 
-        if len(self.buffer) >= BUFFER_SIZE:
-            self._commit()
+            if len(self.buffer) >= BUFFER_SIZE:
+                self._commit()
+        elif isinstance(item, Route):
+            sql = "INSERT INTO routes (vehicle) VALUES (?)"
+            cursor = self.write.execute(sql, (item.vehicle.name,))
+            self.write.commit()
+            return cursor.lastrowid
+
+        return None
 
     def _commit(self):
         self.write.execute("BEGIN TRANSACTION;")
@@ -98,11 +117,11 @@ class Database:
         arrivals = [
             (
                 event.time,
-                event.kwargs["container"].name,
-                event.kwargs["volume"],
+                event.container.name,
+                event.volume,
             )
             for event in self.buffer
-            if event.type == EventType.ARRIVAL
+            if isinstance(event, ArrivalEvent)
         ]
 
         self.write.executemany(
@@ -119,13 +138,14 @@ class Database:
         services = [
             (
                 event.time,
-                event.kwargs["container"].name,
-                event.kwargs["vehicle"].name,
-                event.kwargs["container"].num_arrivals,
-                event.kwargs["container"].volume,
+                event.container.name,
+                event.id_route,
+                event.vehicle.name,
+                event.num_arrivals,
+                event.volume,
             )
             for event in self.buffer
-            if event.type == EventType.SERVICE
+            if isinstance(event, ServiceEvent)
         ]
 
         self.write.executemany(
@@ -133,10 +153,11 @@ class Database:
                 INSERT INTO service_events (
                     time,
                     container,
+                    id_route,
                     vehicle,
                     num_arrivals,
                     volume
-                ) VALUES (?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?)
             """,
             services,
         )

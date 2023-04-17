@@ -1,9 +1,10 @@
+from typing import Iterator
+
 from numpy.random import poisson, uniform
 
 from waste.constants import HOURS_IN_DAY, VOLUME_RANGE
-from waste.enums import EventType
 
-from .Event import Event
+from .Event import ArrivalEvent
 
 
 class Container:
@@ -23,13 +24,11 @@ class Container:
         self.num_arrivals = 0  # number of arrivals since last service
         self.volume = 0.0  # current volume in container, in liters
 
-    def arrivals_until(self, until: int) -> list[Event]:
+    def arrivals_until(self, until: int) -> Iterator[ArrivalEvent]:
         """
         Returns arrivals (events) for the period [0, until], where until is
         assumed to be in hours.
         """
-        events = []
-
         for hour in range(until):
             # Non-homogeneous Poisson arrivals, with hourly rates as given by
             # the rates list for this container.
@@ -39,24 +38,19 @@ class Container:
             volumes = uniform(*VOLUME_RANGE, size=num_arrivals)  # in liters
             arrivals = hour + uniform(size=num_arrivals)
 
-            events += [
-                Event(
+            for arrival, volume in zip(arrivals, volumes):
+                yield ArrivalEvent(
                     arrival,
-                    EventType.ARRIVAL,
                     container=self,
                     volume=volume,
                 )
-                for arrival, volume in zip(arrivals, volumes)
-            ]
 
-        return events
-
-    def arrive(self, event: Event):
+    def arrive(self, volume: float):
         """
         Registers an arrival at this container.
         """
         self.num_arrivals += 1
-        self.volume += event.kwargs["volume"]
+        self.volume += volume
 
     def service(self):
         """
