@@ -1,5 +1,7 @@
 import sqlite3
 
+from waste.constants import ID_DEPOT
+
 
 def avg_route_distance(con: sqlite3.Connection) -> float:
     """
@@ -12,8 +14,8 @@ def avg_route_distance(con: sqlite3.Connection) -> float:
         FROM (
             SELECT id_route,
                    loc.id_location,  -- if null then from/to depot
-                   IFNULL(loc_prev.id_location, 1) AS prev_location,
-                   IFNULL(loc_next.id_location, 1) AS next_location
+                   IFNULL(loc_prev.id_location, :depot) AS prev_location,
+                   IFNULL(loc_next.id_location, :depot) AS next_location
             FROM (
                 SELECT id_route,
                        container,
@@ -37,8 +39,8 @@ def avg_route_distance(con: sqlite3.Connection) -> float:
             ON (
                 from_depot.from_location = prev_location
                 AND from_depot.to_location = id_location
-                AND prev_location = 1
+                AND prev_location = :depot
             );
     """
-    row = con.execute(sql).fetchone()
+    row = con.execute(sql, dict(depot=ID_DEPOT)).fetchone()
     return row[0]

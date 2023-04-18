@@ -78,7 +78,8 @@ class Simulator:
         # Insert the shift planning moments into the event queue.
         for day in range(0, horizon, HOURS_IN_DAY):
             for hour in SHIFT_PLANNING_HOURS:
-                queue.add(ShiftPlanEvent(day + hour))
+                if day + hour <= horizon:
+                    queue.add(ShiftPlanEvent(day + hour))
 
         time = 0.0
 
