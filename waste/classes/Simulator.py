@@ -4,6 +4,8 @@ import heapq
 import logging
 from typing import TYPE_CHECKING, Callable, Optional
 
+import numpy as np
+
 from waste.constants import HOURS_IN_DAY, SHIFT_PLANNING_HOURS
 
 from .Container import Container
@@ -38,7 +40,21 @@ class _EventQueue:
 
 
 class Simulator:
-    def __init__(self, containers: list[Container], vehicles: list[Vehicle]):
+    """
+    The simulator class. This class is responsible for running the main
+    simulation event queue, and has a few attributes that describe the
+    simulation environment.
+    """
+
+    def __init__(
+        self,
+        distances: np.array,
+        durations: np.array,
+        containers: list[Container],
+        vehicles: list[Vehicle],
+    ):
+        self.distances = distances
+        self.durations = durations
         self.containers = containers
         self.vehicles = vehicles
 

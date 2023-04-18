@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import sqlite3
 from typing import Any, Optional
 
@@ -78,6 +79,18 @@ class Database:
             Container(name, rates[name], capacity)
             for name, capacity in capacities.items()
         ]
+
+    def distances(self) -> np.array:
+        cursor = self.read.execute("SELECT distance FROM distances;")
+        data = np.array([distance for distance in cursor])
+        size = math.isqrt(len(data))
+        return np.array(data).reshape((size, size))
+
+    def durations(self) -> np.array:
+        cursor = self.read.execute("SELECT duration FROM durations;")
+        data = np.array([duration for duration in cursor])
+        size = math.isqrt(len(data))
+        return np.array(data).reshape((size, size))
 
     def vehicles(self) -> list[Vehicle]:
         sql = "SELECT name, capacity FROM vehicles;"
