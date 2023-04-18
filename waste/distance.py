@@ -49,7 +49,7 @@ def main():
             from_location INTEGER REFERENCES locations,
             to_location INTEGER REFERENCES locations,
             duration INT -- in seconds
-        )
+        );
     """
     con.executescript(sql)
 

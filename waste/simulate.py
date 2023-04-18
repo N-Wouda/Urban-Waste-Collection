@@ -37,7 +37,12 @@ def main():
 
     # Set up simulation environment and data
     db = Database(args.src_db, args.res_db)
-    sim = Simulator(db.containers(), db.vehicles())
+    sim = Simulator(
+        db.distances(),
+        db.durations(),
+        db.containers(),
+        db.vehicles(),
+    )
 
     generator = np.random.default_rng(args.strategy_seed)
     strategy = STRATEGIES[args.strategy](generator)
