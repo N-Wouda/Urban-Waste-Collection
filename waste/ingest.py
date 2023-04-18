@@ -1,3 +1,4 @@
+import argparse
 import glob
 import logging
 import sqlite3
@@ -12,10 +13,18 @@ from waste.enums import LocationType
 logger = logging.getLogger(__name__)
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(prog="ingest")
+
+    parser.add_argument("database")
+
+    return parser.parse_args()
+
+
 def make_tables(con: sqlite3.Connection):
     sql = """-- sql
         CREATE TABLE locations (
-            id_location INTEGER PRIMARY KEY,
+            id_location INT PRIMARY KEY,
             name varchar UNIQUE,
             street VARCHAR,
             city VARCHAR,
@@ -26,6 +35,7 @@ def make_tables(con: sqlite3.Connection):
 
         CREATE TABLE containers (
             name VARCHAR UNIQUE,
+            id_location INT REFERENCES locations,
             capacity FLOAT
         );
 
@@ -71,23 +81,29 @@ def insert_locations(con: sqlite3.Connection, containers: pd.DataFrame):
 
     columns = ["name", "street", "city", "latitude", "longitude", "type"]
     df = pd.DataFrame(columns=columns, data=values)
-    df.to_sql("locations", con, index=False, if_exists="append")
+    df.to_sql("locations", con, index_label="id_location", if_exists="replace")
 
 
 def insert_containers(con: sqlite3.Connection, containers: pd.DataFrame):
+    sql = "SELECT name, id_location FROM locations;"
+    name2loc = {name: id_location for name, id_location in con.execute(sql)}
     values = [
-        (r.DumpLocationName, 1000 * r.PitCapacity)  # capacity in liters
+        (
+            r.DumpLocationName,
+            name2loc[r.DumpLocationName],
+            1000 * r.PitCapacity,  # capacity in liters
+        )
         for _, r in containers.iterrows()
     ]
 
-    df = pd.DataFrame(columns=["name", "capacity"], data=values)
-    df.to_sql("containers", con, index=False, if_exists="append")
+    df = pd.DataFrame(columns=["name", "id_location", "capacity"], data=values)
+    df.to_sql("containers", con, index=False, if_exists="replace")
 
 
 def insert_vehicles(con: sqlite3.Connection, vehicles: pd.DataFrame):
     values = [(r.Naam, r.Capaciteit) for _, r in vehicles.iterrows()]
     df = pd.DataFrame(columns=["name", "capacity"], data=values)
-    df.to_sql("vehicles", con, index=False, if_exists="append")
+    df.to_sql("vehicles", con, index=False, if_exists="replace")
 
 
 def insert_arrivals(con: sqlite3.Connection, arrivals: pd.DataFrame):
@@ -135,11 +151,13 @@ def insert_services(con: sqlite3.Connection, services: pd.DataFrame):
 
 
 def main():
+    args = parse_args()
+
     # Remove existing database, if any - ingest starts from scratch.
-    db = Path("data/waste.db")
+    db = Path(args.database)
     db.unlink(missing_ok=True)
 
-    con = sqlite3.connect("data/waste.db")
+    con = sqlite3.connect(args.database)
 
     # Set-up database connection and table structure.
     logger.info("Creating tables.")

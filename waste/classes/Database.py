@@ -1,14 +1,18 @@
 from __future__ import annotations
 
+import math
 import sqlite3
+from functools import cache
 from typing import Any, Optional
 
 import numpy as np
 
-from waste.constants import BUFFER_SIZE, HOURS_IN_DAY
+from waste.constants import BUFFER_SIZE, HOURS_IN_DAY, ID_DEPOT
+from waste.enums import LocationType
 from waste.measures import Measure
 
 from .Container import Container
+from .Depot import Depot
 from .Event import ArrivalEvent, Event, ServiceEvent
 from .Route import Route
 from .Vehicle import Vehicle
@@ -49,10 +53,10 @@ class Database:
                     num_arrivals INT,
                     volume FLOAT
                 );
-
             """
         )
 
+    @cache
     def containers(self) -> list[Container]:
         sql = """-- sql
             SELECT cr.container,
@@ -62,7 +66,7 @@ class Database:
             FROM container_rates AS cr
                     INNER JOIN containers AS c
                                 ON c.name = cr.container
-            ORDER BY cr.container, cr.hour;
+            ORDER BY c.id_location, cr.hour;  -- must order by ID, not name!
         """
         capacities: dict[str, float] = {}
         rates: dict[str, np.ndarray] = {}
@@ -79,6 +83,46 @@ class Database:
             for name, capacity in capacities.items()
         ]
 
+    @cache
+    def depot(self) -> Depot:
+        sql = "SELECT name FROM locations WHERE type = ?;"
+        rows = [d for d in self.read.execute(sql, (LocationType.DEPOT,))]
+        assert len(rows) == 1  # there should be only a single depot!
+        return Depot(*rows[0])
+
+    @cache
+    def distances(self) -> np.array:
+        """
+        Returns the matrix of travel distances (in meters) for the depot (at
+        index 0) and all containers returned by ``containers()``, in order.
+        The distance matrix is *not* symmetric.
+        """
+        cursor = self.read.execute("SELECT distance FROM distances;")
+        data = np.array([distance for distance in cursor])
+        size = math.isqrt(len(data))
+        distances = np.array(data).reshape((size, size))
+
+        id_containers = _containers2loc(self.read, self.containers())
+        id_locations = [ID_DEPOT] + id_containers
+        return distances[np.ix_(id_locations, id_locations)]
+
+    @cache
+    def durations(self) -> np.array:
+        """
+        Returns the matrix of travel durations (in seconds) for the depot (at
+        index 0) and all containers returned by ``containers()``, in order.
+        The duration matrix is *not* symmetric.
+        """
+        cursor = self.read.execute("SELECT duration FROM durations;")
+        data = np.array([duration for duration in cursor])
+        size = math.isqrt(len(data))
+        durations = np.array(data).reshape((size, size))
+
+        id_containers = _containers2loc(self.read, self.containers())
+        id_locations = [ID_DEPOT] + id_containers
+        return durations[np.ix_(id_locations, id_locations)]
+
+    @cache
     def vehicles(self) -> list[Vehicle]:
         sql = "SELECT name, capacity FROM vehicles;"
         return [
@@ -168,3 +212,14 @@ class Database:
     def __del__(self):
         self.read.close()
         self.write.close()
+
+
+def _containers2loc(con: sqlite3.Connection, containers: list[Container]):
+    names = ", ".join(f"'{c.name}'" for c in containers)
+    sql = f"""-- sql
+        SELECT id_location
+        FROM containers
+        WHERE name in ({names})
+        ORDER BY id_location;
+    """
+    return [id_location for id_location, in con.execute(sql)]
