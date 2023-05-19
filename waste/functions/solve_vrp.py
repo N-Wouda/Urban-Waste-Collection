@@ -18,13 +18,8 @@ from pyvrp.educate import (
 from pyvrp.stop import StoppingCriterion
 
 
-def solve_vrp(
-    data: ProblemData, stop: StoppingCriterion, seed: int = 42
-) -> Result:
+def solve_vrp(data: ProblemData, stop: StoppingCriterion, seed: int) -> Result:
     rng = XorShift128(seed=seed)
-    pen_manager = PenaltyManager()
-    pop = Population(bpd)
-
     neighbours = compute_neighbours(data)
     ls = LocalSearch(data, rng, neighbours)
 
@@ -34,7 +29,9 @@ def solve_vrp(
     for op in ROUTE_OPERATORS:
         ls.add_route_operator(op(data))
 
-    init = [Individual.make_random(data, rng) for _ in range(25)]
-    algo = GeneticAlgorithm(data, pen_manager, rng, pop, ls, srex, init)
+    pen_manager = PenaltyManager()
+    pop = Population(bpd)
+    init_pop = [Individual.make_random(data, rng) for _ in range(25)]
+    algo = GeneticAlgorithm(data, pen_manager, rng, pop, ls, srex, init_pop)
 
     return algo.run(stop)
