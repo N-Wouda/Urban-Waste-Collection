@@ -41,6 +41,34 @@ class GreedyStrategy:
 
         # Iterate and return the decisions as route objects.
         result = solve_vrp(data, MaxRuntime(10), seed=self.gen.integers(100))
-        print(result)
+        routes = result.best.get_routes()
 
-        return []
+        if not result.best.is_feasible():
+            raise ValueError(f"Infeasible plan at t = {event.time}.")
+
+        route_events = []
+
+        for route in routes:
+            route_event = []
+            time = event.time
+            prev_client = 0
+
+            for client in route:
+                time += data.duration(prev_client, client)
+
+                if time < data.client(client).tw_early:
+                    time = data.client(client).tw_early
+
+                container = sim.containers[selected[client - 1]]
+                route_event.append((time, container))
+
+                time += SERVICE_TIME_PER_CONTAINER
+                prev_client = client
+
+            # TODO does the thing need to be feasible within end-of-shift time?
+            route_events.append(route_event)
+
+        return [
+            Route(plan, vehicle=sim.vehicles[idx])
+            for idx, plan in enumerate(route_events)
+        ]
