@@ -26,8 +26,7 @@ def make_tables(con: sqlite3.Connection):
         CREATE TABLE locations (
             id_location INT PRIMARY KEY,
             name varchar UNIQUE,
-            street VARCHAR,
-            city VARCHAR,
+            description VARCHAR,
             latitude FLOAT,
             longitude FLOAT,
             type INT  -- see LocationType enum
@@ -35,6 +34,8 @@ def make_tables(con: sqlite3.Connection):
 
         CREATE TABLE containers (
             name VARCHAR UNIQUE,
+            cluster VARCHAR,
+            container VARCHAR,
             id_location INT REFERENCES locations,
             capacity FLOAT
         );
@@ -69,17 +70,16 @@ def insert_locations(con: sqlite3.Connection, containers: pd.DataFrame):
     values = [DEPOT]
     values += [
         (
-            r.DumpLocationName,
-            r.Street,
-            r.City,
-            r.Latitude,
-            r.Longitude,
+            r.ClusterCode + "-" + r.ContainerCode,
+            r.ClusterOmschrijving,
+            float(r.Latitude),
+            float(r.Longitude),
             LocationType.CONTAINER,
         )
         for _, r in containers.iterrows()
     ]
 
-    columns = ["name", "street", "city", "latitude", "longitude", "type"]
+    columns = ["name", "description", "latitude", "longitude", "type"]
     df = pd.DataFrame(columns=columns, data=values)
     df.to_sql("locations", con, index_label="id_location", if_exists="replace")
 
@@ -90,18 +90,21 @@ def insert_containers(con: sqlite3.Connection, containers: pd.DataFrame):
     values = [
         (
             r.DumpLocationName,
-            name2loc[r.DumpLocationName],
-            1000 * r.PitCapacity,  # capacity in liters
+            r.ClusterCode,
+            r.ContainerCode,
+            name2loc[r.ClusterCode + "-" + r.ContainerCode],
+            1000 * float(r.PitCapacity),  # capacity in liters
         )
         for _, r in containers.iterrows()
     ]
 
-    df = pd.DataFrame(columns=["name", "id_location", "capacity"], data=values)
+    columns = ["name", "cluster", "container", "id_location", "capacity"]
+    df = pd.DataFrame(columns=columns, data=values)
     df.to_sql("containers", con, index=False, if_exists="replace")
 
 
 def insert_vehicles(con: sqlite3.Connection, vehicles: pd.DataFrame):
-    values = [(r.Naam, r.Capaciteit) for _, r in vehicles.iterrows()]
+    values = [(r.Naam, 1000 * r.Capaciteit) for _, r in vehicles.iterrows()]
     df = pd.DataFrame(columns=["name", "capacity"], data=values)
     df.to_sql("vehicles", con, index=False, if_exists="replace")
 
@@ -163,15 +166,23 @@ def main():
     logger.info("Creating tables.")
     make_tables(con)
 
-    # Depot and container data. For now skip containers w/o (lat, long). I
-    # checked those containers, and they are not in Groningen.
+    # Depot and container data. Here we apply some trickery: there's a public
+    # list of containers that we want, and an internal list Stadsbeheer has
+    # provided for us. The latter contains a lot more places and data. The
+    # places we do not need (those are not part of the collection process), but
+    # the additional data is very useful.
     logger.info("Inserting depot and containers.")
-    containers = pd.read_excel("data/Containergegevens.xlsx")
-    containers = containers.dropna(subset=["Latitude", "Longitude"])
+
+    public = pd.read_csv("data/Containerlocaties.csv", dtype="str")
+    internal = pd.read_excel("data/Containergegevens.xlsx", dtype="str")
+    public["code"] = public.ClusterCode + "-" + public.ContainerCode
+    internal["code"] = internal.ClusterName + "-" + internal.Container
+    containers = public.merge(internal, on="code")
+
     insert_locations(con, containers)
     insert_containers(con, containers)
 
-    # Vehicle data
+    # Vehicle data.
     logger.info("Inserting vehicles.")
     vehicles = pd.read_csv("data/Voertuigen.csv", sep=";")
     insert_vehicles(con, vehicles)
