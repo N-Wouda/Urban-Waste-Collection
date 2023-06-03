@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Callable, Optional
 
 import numpy as np
 
-from waste.constants import HOURS_IN_DAY, SHIFT_PLANNING_HOURS
+from waste.constants import HOURS_IN_DAY, SHIFT_PLAN_TIME
 
 from .Container import Container
 from .Event import ArrivalEvent, Event, ServiceEvent, ShiftPlanEvent
@@ -77,9 +77,8 @@ class Simulator:
 
         # Insert the shift planning moments into the event queue.
         for day in range(0, horizon, HOURS_IN_DAY):
-            for hour in SHIFT_PLANNING_HOURS:
-                if day + hour <= horizon:
-                    queue.add(ShiftPlanEvent(day + hour))
+            if day + SHIFT_PLAN_TIME <= horizon:
+                queue.add(ShiftPlanEvent(day + SHIFT_PLAN_TIME))
 
         time = 0.0
 
