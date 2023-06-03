@@ -28,7 +28,7 @@ def query(base_url: str, points: str, **query) -> tuple[list[int], list[int]]:
         raise ValueError(msg)
 
     # Round values to nearest integers. As distance is in meters and duration
-    # in seconds, this won't have much of an impact on quality.
+    # in seconds, this won't have much of an impact on solution quality.
     distances = [round(max(dist, 0)) for dist in data["distances"][0]]
     durations = [round(max(dur, 0)) for dur in data["durations"][0]]
     return distances, durations

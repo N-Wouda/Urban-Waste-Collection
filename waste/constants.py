@@ -10,8 +10,7 @@ __doc__ = """
 ID_DEPOT = 0
 DEPOT = (
     "Depot",  # name
-    "Duinkerkenstraat 45",  # street
-    "Oosterpark e.o.",  # city
+    "Duinkerkenstraat 45",  # description
     53.197625,  # latitude
     6.6127883,  # longitude
     LocationType.DEPOT,
