@@ -33,6 +33,13 @@ class Event(ABC):
         class_name = self.__class__.__name__
         return f"{class_name}(time={self.time:.2f}, status={self.status.name})"
 
+    def __lt__(self, other):
+        if self.time < other.time:
+            return True
+        else:
+            # tie breaker
+            return id(self) < id(other)
+
 
 class ServiceEvent(Event):
     """
