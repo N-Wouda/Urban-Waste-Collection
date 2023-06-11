@@ -3,8 +3,6 @@ from __future__ import annotations
 from abc import ABC
 from typing import TYPE_CHECKING, Optional
 
-import numpy as np
-
 from waste.enums import EventStatus
 
 if TYPE_CHECKING:
@@ -30,13 +28,6 @@ class Event(ABC):
 
     def seal(self):
         self.status = EventStatus.SEALED
-
-    def __lt__(self, other: Event) -> bool:
-        if self.time < other.time:
-            return True
-
-        # When the times are equal we use the memory location as a tie breaker.
-        return np.isclose(self.time, other.time) and id(self) < id(other)
 
     def __str__(self) -> str:
         class_name = self.__class__.__name__

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import heapq
 import logging
+from itertools import count
 from typing import TYPE_CHECKING, Callable, Optional
 
 import numpy as np
@@ -26,16 +27,18 @@ class _EventQueue:
     """
 
     def __init__(self):
-        self._events: list[tuple[float, Event]] = []
+        self._events: list[tuple[float, int, Event]] = []
+        self._counter = count(0)
 
     def add(self, event: Event):
-        heapq.heappush(self._events, (event.time, event))
+        tiebreaker = next(self._counter)
+        heapq.heappush(self._events, (event.time, tiebreaker, event))
 
     def __len__(self) -> int:
         return len(self._events)
 
     def pop(self) -> Event:
-        _, event = heapq.heappop(self._events)
+        *_, event = heapq.heappop(self._events)
         return event
 
 
