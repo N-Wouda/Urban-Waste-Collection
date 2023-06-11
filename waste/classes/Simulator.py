@@ -7,7 +7,11 @@ from typing import TYPE_CHECKING, Callable, Optional
 
 import numpy as np
 
-from waste.constants import HOURS_IN_DAY, SHIFT_PLAN_TIME
+from waste.constants import (
+    HOURS_IN_DAY,
+    SERVICE_TIME_PER_CONTAINER,
+    SHIFT_PLAN_TIME,
+)
 
 from .Container import Container
 from .Event import ArrivalEvent, Event, ServiceEvent, ShiftPlanEvent
@@ -120,15 +124,23 @@ class Simulator:
                     id_route = store(route)
                     assert id_route is not None
 
-                    for service_time, service_container in route.plan:
+                    service_time = event.time
+                    prev = 0
+
+                    for container_idx in route.plan:
+                        service_time += self.durations[prev, container_idx]
+
                         queue.add(
                             ServiceEvent(
                                 service_time,
                                 id_route=id_route,
-                                container=service_container,
+                                container=self.containers[container_idx],
                                 vehicle=route.vehicle,
                             )
                         )
+
+                        service_time += SERVICE_TIME_PER_CONTAINER
+                        prev = container_idx
             else:
                 msg = f"Unhandled event of type {type(event)}."
                 logger.error(msg)
