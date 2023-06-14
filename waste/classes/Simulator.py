@@ -7,11 +7,7 @@ from typing import TYPE_CHECKING, Callable, Optional
 
 import numpy as np
 
-from waste.constants import (
-    HOURS_IN_DAY,
-    SERVICE_TIME_PER_CONTAINER,
-    SHIFT_PLAN_TIME,
-)
+from waste.constants import HOURS_IN_DAY, SHIFT_PLAN_TIME, TIME_PER_CONTAINER
 
 from .Container import Container
 from .Event import ArrivalEvent, Event, ServiceEvent, ShiftPlanEvent
@@ -139,7 +135,7 @@ class Simulator:
                             )
                         )
 
-                        service_time += SERVICE_TIME_PER_CONTAINER
+                        service_time += TIME_PER_CONTAINER
                         prev = container_idx
             else:
                 msg = f"Unhandled event of type {type(event)}."

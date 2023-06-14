@@ -78,17 +78,26 @@ class Database:
             capacities[name] = capacity
             rates[name][hour] = rate
 
+        sql = """-- sql
+            SELECT c.name, l.latitude, l.longitude
+            FROM containers AS c
+                    INNER JOIN locations AS l
+                            ON l.id_location = c.id_location;
+        """
+        name2loc = {name: loc for name, *loc in self.read.execute(sql)}
+
         return [
-            Container(name, rates[name], capacity)
+            Container(name, rates[name], capacity, name2loc[name])
             for name, capacity in capacities.items()
         ]
 
     @cache
     def depot(self) -> Depot:
-        sql = "SELECT name FROM locations WHERE type = ?;"
+        sql = "SELECT name, latitude, longitude FROM locations WHERE type = ?;"
         rows = [d for d in self.read.execute(sql, (LocationType.DEPOT,))]
+        row = rows[0]
         assert len(rows) == 1  # there should be only a single depot!
-        return Depot(*rows[0])
+        return Depot(name=row[0], location=row[1:])
 
     @cache
     def distances(self) -> np.array:
