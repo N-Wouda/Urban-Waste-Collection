@@ -5,17 +5,18 @@ import logging
 from itertools import count
 from typing import TYPE_CHECKING, Callable, Optional
 
-import numpy as np
-
 from waste.constants import HOURS_IN_DAY, SHIFT_PLAN_TIME, TIME_PER_CONTAINER
 
-from .Container import Container
 from .Event import ArrivalEvent, Event, ServiceEvent, ShiftPlanEvent
-from .Route import Route
-from .Vehicle import Vehicle
 
 if TYPE_CHECKING:
+    import numpy as np
+
     from waste.strategies import Strategy
+
+    from .Container import Container
+    from .Route import Route
+    from .Vehicle import Vehicle
 
 logger = logging.getLogger(__name__)
 

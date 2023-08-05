@@ -60,16 +60,16 @@ class ServiceEvent(Event):
         if self.is_sealed():
             assert self._num_arrivals is not None
             return self._num_arrivals
-        else:
-            return self.container.num_arrivals
+
+        return self.container.num_arrivals
 
     @property
     def volume(self) -> float:
         if self.is_sealed():
             assert self._volume is not None
             return self._volume
-        else:
-            return self.container.volume
+
+        return self.container.volume
 
     def seal(self):
         super().seal()

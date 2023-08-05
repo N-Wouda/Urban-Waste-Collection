@@ -1,11 +1,10 @@
 import numpy as np
 from numpy.random import Generator
-from pyvrp import Client, ProblemData
-from pyvrp.stop import MaxRuntime
 
+from pyvrp import Client, Model, ProblemData
+from pyvrp.stop import MaxRuntime
 from waste.classes import Route, ShiftPlanEvent, Simulator
 from waste.constants import BREAKS, DEPOT, ID_DEPOT, TIME_PER_CONTAINER
-from waste.functions import solve_vrp
 
 
 class GreedyStrategy:
@@ -24,7 +23,7 @@ class GreedyStrategy:
 
         arrivals = np.array([c.num_arrivals for c in sim.containers])
         selected = np.argsort(-arrivals)[:num_containers]
-        ids = [ID_DEPOT] + list(selected + 1)
+        ids = [ID_DEPOT, *list(selected + 1)]
         indices = np.ix_(ids, ids)
 
         # Prepare the problem data instance for PyVRP, based on the selected
@@ -55,7 +54,7 @@ class GreedyStrategy:
             for _ in range(num_vehicles)
         ]
 
-        stops = [depot] + clients + breaks
+        stops = [depot, *clients, *breaks]
 
         dist = np.empty((len(stops), len(stops)), dtype=int)
         dist[: len(ids), : len(ids)] = sim.distances[indices]
@@ -69,10 +68,10 @@ class GreedyStrategy:
         dur[len(ids) :, : len(ids)] = dur[0, : len(ids)]
         dur[: len(ids), len(ids) :] = np.atleast_2d(dur[: len(ids), 0]).T
 
-        data = ProblemData(stops, num_vehicles, 0, dist, dur)
-
         # Iterate and return the decisions as route objects.
-        result = solve_vrp(data, MaxRuntime(10), seed=self.gen.integers(100))
+        data = ProblemData(stops, num_vehicles, 0, dist, dur)
+        model = Model.from_data(data)
+        result = model.solve(MaxRuntime(10), seed=self.gen.integers(100))
         routes = result.best.get_routes()
 
         if not result.best.is_feasible():

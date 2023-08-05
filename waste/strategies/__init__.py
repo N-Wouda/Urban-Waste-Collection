@@ -22,8 +22,8 @@ class Strategy(Protocol):
         pass
 
 
-STRATEGIES: dict[str, Strategy] = {
-    "baseline": BaselineStrategy,
-    "prize": PrizeCollectingStrategy,
-    "greedy": GreedyStrategy,
+STRATEGIES: dict[str, type[Strategy]] = {
+    "baseline": BaselineStrategy,  # type: ignore
+    "prize": PrizeCollectingStrategy,  # type: ignore
+    "greedy": GreedyStrategy,  # type: ignore
 }
