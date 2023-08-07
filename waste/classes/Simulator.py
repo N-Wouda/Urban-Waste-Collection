@@ -28,7 +28,7 @@ class _EventQueue:
     """
 
     def __init__(self):
-        self._events: list[tuple[float, int, Event]] = []
+        self._events = []
         self._counter = count(0)
 
     def add(self, event: Event):
