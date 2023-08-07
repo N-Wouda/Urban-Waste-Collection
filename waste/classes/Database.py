@@ -3,19 +3,21 @@ from __future__ import annotations
 import math
 import sqlite3
 from functools import cache
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
 
 from waste.constants import BUFFER_SIZE, HOURS_IN_DAY, ID_DEPOT
 from waste.enums import LocationType
-from waste.measures import Measure
 
 from .Container import Container
 from .Depot import Depot
 from .Event import ArrivalEvent, Event, ServiceEvent
 from .Route import Route
 from .Vehicle import Vehicle
+
+if TYPE_CHECKING:
+    from waste.measures import Measure
 
 
 class Database:
@@ -78,17 +80,26 @@ class Database:
             capacities[name] = capacity
             rates[name][hour] = rate
 
+        sql = """-- sql
+            SELECT c.name, l.latitude, l.longitude
+            FROM containers AS c
+                    INNER JOIN locations AS l
+                            ON l.id_location = c.id_location;
+        """
+        name2loc = {name: loc for name, *loc in self.read.execute(sql)}
+
         return [
-            Container(name, rates[name], capacity)
+            Container(name, rates[name], capacity, name2loc[name])
             for name, capacity in capacities.items()
         ]
 
     @cache
     def depot(self) -> Depot:
-        sql = "SELECT name FROM locations WHERE type = ?;"
+        sql = "SELECT name, latitude, longitude FROM locations WHERE type = ?;"
         rows = [d for d in self.read.execute(sql, (LocationType.DEPOT,))]
+        row = rows[0]
         assert len(rows) == 1  # there should be only a single depot!
-        return Depot(*rows[0])
+        return Depot(name=row[0], location=row[1:])
 
     @cache
     def distances(self) -> np.array:
@@ -103,7 +114,7 @@ class Database:
         distances = np.array(data).reshape((size, size))
 
         id_containers = _containers2loc(self.read, self.containers())
-        id_locations = [ID_DEPOT] + id_containers
+        id_locations = [ID_DEPOT, *id_containers]
         return distances[np.ix_(id_locations, id_locations)]
 
     @cache
@@ -119,7 +130,7 @@ class Database:
         durations = np.array(data).reshape((size, size))
 
         id_containers = _containers2loc(self.read, self.containers())
-        id_locations = [ID_DEPOT] + id_containers
+        id_locations = [ID_DEPOT, *id_containers]
         return durations[np.ix_(id_locations, id_locations)]
 
     @cache

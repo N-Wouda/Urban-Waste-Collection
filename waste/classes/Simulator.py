@@ -1,22 +1,22 @@
 from __future__ import annotations
 
 import logging
-
-# import heapq
 from heapq import heappop, heappush
+from itertools import count
 from typing import TYPE_CHECKING, Callable, Optional
 
-import numpy as np
+from waste.constants import HOURS_IN_DAY, SHIFT_PLAN_TIME, TIME_PER_CONTAINER
 
-from waste.constants import HOURS_IN_DAY, SHIFT_PLANNING_HOURS
-
-from .Container import Container
 from .Event import ArrivalEvent, Event, ServiceEvent, ShiftPlanEvent
-from .Route import Route
-from .Vehicle import Vehicle
 
 if TYPE_CHECKING:
+    import numpy as np
+
     from waste.strategies import Strategy
+
+    from .Container import Container
+    from .Route import Route
+    from .Vehicle import Vehicle
 
 logger = logging.getLogger(__name__)
 
@@ -28,16 +28,18 @@ class _EventQueue:
     """
 
     def __init__(self):
-        self._events: list[Event] = []
-
-    def push(self, event: Event):
-        heappush(self._events, event)
+        self._events = []
+        self._counter = count(0)
 
     def __len__(self) -> int:
         return len(self._events)
 
+    def push(self, event: Event):
+        tiebreaker = next(self._counter)
+        heappush(self._events, (event.time, tiebreaker, event))
+
     def pop(self) -> Event:
-        event = heappop(self._events)
+        *_, event = heappop(self._events)
         return event
 
 
@@ -79,9 +81,8 @@ class Simulator:
 
         # Insert the shift planning moments into the event queue.
         for day in range(0, horizon, HOURS_IN_DAY):
-            for hour in SHIFT_PLANNING_HOURS:
-                if day + hour <= horizon:
-                    events.push(ShiftPlanEvent(day + hour))
+            if day + SHIFT_PLAN_TIME <= horizon:
+                events.push(ShiftPlanEvent(day + SHIFT_PLAN_TIME))
 
         now = 0.0
 
@@ -120,15 +121,23 @@ class Simulator:
                     id_route = store(route)
                     assert id_route is not None
 
-                    for service_time, service_container in route.plan:
+                    service_time = event.time
+                    prev = 0
+
+                    for container_idx in route.plan:
+                        service_time += self.durations[prev, container_idx]
+
                         events.push(
                             ServiceEvent(
                                 service_time,
                                 id_route=id_route,
-                                container=service_container,
+                                container=self.containers[container_idx],
                                 vehicle=route.vehicle,
                             )
                         )
+
+                        service_time += TIME_PER_CONTAINER
+                        prev = container_idx
             else:
                 msg = f"Unhandled event of type {type(event)}."
                 logger.error(msg)
