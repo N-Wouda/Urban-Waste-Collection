@@ -154,6 +154,7 @@ class Database:
         # Only arrival and service events are logged; other events are
         # currently an intended no-op.
         if isinstance(item, (ArrivalEvent, ServiceEvent)):
+            assert item.is_sealed()
             self.buffer.append(item)
 
             if len(self.buffer) >= BUFFER_SIZE:

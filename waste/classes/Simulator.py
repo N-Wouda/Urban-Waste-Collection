@@ -89,12 +89,12 @@ class Simulator:
         while events and now <= horizon:
             event = events.pop()
 
-            if event.time >= now:
-                now = event.time
-            else:
+            if event.time < now:
                 msg = f"{event} time is before current time {now:.2f}!"
                 logger.error(msg)
                 raise ValueError(msg)
+
+            now = event.time
 
             # First seal the event. This ensures all data that was previously
             # linked to changing objects is made static at their current
@@ -114,14 +114,14 @@ class Simulator:
 
                 logger.debug(f"Service at {container.name} at t = {now:.2f}.")
             elif isinstance(event, ShiftPlanEvent):
-                logger.info(f"Generating shift plan at t = {event.time:.2f}.")
+                logger.info(f"Generating shift plan at t = {now:.2f}.")
                 routes = strategy(self, event)
 
                 for route in routes:
                     id_route = store(route)
                     assert id_route is not None
 
-                    service_time = event.time
+                    service_time = now
                     prev = 0
 
                     for container_idx in route.plan:
