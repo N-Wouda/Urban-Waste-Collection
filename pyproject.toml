@@ -39,7 +39,7 @@ select = ["E", "F", "I", "RET", "RSE", "RUF", "SLF", "SIM", "TCH"]
 
 [tool.ruff.isort]
 case-sensitive = true
-known-first-party = ["pyvrp"]
+known-first-party = ["waste"]
 
 [tool.mypy]
 ignore_missing_imports = true

@@ -1,8 +1,8 @@
 import numpy as np
 from numpy.random import Generator
-
 from pyvrp import Client, Model, ProblemData
 from pyvrp.stop import MaxRuntime
+
 from waste.classes import Route, ShiftPlanEvent, Simulator
 from waste.constants import BREAKS, DEPOT, ID_DEPOT, TIME_PER_CONTAINER
 

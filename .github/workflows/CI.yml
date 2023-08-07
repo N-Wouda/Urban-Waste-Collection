@@ -13,7 +13,7 @@ concurrency:
 jobs:
   build:
     name: >
-      Build and test pyvrp using Python ${{ matrix.python-version }}
+      Lint and test using Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: true
