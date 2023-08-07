@@ -100,34 +100,40 @@ class Simulator:
             event.seal()
             store(event)
 
-            if isinstance(event, ArrivalEvent):
-                container = event.container
-                container.arrive(event.volume)
+            match event:
+                case ArrivalEvent():
+                    container = event.container
+                    container.arrive(event.volume)
+                    logger.debug(
+                        f"Arrival at {container.name} at t = {time:.2f}."
+                    )
+                case ServiceEvent():
+                    container = event.container
+                    container.service()
+                    logger.debug(
+                        f"Service at {container.name} at t = {time:.2f}."
+                    )
+                case ShiftPlanEvent():
+                    logger.info(
+                        f"Generating shift plan at t = {event.time:.2f}."
+                    )
+                    routes = strategy(self, event)
 
-                logger.debug(f"Arrival at {container.name} at t = {time:.2f}.")
-            elif isinstance(event, ServiceEvent):
-                container = event.container
-                container.service()
+                    for route in routes:
+                        id_route = store(route)
+                        assert id_route is not None
 
-                logger.debug(f"Service at {container.name} at t = {time:.2f}.")
-            elif isinstance(event, ShiftPlanEvent):
-                logger.info(f"Generating shift plan at t = {event.time:.2f}.")
-                routes = strategy(self, event)
-
-                for route in routes:
-                    id_route = store(route)
-                    assert id_route is not None
-
-                    for service_time, service_container in route.plan:
-                        queue.add(
-                            ServiceEvent(
-                                service_time,
-                                id_route=id_route,
-                                container=service_container,
-                                vehicle=route.vehicle,
+                        for service_time, service_container in route.plan:
+                            queue.add(
+                                ServiceEvent(
+                                    service_time,
+                                    id_route=id_route,
+                                    container=service_container,
+                                    vehicle=route.vehicle,
+                                )
                             )
-                        )
-            else:
-                msg = f"Unhandled event of type {type(event)}."
-                logger.error(msg)
-                raise ValueError(msg)
+
+                case _:
+                    msg = f"Unhandled event of type {type(event)}."
+                    logger.error(msg)
+                    raise ValueError(msg)
