@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Iterator, Protocol
 from .BaselineStrategy import BaselineStrategy
 from .GreedyStrategy import GreedyStrategy
 from .PrizeCollectingStrategy import PrizeCollectingStrategy
+from .RandomStrategy import RandomStrategy
 
 if TYPE_CHECKING:
     from numpy.random import Generator
@@ -24,6 +25,7 @@ class Strategy(Protocol):
 
 STRATEGIES: dict[str, type[Strategy]] = {
     "baseline": BaselineStrategy,  # type: ignore
-    "prize": PrizeCollectingStrategy,  # type: ignore
     "greedy": GreedyStrategy,  # type: ignore
+    "prize": PrizeCollectingStrategy,  # type: ignore
+    "random": RandomStrategy,  # type: ignore
 }
