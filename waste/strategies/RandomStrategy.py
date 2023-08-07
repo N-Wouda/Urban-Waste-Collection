@@ -23,7 +23,7 @@ class RandomStrategy:
         p /= p.sum()
 
         containers = self.gen.choice(
-            sim.containers,
+            np.arange(len(sim.containers)),
             size=(len(sim.vehicles), NUM),
             replace=False,
             p=p,
