@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import heapq
 import logging
+from heapq import heappop, heappush
 from itertools import count
 from typing import TYPE_CHECKING, Callable, Optional
 
@@ -31,15 +31,15 @@ class _EventQueue:
         self._events = []
         self._counter = count(0)
 
-    def add(self, event: Event):
-        tiebreaker = next(self._counter)
-        heapq.heappush(self._events, (event.time, tiebreaker, event))
-
     def __len__(self) -> int:
         return len(self._events)
 
+    def push(self, event: Event):
+        tiebreaker = next(self._counter)
+        heappush(self._events, (event.time, tiebreaker, event))
+
     def pop(self) -> Event:
-        *_, event = heapq.heappop(self._events)
+        *_, event = heappop(self._events)
         return event
 
 
@@ -71,30 +71,30 @@ class Simulator:
         """
         Applies the given strategy for a simulation lasting horizon hours.
         """
-        queue = _EventQueue()
+        events = _EventQueue()
 
         # Insert all arrival events into the event queue. This is the only
         # source of uncertainty in the simulation.
         for container in self.containers:
             for arrival in container.arrivals_until(horizon):
-                queue.add(arrival)
+                events.push(arrival)
 
         # Insert the shift planning moments into the event queue.
         for day in range(0, horizon, HOURS_IN_DAY):
             if day + SHIFT_PLAN_TIME <= horizon:
-                queue.add(ShiftPlanEvent(day + SHIFT_PLAN_TIME))
+                events.push(ShiftPlanEvent(day + SHIFT_PLAN_TIME))
 
-        time = 0.0
+        now = 0.0
 
-        while queue and time <= horizon:
-            event = queue.pop()
+        while events and now <= horizon:
+            event = events.pop()
 
-            if event.time >= time:
-                time = event.time
-            else:
-                msg = f"{event} time is before current time {time:.2f}!"
+            if event.time < now:
+                msg = f"{event} time is before current time {now:.2f}!"
                 logger.error(msg)
                 raise ValueError(msg)
+
+            now = event.time
 
             # First seal the event. This ensures all data that was previously
             # linked to changing objects is made static at their current
@@ -107,27 +107,27 @@ class Simulator:
                 container = event.container
                 container.arrive(event.volume)
 
-                logger.debug(f"Arrival at {container.name} at t = {time:.2f}.")
+                logger.debug(f"Arrival at {container.name} at t = {now:.2f}.")
             elif isinstance(event, ServiceEvent):
                 container = event.container
                 container.service()
 
-                logger.debug(f"Service at {container.name} at t = {time:.2f}.")
+                logger.debug(f"Service at {container.name} at t = {now:.2f}.")
             elif isinstance(event, ShiftPlanEvent):
-                logger.info(f"Generating shift plan at t = {event.time:.2f}.")
+                logger.info(f"Generating shift plan at t = {now:.2f}.")
                 routes = strategy(self, event)
 
                 for route in routes:
                     id_route = store(route)
                     assert id_route is not None
 
-                    service_time = event.time
+                    service_time = now
                     prev = 0
 
                     for container_idx in route.plan:
                         service_time += self.durations[prev, container_idx]
 
-                        queue.add(
+                        events.push(
                             ServiceEvent(
                                 service_time,
                                 id_route=id_route,
