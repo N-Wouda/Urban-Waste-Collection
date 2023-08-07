@@ -14,12 +14,19 @@ class Container:
     since last service.
     """
 
-    def __init__(self, name: str, rates: list[float], capacity: float):
+    def __init__(
+        self,
+        name: str,
+        rates: list[float],
+        capacity: float,
+        location: tuple[float, float],
+    ):
         assert len(rates) == HOURS_IN_DAY
 
         self.name = name
         self.rates = rates  # arrival rates, per clock hour ([0 - 23])
         self.capacity = capacity  # in volume, liters
+        self.location = location  # (lat, lon) pair
 
         self.num_arrivals = 0  # number of arrivals since last service
         self.volume = 0.0  # current volume in container, in liters
