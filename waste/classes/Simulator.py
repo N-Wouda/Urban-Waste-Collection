@@ -26,16 +26,16 @@ class _EventQueue:
     """
 
     def __init__(self):
-        self._events: list[tuple[float, Event]] = []
+        self._events: list[Event] = []
 
-    def add(self, event: Event):
-        heapq.heappush(self._events, (event.time, event))
+    def push(self, event: Event):
+        heapq.heappush(self._events, event)
 
     def __len__(self) -> int:
         return len(self._events)
 
     def pop(self) -> Event:
-        _, event = heapq.heappop(self._events)
+        event = heapq.heappop(self._events)
         return event
 
 
@@ -67,29 +67,29 @@ class Simulator:
         """
         Applies the given strategy for a simulation lasting horizon hours.
         """
-        queue = _EventQueue()
+        events = _EventQueue()
 
         # Insert all arrival events into the event queue. This is the only
         # source of uncertainty in the simulation.
         for container in self.containers:
             for arrival in container.arrivals_until(horizon):
-                queue.add(arrival)
+                events.push(arrival)
 
         # Insert the shift planning moments into the event queue.
         for day in range(0, horizon, HOURS_IN_DAY):
             for hour in SHIFT_PLANNING_HOURS:
                 if day + hour <= horizon:
-                    queue.add(ShiftPlanEvent(day + hour))
+                    events.push(ShiftPlanEvent(day + hour))
 
-        time = 0.0
+        now = 0.0
 
-        while queue and time <= horizon:
-            event = queue.pop()
+        while events and now <= horizon:
+            event = events.pop()
 
-            if event.time >= time:
-                time = event.time
+            if event.time >= now:
+                now = event.time
             else:
-                msg = f"{event} time is before current time {time:.2f}!"
+                msg = f"{event} time is before current time {now:.2f}!"
                 logger.error(msg)
                 raise ValueError(msg)
 
@@ -104,12 +104,12 @@ class Simulator:
                 container = event.container
                 container.arrive(event.volume)
 
-                logger.debug(f"Arrival at {container.name} at t = {time:.2f}.")
+                logger.debug(f"Arrival at {container.name} at t = {now:.2f}.")
             elif isinstance(event, ServiceEvent):
                 container = event.container
                 container.service()
 
-                logger.debug(f"Service at {container.name} at t = {time:.2f}.")
+                logger.debug(f"Service at {container.name} at t = {now:.2f}.")
             elif isinstance(event, ShiftPlanEvent):
                 logger.info(f"Generating shift plan at t = {event.time:.2f}.")
                 routes = strategy(self, event)
@@ -119,7 +119,7 @@ class Simulator:
                     assert id_route is not None
 
                     for service_time, service_container in route.plan:
-                        queue.add(
+                        events.push(
                             ServiceEvent(
                                 service_time,
                                 id_route=id_route,
