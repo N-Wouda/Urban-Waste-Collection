@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-import heapq
 import logging
+
+# import heapq
+from heapq import heappop, heappush
 from typing import TYPE_CHECKING, Callable, Optional
 
 import numpy as np
@@ -29,13 +31,13 @@ class _EventQueue:
         self._events: list[Event] = []
 
     def push(self, event: Event):
-        heapq.heappush(self._events, event)
+        heappush(self._events, event)
 
     def __len__(self) -> int:
         return len(self._events)
 
     def pop(self) -> Event:
-        event = heapq.heappop(self._events)
+        event = heappop(self._events)
         return event
 
 
