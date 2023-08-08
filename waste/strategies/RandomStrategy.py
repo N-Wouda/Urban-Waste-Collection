@@ -3,9 +3,8 @@ from typing import Iterator
 import numpy as np
 from numpy.random import Generator
 
-from waste.classes import Route
+from waste.classes import Route, Simulator
 from waste.classes import ShiftPlanEvent as ShiftPlan
-from waste.classes import Simulator
 
 
 class RandomStrategy:
@@ -24,15 +23,11 @@ class RandomStrategy:
         p /= p.sum()
 
         containers = self.gen.choice(
-            sim.containers,
+            np.arange(len(sim.containers)),
             size=(len(sim.vehicles), NUM),
             replace=False,
             p=p,
         )
 
         for idx, vehicle in enumerate(sim.vehicles):
-            times = sorted(np.random.uniform(event.time, event.time + 6, NUM))
-            yield Route(
-                plan=[(t, c) for t, c in zip(times, containers[idx])],
-                vehicle=vehicle,
-            )
+            yield Route(plan=list(containers[idx]), vehicle=vehicle)

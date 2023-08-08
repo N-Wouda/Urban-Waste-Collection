@@ -1,20 +1,22 @@
 from __future__ import annotations
 
-import heapq
 import logging
+from heapq import heappop, heappush
+from itertools import count
 from typing import TYPE_CHECKING, Callable, Optional
 
-import numpy as np
+from waste.constants import HOURS_IN_DAY, SHIFT_PLAN_TIME, TIME_PER_CONTAINER
 
-from waste.constants import HOURS_IN_DAY, SHIFT_PLANNING_HOURS
-
-from .Container import Container
 from .Event import ArrivalEvent, Event, ServiceEvent, ShiftPlanEvent
-from .Route import Route
-from .Vehicle import Vehicle
 
 if TYPE_CHECKING:
+    import numpy as np
+
     from waste.strategies import Strategy
+
+    from .Container import Container
+    from .Route import Route
+    from .Vehicle import Vehicle
 
 logger = logging.getLogger(__name__)
 
@@ -26,16 +28,18 @@ class _EventQueue:
     """
 
     def __init__(self):
-        self._events: list[tuple[float, Event]] = []
-
-    def add(self, event: Event):
-        heapq.heappush(self._events, (event.time, event))
+        self._events = []
+        self._counter = count(0)
 
     def __len__(self) -> int:
         return len(self._events)
 
+    def push(self, event: Event):
+        tiebreaker = next(self._counter)
+        heappush(self._events, (event.time, tiebreaker, event))
+
     def pop(self) -> Event:
-        _, event = heapq.heappop(self._events)
+        *_, event = heappop(self._events)
         return event
 
 
@@ -67,31 +71,30 @@ class Simulator:
         """
         Applies the given strategy for a simulation lasting horizon hours.
         """
-        queue = _EventQueue()
+        events = _EventQueue()
 
         # Insert all arrival events into the event queue. This is the only
         # source of uncertainty in the simulation.
         for container in self.containers:
             for arrival in container.arrivals_until(horizon):
-                queue.add(arrival)
+                events.push(arrival)
 
         # Insert the shift planning moments into the event queue.
         for day in range(0, horizon, HOURS_IN_DAY):
-            for hour in SHIFT_PLANNING_HOURS:
-                if day + hour <= horizon:
-                    queue.add(ShiftPlanEvent(day + hour))
+            if day + SHIFT_PLAN_TIME <= horizon:
+                events.push(ShiftPlanEvent(day + SHIFT_PLAN_TIME))
 
-        time = 0.0
+        now = 0.0
 
-        while queue and time <= horizon:
-            event = queue.pop()
+        while events and now <= horizon:
+            event = events.pop()
 
-            if event.time >= time:
-                time = event.time
-            else:
-                msg = f"{event} time is before current time {time:.2f}!"
+            if event.time < now:
+                msg = f"{event} time is before current time {now:.2f}!"
                 logger.error(msg)
                 raise ValueError(msg)
+
+            now = event.time
 
             # First seal the event. This ensures all data that was previously
             # linked to changing objects is made static at their current
@@ -99,6 +102,7 @@ class Simulator:
             # independent from that of the objects it references.
             event.seal()
             store(event)
+
 
             match event:
                 case ArrivalEvent(time=time, container=c, volume=vol):
