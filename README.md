@@ -21,6 +21,7 @@ The following programs are currently available:
   This script ingests raw data files into an SQL database.
 - `simulate`, the simulation runscript.
   This script runs a single simulation using a given collection strategy.
+- `analyze`, the analysis script.
 
 These programs can be ran as `poetry run <script name>`, for example:
 ```shell
