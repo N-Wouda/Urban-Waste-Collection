@@ -103,7 +103,6 @@ class Simulator:
             event.seal()
             store(event)
 
-
             match event:
                 case ArrivalEvent(time=time, container=c, volume=vol):
                     c.arrive(vol)
@@ -113,22 +112,28 @@ class Simulator:
                     logger.debug(f"Service at {c.name} at t = {time:.2f}.")
                 case ShiftPlanEvent(time=time):
                     logger.info(f"Generating shift plan at t = {time:.2f}.")
-                    routes = strategy(self, event)
 
-                    for route in routes:
+                    for route in strategy(self, event):
                         id_route = store(route)
                         assert id_route is not None
 
-                        for service_time, service_container in route.plan:
-                            queue.add(
+                        service_time = now
+                        prev = 0
+
+                        for container_idx in route.plan:
+                            service_time += self.durations[prev, container_idx]
+
+                            events.push(
                                 ServiceEvent(
                                     service_time,
                                     id_route=id_route,
-                                    container=service_container,
+                                    container=self.containers[container_idx],
                                     vehicle=route.vehicle,
                                 )
                             )
 
+                            service_time += TIME_PER_CONTAINER
+                            prev = container_idx
                 case _:
                     msg = f"Unhandled event of type {type(event)}."
                     logger.error(msg)
