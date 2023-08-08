@@ -155,21 +155,24 @@ class Database:
         return measure(self.write)
 
     def store(self, item: Event | Route) -> Optional[int]:
-        # Only arrival and service events are logged; other events are
-        # currently an intended no-op.
-        if isinstance(item, (ArrivalEvent, ServiceEvent)):
-            assert item.is_sealed()
-            self.buffer.append(item)
+        # Only arrival, service and route events are logged; other arguments
+        #  are currently an intended no-op.
+        match item:
+            case (ArrivalEvent() | ServiceEvent()) as event:
+                assert event.is_sealed()
 
-            if len(self.buffer) >= BUFFER_SIZE:
-                self._commit()
-        elif isinstance(item, Route):
-            sql = "INSERT INTO routes (vehicle) VALUES (?)"
-            cursor = self.write.execute(sql, (item.vehicle.name,))
-            self.write.commit()
-            return cursor.lastrowid
+                self.buffer.append(event)
+                if len(self.buffer) >= BUFFER_SIZE:
+                    self._commit()
 
-        return None
+                return None
+            case Route(vehicle=vehicle):
+                sql = "INSERT INTO routes (vehicle) VALUES (?)"
+                cursor = self.write.execute(sql, (vehicle.name,))
+                self.write.commit()
+                return cursor.lastrowid
+            case _:
+                return None
 
     def _commit(self):
         self.write.execute("BEGIN TRANSACTION;")
