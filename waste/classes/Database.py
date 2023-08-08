@@ -6,13 +6,12 @@ from functools import cache
 from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
-
 from waste.constants import BUFFER_SIZE, HOURS_IN_DAY, ID_DEPOT
 from waste.enums import LocationType
 
 from .Container import Container
 from .Depot import Depot
-from .Event import ArrivalEvent, Event, ServiceEvent
+from .Event import ArrivalEvent, Event, ServiceEvent, ShiftPlanEvent
 from .Route import Route
 from .Vehicle import Vehicle
 
@@ -136,10 +135,7 @@ class Database:
     @cache
     def vehicles(self) -> list[Vehicle]:
         sql = "SELECT name, capacity FROM vehicles;"
-        return [
-            Vehicle(name, capacity)
-            for name, capacity in self.read.execute(sql)
-        ]
+        return [Vehicle(name, capacity) for name, capacity in self.read.execute(sql)]
 
     def compute(self, measure: Measure) -> Any:
         """
@@ -153,18 +149,21 @@ class Database:
     def store(self, item: Event | Route) -> Optional[int]:
         # Only arrival and service events are logged; other events are
         # currently an intended no-op.
-        if isinstance(item, (ArrivalEvent, ServiceEvent)):
-            assert item.is_sealed()
-            self.buffer.append(item)
-
-            if len(self.buffer) >= BUFFER_SIZE:
-                self._commit()
-        elif isinstance(item, Route):
-            sql = "INSERT INTO routes (vehicle) VALUES (?)"
-            cursor = self.write.execute(sql, (item.vehicle.name,))
-            self.write.commit()
-            return cursor.lastrowid
-
+        match item:
+            case (ArrivalEvent() | ServiceEvent()) as event:
+                assert event.is_sealed()
+                self.buffer.append(event)
+                if len(self.buffer) >= BUFFER_SIZE:
+                    self._commit()
+            case Route(vehicle=vehicle):
+                sql = "INSERT INTO routes (vehicle) VALUES (?)"
+                cursor = self.write.execute(sql, (vehicle.name,))
+                self.write.commit()
+                return cursor.lastrowid
+            case ShiftPlanEvent():
+                pass
+            case _:
+                raise ValueError(f'{type(item)=} is invalid')
         return None
 
     def _commit(self):
