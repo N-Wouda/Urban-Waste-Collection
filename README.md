@@ -1,5 +1,7 @@
 # Groningen waste collection
 
+[![CI](https://github.com/N-Wouda/Groningen-Waste-Collection/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/N-Wouda/Groningen-Waste-Collection/actions/workflows/CI.yml)
+
 This repository hosts code we use to improve waste collection in/by the Municipality of Groningen from underground containers.
 The code includes:
 
