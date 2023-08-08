@@ -50,4 +50,6 @@ jobs:
       - name: Run pre-commit
         run: poetry run pre-commit run --all-files
       - name: Run pytest
-        run: poetry run pytest
+        run: |
+          mkdir out
+          poetry run pytest
