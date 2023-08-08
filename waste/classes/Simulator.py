@@ -101,22 +101,14 @@ class Simulator:
             store(event)
 
             match event:
-                case ArrivalEvent():
-                    container = event.container
-                    container.arrive(event.volume)
-                    logger.debug(
-                        f"Arrival at {container.name} at t = {time:.2f}."
-                    )
-                case ServiceEvent():
-                    container = event.container
-                    container.service()
-                    logger.debug(
-                        f"Service at {container.name} at t = {time:.2f}."
-                    )
-                case ShiftPlanEvent():
-                    logger.info(
-                        f"Generating shift plan at t = {event.time:.2f}."
-                    )
+                case ArrivalEvent(time=time, container=c, volume=vol):
+                    c.arrive(vol)
+                    logger.debug(f"Arrival at {c.name} at t = {time:.2f}.")
+                case ServiceEvent(time=time, container=c):
+                    c.service()
+                    logger.debug(f"Service at {c.name} at t = {time:.2f}.")
+                case ShiftPlanEvent(time=time):
+                    logger.info(f"Generating shift plan at t = {time:.2f}.")
                     routes = strategy(self, event)
 
                     for route in routes:
