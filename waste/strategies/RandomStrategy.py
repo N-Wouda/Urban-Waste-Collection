@@ -1,5 +1,3 @@
-from typing import Iterator
-
 import numpy as np
 from numpy.random import Generator
 
@@ -15,7 +13,7 @@ class RandomStrategy:
     def __init__(self, gen: Generator):
         self.gen = gen
 
-    def __call__(self, sim: Simulator, event: ShiftPlan) -> Iterator[Route]:
+    def __call__(self, sim: Simulator, event: ShiftPlan) -> list[Route]:
         # TODO get parameters into the class somehow
         NUM = 20
 
@@ -29,5 +27,7 @@ class RandomStrategy:
             p=p,
         )
 
-        for idx, vehicle in enumerate(sim.vehicles):
-            yield Route(plan=list(containers[idx]), vehicle=vehicle)
+        return [
+            Route(plan=list(containers[idx]), vehicle=vehicle)
+            for idx, vehicle in enumerate(sim.vehicles)
+        ]
