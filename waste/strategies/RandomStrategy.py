@@ -17,7 +17,7 @@ class RandomStrategy:
 
     def __call__(self, sim: Simulator, event: ShiftPlan) -> Iterator[Route]:
         # TODO get parameters into the class somehow
-        NUM = 4
+        NUM = 20
 
         p = np.array([c.num_arrivals for c in sim.containers], dtype=float)
         p /= p.sum()
