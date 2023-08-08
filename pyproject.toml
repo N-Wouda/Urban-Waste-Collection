@@ -21,6 +21,7 @@ pyvrp = "0.5.0"
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
 pre-commit = "^3.2.2"
+pytest = "^7.4.0"
 
 [tool.poetry.scripts]
 distance = "waste.distance:main"
