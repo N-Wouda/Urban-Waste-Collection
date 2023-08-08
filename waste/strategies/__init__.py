@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterator, Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from .BaselineStrategy import BaselineStrategy
 from .GreedyStrategy import GreedyStrategy
@@ -16,10 +16,10 @@ if TYPE_CHECKING:
 
 
 class Strategy(Protocol):
-    def __init__(self, gen: Generator):
+    def __init__(self, gen: Generator = None):
         pass
 
-    def __call__(self, sim: Simulator, event: ShiftPlan) -> Iterator[Route]:
+    def __call__(self, sim: Simulator, event: ShiftPlan) -> list[Route]:
         pass
 
 

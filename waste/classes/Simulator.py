@@ -5,7 +5,7 @@ from heapq import heappop, heappush
 from itertools import count
 from typing import TYPE_CHECKING, Callable, Optional
 
-from waste.constants import HOURS_IN_DAY, SHIFT_PLAN_TIME, TIME_PER_CONTAINER
+from waste.constants import TIME_PER_CONTAINER
 
 from .Event import ArrivalEvent, Event, ServiceEvent, ShiftPlanEvent
 
@@ -64,29 +64,21 @@ class Simulator:
 
     def __call__(
         self,
-        horizon: int,
         store: Callable[[Event | Route], Optional[int]],
         strategy: Strategy,
+        initial_events: list[Event],
     ):
         """
         Applies the given strategy for a simulation lasting horizon hours.
         """
         events = _EventQueue()
 
-        # Insert all arrival events into the event queue. This is the only
-        # source of uncertainty in the simulation.
-        for container in self.containers:
-            for arrival in container.arrivals_until(horizon):
-                events.push(arrival)
-
-        # Insert the shift planning moments into the event queue.
-        for day in range(0, horizon, HOURS_IN_DAY):
-            if day + SHIFT_PLAN_TIME <= horizon:
-                events.push(ShiftPlanEvent(day + SHIFT_PLAN_TIME))
+        for event in initial_events:
+            events.push(event)
 
         now = 0.0
 
-        while events and now <= horizon:
+        while events:
             event = events.pop()
 
             if event.time < now:
