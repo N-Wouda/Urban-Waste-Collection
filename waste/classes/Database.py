@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 import sqlite3
 from functools import cache
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
@@ -27,36 +28,39 @@ class Database:
     """
 
     def __init__(self, src_db: str, res_db: str):
-        self.buffer: list[ArrivalEvent | ServiceEvent] = []
+        res_exists = Path(res_db).exists()
 
+        self.buffer: list[ArrivalEvent | ServiceEvent] = []
         self.read = sqlite3.connect(src_db)
-        self.write = sqlite3.connect(res_db)
 
         # Prepare the result database
+        self.write = sqlite3.connect(res_db)
         self.write.execute("ATTACH DATABASE ? AS source;", (src_db,))
-        self.write.executescript(
-            """-- sql
-                CREATE TABLE arrival_events (
-                    time FLOAT,
-                    container VARCHAR,
-                    volume FLOAT
-                );
 
-                CREATE TABLE routes (
-                    id_route INTEGER PRIMARY KEY,
-                    vehicle NAME
-                );
+        if not res_exists:
+            self.write.executescript(
+                """-- sql
+                    CREATE TABLE arrival_events (
+                        time FLOAT,
+                        container VARCHAR,
+                        volume FLOAT
+                    );
 
-                CREATE TABLE service_events (
-                    time FLOAT,
-                    container VARCHAR,
-                    id_route INTEGER references routes,
-                    vehicle VARCHAR,
-                    num_arrivals INT,
-                    volume FLOAT
-                );
-            """
-        )
+                    CREATE TABLE routes (
+                        id_route INTEGER PRIMARY KEY,
+                        vehicle NAME
+                    );
+
+                    CREATE TABLE service_events (
+                        time FLOAT,
+                        container VARCHAR,
+                        id_route INTEGER references routes,
+                        vehicle VARCHAR,
+                        num_arrivals INT,
+                        volume FLOAT
+                    );
+                """
+            )
 
     @cache
     def containers(self) -> list[Container]:
