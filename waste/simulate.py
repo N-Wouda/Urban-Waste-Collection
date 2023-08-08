@@ -4,6 +4,8 @@ import logging
 import numpy as np
 
 from waste.classes import Database, Simulator
+from waste.classes.Event import ShiftPlanEvent
+from waste.constants import HOURS_IN_DAY, SHIFT_PLAN_TIME
 from waste.strategies import STRATEGIES
 
 logger = logging.getLogger(__name__)
@@ -46,8 +48,19 @@ def main():
     generator = np.random.default_rng(args.strategy_seed)
     strategy = STRATEGIES[args.strategy](generator)
 
-    # Simulate and store results
-    sim(args.horizon, db.store, strategy)
+    # Simulate and store results. First we create initial events: these are all
+    # arrival events, and shift planning times. The simulation starts with
+    # those events and processes them, which may add new ones as well.
+    events = []
+    for container in db.containers():
+        for arrival in container.arrivals_until(args.horizon):
+            events.push(arrival)
+
+    for day in range(0, args.horizon, HOURS_IN_DAY):
+        if day + SHIFT_PLAN_TIME <= args.horizon:
+            events.push(ShiftPlanEvent(day + SHIFT_PLAN_TIME))
+
+    sim(args.horizon, db.store, strategy, events)
 
 
 if __name__ == "__main__":
