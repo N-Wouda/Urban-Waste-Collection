@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
+
 from waste.constants import BUFFER_SIZE, HOURS_IN_DAY, ID_DEPOT
 from waste.enums import LocationType
 
@@ -139,7 +140,10 @@ class Database:
     @cache
     def vehicles(self) -> list[Vehicle]:
         sql = "SELECT name, capacity FROM vehicles;"
-        return [Vehicle(name, capacity) for name, capacity in self.read.execute(sql)]
+        return [
+            Vehicle(name, capacity)
+            for name, capacity in self.read.execute(sql)
+        ]
 
     def compute(self, measure: Measure) -> Any:
         """
@@ -167,7 +171,7 @@ class Database:
             case ShiftPlanEvent():
                 pass
             case _:
-                raise ValueError(f'{type(item)=} is invalid')
+                raise ValueError(f"{type(item)=} is invalid")
         return None
 
     def _commit(self):

@@ -2,6 +2,7 @@ from typing import Iterator
 
 import numpy as np
 from numpy.random import Generator
+
 from waste.classes import Route, Simulator
 from waste.classes import ShiftPlanEvent as ShiftPlan
 

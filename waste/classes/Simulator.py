@@ -11,6 +11,7 @@ from .Event import ArrivalEvent, Event, ServiceEvent, ShiftPlanEvent
 
 if TYPE_CHECKING:
     import numpy as np
+
     from waste.strategies import Strategy
 
     from .Container import Container
