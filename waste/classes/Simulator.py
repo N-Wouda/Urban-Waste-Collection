@@ -103,42 +103,38 @@ class Simulator:
             event.seal()
             store(event)
 
-            if isinstance(event, ArrivalEvent):
-                container = event.container
-                container.arrive(event.volume)
+            match event:
+                case ArrivalEvent(time=time, container=c, volume=vol):
+                    c.arrive(vol)
+                    logger.debug(f"Arrival at {c.name} at t = {time:.2f}.")
+                case ServiceEvent(time=time, container=c):
+                    c.service()
+                    logger.debug(f"Service at {c.name} at t = {time:.2f}.")
+                case ShiftPlanEvent(time=time):
+                    logger.info(f"Generating shift plan at t = {time:.2f}.")
 
-                logger.debug(f"Arrival at {container.name} at t = {now:.2f}.")
-            elif isinstance(event, ServiceEvent):
-                container = event.container
-                container.service()
+                    for route in strategy(self, event):
+                        id_route = store(route)
+                        assert id_route is not None
 
-                logger.debug(f"Service at {container.name} at t = {now:.2f}.")
-            elif isinstance(event, ShiftPlanEvent):
-                logger.info(f"Generating shift plan at t = {now:.2f}.")
-                routes = strategy(self, event)
+                        service_time = now
+                        prev = 0
 
-                for route in routes:
-                    id_route = store(route)
-                    assert id_route is not None
+                        for container_idx in route.plan:
+                            service_time += self.durations[prev, container_idx]
 
-                    service_time = now
-                    prev = 0
-
-                    for container_idx in route.plan:
-                        service_time += self.durations[prev, container_idx]
-
-                        events.push(
-                            ServiceEvent(
-                                service_time,
-                                id_route=id_route,
-                                container=self.containers[container_idx],
-                                vehicle=route.vehicle,
+                            events.push(
+                                ServiceEvent(
+                                    service_time,
+                                    id_route=id_route,
+                                    container=self.containers[container_idx],
+                                    vehicle=route.vehicle,
+                                )
                             )
-                        )
 
-                        service_time += TIME_PER_CONTAINER
-                        prev = container_idx
-            else:
-                msg = f"Unhandled event of type {type(event)}."
-                logger.error(msg)
-                raise ValueError(msg)
+                            service_time += TIME_PER_CONTAINER
+                            prev = container_idx
+                case _:
+                    msg = f"Unhandled event of type {type(event)}."
+                    logger.error(msg)
+                    raise ValueError(msg)
