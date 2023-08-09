@@ -8,8 +8,10 @@ class RandomStrategy:
     Random routing and dispatch strategy.
     """
 
-    def __init__(self, containers_per_route: int):
-        # TODO get from configuration?
+    def __init__(self, containers_per_route: int, **kwargs):
+        if containers_per_route < 0:
+            raise ValueError("Expected containers_per_route > 0.")
+
         self.containers_per_route = containers_per_route
 
     def __call__(self, sim: Simulator, event: ShiftPlanEvent) -> list[Route]:

@@ -12,6 +12,13 @@ if TYPE_CHECKING:
 
 
 class Strategy(Protocol):
+
+    # Should be able to take arbitrary arguments, some of which may be
+    # discarded. This makes it much easier to work with the strategies from
+    # the simulate entrypoint.
+    def __init__(self, **kwargs):
+        pass
+
     def __call__(self, sim: Simulator, event: ShiftPlanEvent) -> list[Route]:
         pass
 
