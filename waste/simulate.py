@@ -25,7 +25,6 @@ def parse_args():
     )
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument("--strategy", choices=STRATEGIES.keys(), required=True)
-    parser.add_argument("--strategy_seed", type=int, required=True)
 
     return parser.parse_args()
 
@@ -34,26 +33,26 @@ def main():
     args = parse_args()
     logger.info(f"Running simulation with arguments {vars(args)}.")
 
-    np.random.seed(args.seed)
+    generator = np.random.default_rng(args.seed)
 
     # Set up simulation environment and data
     db = Database(args.src_db, args.res_db)
     sim = Simulator(
+        generator,
         db.distances(),
         db.durations(),
         db.containers(),
         db.vehicles(),
     )
 
-    generator = np.random.default_rng(args.strategy_seed)
-    strategy = STRATEGIES[args.strategy](generator)
+    strategy = STRATEGIES[args.strategy]()
 
     # Simulate and store results. First we create initial events: these are all
     # arrival events, and shift planning times. The simulation starts with
     # those events and processes them, which may add new ones as well.
     events = []
     for container in db.containers():
-        for arrival in container.arrivals_until(args.horizon):
+        for arrival in container.arrivals_until(generator, args.horizon):
             events.append(arrival)
 
     for day in range(0, args.horizon, HOURS_IN_DAY):
