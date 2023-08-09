@@ -143,7 +143,7 @@ class Database:
 
         id_containers = _containers2loc(self.read, self.containers())
         id_locations = [ID_DEPOT, *id_containers]
-        return durations[np.ix_(id_locations, id_locations)]
+        return durations[np.ix_(id_locations, id_locations)] / 3600  # in hours
 
     @cache
     def vehicles(self) -> list[Vehicle]:
