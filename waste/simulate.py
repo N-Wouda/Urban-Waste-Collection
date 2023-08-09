@@ -31,7 +31,12 @@ def parse_args():
     subparsers.add_parser("prize")
 
     random = subparsers.add_parser("random")
-    random.add_argument("--containers_per_route", type=int, required=True)
+    random.add_argument(
+        "--containers_per_route",
+        required=True,
+        type=int,
+        default=20,
+    )
 
     return parser.parse_args()
 
