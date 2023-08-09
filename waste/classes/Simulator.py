@@ -69,7 +69,8 @@ class Simulator:
         initial_events: list[Event],
     ):
         """
-        Applies the given strategy for a simulation lasting horizon hours.
+        Applies a strategy for a simulation starting with the given initial
+        events.        .
         """
         events = _EventQueue()
 
