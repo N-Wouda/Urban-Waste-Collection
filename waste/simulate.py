@@ -39,7 +39,7 @@ def parse_args():
 def main():
     args = parse_args()
     if args.strategy not in STRATEGIES.keys():
-        raise ValueError(f"Strategy {args.strategy} not understood.")
+        raise ValueError(f"Strategy '{args.strategy}' not understood.")
 
     logger.info(f"Running simulation with arguments {vars(args)}.")
 
