@@ -54,13 +54,13 @@ def main():
     events = []
     for container in db.containers():
         for arrival in container.arrivals_until(args.horizon):
-            events.push(arrival)
+            events.append(arrival)
 
     for day in range(0, args.horizon, HOURS_IN_DAY):
         if day + SHIFT_PLAN_TIME <= args.horizon:
-            events.push(ShiftPlanEvent(day + SHIFT_PLAN_TIME))
+            events.append(ShiftPlanEvent(day + SHIFT_PLAN_TIME))
 
-    sim(args.horizon, db.store, strategy, events)
+    sim(db.store, strategy, events)
 
 
 if __name__ == "__main__":

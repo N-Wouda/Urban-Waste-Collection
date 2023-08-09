@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import math
 import sqlite3
 from functools import cache
@@ -21,6 +22,9 @@ if TYPE_CHECKING:
     from waste.measures import Measure
 
 
+logger = logging.getLogger(__name__)
+
+
 class Database:
     """
     Simple database wrapper/model class for interacting with the static and
@@ -28,11 +32,11 @@ class Database:
     """
 
     def __init__(self, src_db: str, res_db: str, exists_ok: bool = False):
-        if (res_exists := Path(res_db).exists()) and not exists_ok:
-            raise FileExistsError(f"Database {res_db} already exists!")
-
         self.buffer: list[ArrivalEvent | ServiceEvent] = []
         self.read = sqlite3.connect(src_db)
+
+        if (res_exists := Path(res_db).exists()) and not exists_ok:
+            raise FileExistsError(f"Database {res_db} already exists!")
 
         # Prepare the result database
         self.write = sqlite3.connect(res_db)
@@ -56,7 +60,6 @@ class Database:
                         time FLOAT,
                         container VARCHAR,
                         id_route INTEGER references routes,
-                        vehicle VARCHAR,
                         num_arrivals INT,
                         volume FLOAT
                     );
@@ -204,7 +207,6 @@ class Database:
                 event.time,
                 event.container.name,
                 event.id_route,
-                event.vehicle.name,
                 event.num_arrivals,
                 event.volume,
             )
@@ -218,10 +220,9 @@ class Database:
                     time,
                     container,
                     id_route,
-                    vehicle,
                     num_arrivals,
                     volume
-                ) VALUES (?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?)
             """,
             services,
         )
@@ -230,6 +231,9 @@ class Database:
         self.buffer = []
 
     def __del__(self):
+        if self.buffer:
+            self._commit()
+
         self.read.close()
         self.write.close()
 
