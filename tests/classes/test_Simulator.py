@@ -24,12 +24,11 @@ def test_events_are_sealed_and_stored_property():
 
     # Create some initial events for the simulator. After creation, new events
     # are not yet sealed.
-    init = [ArrivalEvent(time, container, 0) for time in range(5)]
-    init += [
-        ServiceEvent(time, id_route=1, container=container, vehicle=1)
-        for time in range(5, 10)
+    init = [
+        ArrivalEvent(time=0, container=container, volume=0),
+        ServiceEvent(time=1, id_route=1, container=container, vehicle=1),
+        ShiftPlanEvent(time=2),
     ]
-    init += [ShiftPlanEvent(time) for time in range(10, 15)]
     for event in init:
         assert_(event.is_pending())
         assert_(not event.is_sealed())
@@ -46,3 +45,15 @@ def test_events_are_sealed_and_stored_property():
         assert_(init_event is stored_event)
         assert_(not init_event.is_pending())
         assert_(init_event.is_sealed())
+
+
+def test_stored_events_are_sorted_in_time():
+    sim = Simulator(distances=[], durations=[], containers=[], vehicles=[])
+
+    # Create some initial events for the simulator. After creation, new events
+    # are not yet sealed.
+    init = [ShiftPlanEvent(time=time) for time in range(5, 0, -1)]
+
+    stored = []
+    sim(lambda event: stored.append(event), NullStrategy(), init)
+    assert stored == sorted(stored, key=lambda event: event.time)
