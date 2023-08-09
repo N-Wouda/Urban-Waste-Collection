@@ -8,16 +8,19 @@ class RandomStrategy:
     Random routing and dispatch strategy.
     """
 
-    def __call__(self, sim: Simulator, event: ShiftPlanEvent) -> list[Route]:
-        # TODO get parameter into the class somehow
-        containers_per_route = 20
+    def __init__(self, containers_per_route: int):
+        # TODO get from configuration?
+        self.containers_per_route = containers_per_route
 
-        with_arrivals = [c.num_arrivals > 0 for c in sim.containers]
+    def __call__(self, sim: Simulator, event: ShiftPlanEvent) -> list[Route]:
+        # We select randomly from containers with arrivals, favouring those
+        # with more arrivals.
+        arrivals = [c.num_arrivals for c in sim.containers]
         containers = sim.generator.choice(
             np.arange(len(sim.containers)),
-            size=(len(sim.vehicles), containers_per_route),
+            size=(len(sim.vehicles), self.containers_per_route),
             replace=False,
-            p=with_arrivals / np.sum(with_arrivals),
+            p=arrivals / np.sum(arrivals),
         )
 
         return [
