@@ -27,8 +27,9 @@ class Database:
     simulation data.
     """
 
-    def __init__(self, src_db: str, res_db: str):
-        res_exists = Path(res_db).exists()
+    def __init__(self, src_db: str, res_db: str, exists_ok: bool = False):
+        if (res_exists := Path(res_db).exists()) and not exists_ok:
+            raise FileExistsError(f"Database {res_db} already exists!")
 
         self.buffer: list[ArrivalEvent | ServiceEvent] = []
         self.read = sqlite3.connect(src_db)
