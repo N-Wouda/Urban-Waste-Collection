@@ -8,17 +8,12 @@ from .PrizeCollectingStrategy import PrizeCollectingStrategy
 from .RandomStrategy import RandomStrategy
 
 if TYPE_CHECKING:
-    from numpy.random import Generator
-
     from waste.classes.Event import ShiftPlanEvent as ShiftPlan
     from waste.classes.Route import Route
     from waste.classes.Simulator import Simulator
 
 
 class Strategy(Protocol):
-    def __init__(self, gen: Generator = None):
-        pass
-
     def __call__(self, sim: Simulator, event: ShiftPlan) -> list[Route]:
         pass
 

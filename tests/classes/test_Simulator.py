@@ -1,3 +1,4 @@
+from numpy.random import default_rng
 from numpy.testing import assert_, assert_equal
 
 from tests.helpers import NullStrategy
@@ -12,15 +13,8 @@ from waste.constants import HOURS_IN_DAY
 
 
 def test_events_are_sealed_and_stored_property():
-    container = Container(
-        name="test",
-        rates=[1] * HOURS_IN_DAY,
-        capacity=1.0,
-        location=(0.0, 0.0),
-    )
-    sim = Simulator(
-        distances=[], durations=[], containers=[container], vehicles=[]
-    )
+    container = Container("test", [1] * HOURS_IN_DAY, 1.0, (0.0, 0.0))
+    sim = Simulator(default_rng(0), [], [], [container], [])
 
     # Create some initial events for the simulator. After creation, new events
     # are not yet sealed.
@@ -48,7 +42,7 @@ def test_events_are_sealed_and_stored_property():
 
 
 def test_stored_events_are_sorted_in_time():
-    sim = Simulator(distances=[], durations=[], containers=[], vehicles=[])
+    sim = Simulator(default_rng(0), [], [], [], [])
     init = [ShiftPlanEvent(time=time) for time in range(5, 0, -1)]
 
     stored = []

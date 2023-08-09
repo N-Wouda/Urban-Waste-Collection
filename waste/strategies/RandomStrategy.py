@@ -1,8 +1,6 @@
 import numpy as np
-from numpy.random import Generator
 
-from waste.classes import Route, Simulator
-from waste.classes import ShiftPlanEvent as ShiftPlan
+from waste.classes import Route, ShiftPlanEvent, Simulator
 
 
 class RandomStrategy:
@@ -10,17 +8,14 @@ class RandomStrategy:
     Random routing and dispatch strategy.
     """
 
-    def __init__(self, gen: Generator):
-        self.gen = gen
-
-    def __call__(self, sim: Simulator, event: ShiftPlan) -> list[Route]:
+    def __call__(self, sim: Simulator, event: ShiftPlanEvent) -> list[Route]:
         # TODO get parameters into the class somehow
         NUM = 20
 
         p = np.array([c.num_arrivals for c in sim.containers], dtype=float)
         p /= p.sum()
 
-        containers = self.gen.choice(
+        containers = sim.generator.choice(
             np.arange(len(sim.containers)),
             size=(len(sim.vehicles), NUM),
             replace=False,

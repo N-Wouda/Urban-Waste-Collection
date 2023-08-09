@@ -11,6 +11,7 @@ from .Event import ArrivalEvent, Event, ServiceEvent, ShiftPlanEvent
 
 if TYPE_CHECKING:
     import numpy as np
+    from numpy.random import Generator
 
     from waste.strategies import Strategy
 
@@ -52,11 +53,13 @@ class Simulator:
 
     def __init__(
         self,
+        generator: Generator,
         distances: np.array,
         durations: np.array,
         containers: list[Container],
         vehicles: list[Vehicle],
     ):
+        self.generator = generator
         self.distances = distances
         self.durations = durations
         self.containers = containers
