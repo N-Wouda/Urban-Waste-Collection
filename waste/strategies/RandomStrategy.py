@@ -9,20 +9,18 @@ class RandomStrategy:
     """
 
     def __call__(self, sim: Simulator, event: ShiftPlanEvent) -> list[Route]:
-        # TODO get parameters into the class somehow
-        NUM = 20
+        # TODO get parameter into the class somehow
+        containers_per_route = 20
 
-        p = np.array([c.num_arrivals for c in sim.containers], dtype=float)
-        p /= p.sum()
-
+        with_arrivals = [c.num_arrivals > 0 for c in sim.containers]
         containers = sim.generator.choice(
             np.arange(len(sim.containers)),
-            size=(len(sim.vehicles), NUM),
+            size=(len(sim.vehicles), containers_per_route),
             replace=False,
-            p=p,
+            p=with_arrivals / np.sum(with_arrivals),
         )
 
         return [
-            Route(plan=list(containers[idx]), vehicle=vehicle)
-            for idx, vehicle in enumerate(sim.vehicles)
+            Route(plan=list(plan), vehicle=vehicle)
+            for plan, vehicle in zip(containers, sim.vehicles)
         ]
