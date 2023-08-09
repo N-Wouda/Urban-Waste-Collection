@@ -35,12 +35,12 @@ class Container:
         self,
         gen: Generator,
         until: int,
-        volumes: tuple[float, float] = VOLUME_RANGE,
+        volume_range: tuple[float, float] = VOLUME_RANGE,
     ) -> Iterator[ArrivalEvent]:
         """
         Returns arrivals (events) for the period [0, until], where until is
         assumed to be in hours. Each arrival event has a volume sampled
-        uniformly from U[volumes].
+        uniformly from U[volume_range].
         """
         for hour in range(until):
             # Non-homogeneous Poisson arrivals, with hourly rates as given by
@@ -48,7 +48,7 @@ class Container:
             rate = self.rates[hour % len(self.rates)]
             num_arrivals = gen.poisson(rate)
 
-            volumes = gen.uniform(*volumes, size=num_arrivals)  # in liters
+            volumes = gen.uniform(*volume_range, size=num_arrivals)  # liters
             arrivals = hour + gen.uniform(size=num_arrivals)
 
             for arrival, volume in zip(arrivals, volumes):
