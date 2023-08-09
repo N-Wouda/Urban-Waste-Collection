@@ -49,7 +49,6 @@ def test_events_are_sealed_and_stored_property():
 
 def test_stored_events_are_sorted_in_time():
     sim = Simulator(distances=[], durations=[], containers=[], vehicles=[])
-
     init = [ShiftPlanEvent(time=time) for time in range(5, 0, -1)]
 
     stored = []
