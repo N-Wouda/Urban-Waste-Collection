@@ -15,7 +15,7 @@ def parse_args():
 
 def main():
     args = parse_args()
-    db = Database(args.src_db, args.res_db)
+    db = Database(args.src_db, args.res_db, exists_ok=True)
 
     # Compute performance measures from stored data.
     for name, func in MEASURES.items():
