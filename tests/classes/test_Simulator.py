@@ -30,7 +30,7 @@ def test_events_are_sealed_and_stored_property():
         assert_(init_event.is_sealed())
 
 
-def test_shiftevents_are_sealed_and_stored_properly():
+def test_serviceevents_are_sealed_and_stored_properly():
     container = Container(
         name="test",
         rates=[1] * HOURS_IN_DAY,
