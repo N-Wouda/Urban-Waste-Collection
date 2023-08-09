@@ -1,7 +1,13 @@
 from numpy.testing import assert_, assert_equal
 
 from tests.helpers import NullStrategy
-from waste.classes import ArrivalEvent, Container, ServiceEvent, Simulator
+from waste.classes import (
+    ArrivalEvent,
+    Container,
+    ServiceEvent,
+    ShiftPlanEvent,
+    Simulator,
+)
 from waste.constants import HOURS_IN_DAY
 
 
@@ -23,6 +29,7 @@ def test_events_are_sealed_and_stored_property():
         ServiceEvent(time, id_route=1, container=container, vehicle=1)
         for time in range(5, 10)
     ]
+    init += [ShiftPlanEvent(time) for time in range(10, 15)]
     for event in init:
         assert_(event.is_pending())
         assert_(not event.is_sealed())
