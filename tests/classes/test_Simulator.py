@@ -50,10 +50,8 @@ def test_events_are_sealed_and_stored_property():
 def test_stored_events_are_sorted_in_time():
     sim = Simulator(distances=[], durations=[], containers=[], vehicles=[])
 
-    # Create some initial events for the simulator. After creation, new events
-    # are not yet sealed.
     init = [ShiftPlanEvent(time=time) for time in range(5, 0, -1)]
 
     stored = []
     sim(lambda event: stored.append(event), NullStrategy(), init)
-    assert stored == sorted(stored, key=lambda event: event.time)
+    assert_equal(stored, sorted(stored, key=lambda event: event.time))
