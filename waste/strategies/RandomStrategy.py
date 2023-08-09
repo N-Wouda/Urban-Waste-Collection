@@ -10,7 +10,7 @@ class RandomStrategy:
 
     def __init__(self, containers_per_route: int, **kwargs):
         if containers_per_route < 0:
-            raise ValueError("Expected containers_per_route > 0.")
+            raise ValueError("Expected containers_per_route >= 0.")
 
         self.containers_per_route = containers_per_route
 
