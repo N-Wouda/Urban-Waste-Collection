@@ -31,18 +31,22 @@ class Database:
     simulation data.
     """
 
+    def __new__(cls, src_db: str, res_db: str, exists_ok: bool = False):
+        if Path(res_db).exists() and not exists_ok:
+            raise FileExistsError(f"Database {res_db} already exists!")
+
+        return super().__new__(cls)
+
     def __init__(self, src_db: str, res_db: str, exists_ok: bool = False):
         self.buffer: list[ArrivalEvent | ServiceEvent] = []
         self.read = sqlite3.connect(src_db)
 
-        if (res_exists := Path(res_db).exists()) and not exists_ok:
-            raise FileExistsError(f"Database {res_db} already exists!")
-
         # Prepare the result database
+        res_db_exists = Path(res_db).exists()
         self.write = sqlite3.connect(res_db)
         self.write.execute("ATTACH DATABASE ? AS source;", (src_db,))
 
-        if not res_exists:
+        if not res_db_exists:
             self.write.executescript(
                 """-- sql
                     CREATE TABLE arrival_events (
