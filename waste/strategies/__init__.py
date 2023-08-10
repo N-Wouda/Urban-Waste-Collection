@@ -8,13 +8,18 @@ from .PrizeCollectingStrategy import PrizeCollectingStrategy
 from .RandomStrategy import RandomStrategy
 
 if TYPE_CHECKING:
-    from waste.classes.Event import ShiftPlanEvent as ShiftPlan
-    from waste.classes.Route import Route
-    from waste.classes.Simulator import Simulator
+    from waste.classes import Route, ShiftPlanEvent, Simulator
 
 
 class Strategy(Protocol):
-    def __call__(self, sim: Simulator, event: ShiftPlan) -> list[Route]:
+
+    # Should be able to take arbitrary arguments, some of which may be
+    # discarded. This makes it much easier to work with the strategies from
+    # the simulate entrypoint.
+    def __init__(self, **kwargs):
+        pass
+
+    def __call__(self, sim: Simulator, event: ShiftPlanEvent) -> list[Route]:
         pass
 
 
