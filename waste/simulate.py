@@ -13,46 +13,59 @@ logger = logging.getLogger(__name__)
 
 def parse_args():
     parser = argparse.ArgumentParser(prog="simulate")
+    subparsers = parser.add_subparsers(dest="strategy")
 
     parser.add_argument("src_db", help="Location of the input database.")
     parser.add_argument("res_db", help="Location of the output database.")
-
+    parser.add_argument("--seed", type=int, required=True)
     parser.add_argument(
         "--horizon",
         required=True,
         type=int,
         help="Time horizon for the simulation (in hours).",
     )
-    parser.add_argument("--seed", type=int, required=True)
-    parser.add_argument("--strategy", choices=STRATEGIES.keys(), required=True)
+
+    # TODO flesh out the following strategies
+    subparsers.add_parser("baseline")
+    subparsers.add_parser("greedy")
+    subparsers.add_parser("prize")
+
+    random = subparsers.add_parser("random")
+    random.add_argument(
+        "--containers_per_route",
+        required=True,
+        type=int,
+        default=20,
+    )
 
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
-    logger.info(f"Running simulation with arguments {vars(args)}.")
+    if args.strategy not in STRATEGIES.keys():
+        raise ValueError(f"Strategy '{args.strategy}' not understood.")
 
-    generator = np.random.default_rng(args.seed)
+    logger.info(f"Running simulation with arguments {vars(args)}.")
 
     # Set up simulation environment and data
     db = Database(args.src_db, args.res_db)
     sim = Simulator(
-        generator,
+        np.random.default_rng(args.seed),
         db.distances(),
         db.durations(),
         db.containers(),
         db.vehicles(),
     )
 
-    strategy = STRATEGIES[args.strategy]()
+    strategy = STRATEGIES[args.strategy](**vars(args))
 
     # Simulate and store results. First we create initial events: these are all
     # arrival events, and shift planning times. The simulation starts with
     # those events and processes them, which may add new ones as well.
     events = []
     for container in db.containers():
-        for arrival in container.arrivals_until(generator, args.horizon):
+        for arrival in container.arrivals_until(sim.generator, args.horizon):
             events.append(arrival)
 
     for day in range(0, args.horizon, HOURS_IN_DAY):
