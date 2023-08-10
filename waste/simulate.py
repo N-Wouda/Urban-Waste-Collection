@@ -13,33 +13,57 @@ from waste.strategies import STRATEGIES
 logger = logging.getLogger(__name__)
 
 
+def valid_datetime_format(arg_datetime):
+    try:
+        datetime.strptime(arg_datetime, "%Y-%m-%dT%H:%M")
+        return arg_datetime
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            "Invalid datetime format. Please use: 'yyyy-mm-ddThh:mm'."
+        )
+
+
 def parse_args():
     parser = argparse.ArgumentParser(prog="simulate")
+    subparsers = parser.add_subparsers(dest="strategy")
 
     parser.add_argument("src_db", help="Location of the input database.")
     parser.add_argument("res_db", help="Location of the output database.")
-
+    parser.add_argument("--seed", type=int, required=True)
     parser.add_argument(
         "--start",
-        type=str,
+        type=valid_datetime_format,
         required=True,
         help="Start datetime, e.g., 2023-08-10T07:00",
     )
+
     parser.add_argument(
         "--finish",
-        type=str,
+        type=valid_datetime_format,
         required=True,
         help="Finish datetime, e.g., 2023-08-10T07:00",
     )
 
-    parser.add_argument("--seed", type=int, required=True)
-    parser.add_argument("--strategy", choices=STRATEGIES.keys(), required=True)
+    # TODO flesh out the following strategies
+    subparsers.add_parser("baseline")
+    subparsers.add_parser("greedy")
+    subparsers.add_parser("prize")
+
+    random = subparsers.add_parser("random")
+    random.add_argument(
+        "--containers_per_route",
+        required=True,
+        type=int,
+        default=20,
+    )
 
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
+
+    generator = np.random.default_rng(3)
 
     from_time = datetime.strptime(args.start, "%Y-%m-%dT%H:%M")
     until_time = datetime.strptime(args.finish, "%Y-%m-%dT%H:%M")
@@ -48,19 +72,22 @@ def main():
 
     logger.info(f"Running simulation with arguments {vars(args)}.")
 
-    generator = np.random.default_rng(args.seed)
+    if args.strategy not in STRATEGIES.keys():
+        raise ValueError(f"Strategy '{args.strategy}' not understood.")
+
+    logger.info(f"Running simulation with arguments {vars(args)}.")
 
     # Set up simulation environment and data
     db = Database(args.src_db, args.res_db)
     sim = Simulator(
-        generator,
+        np.random.default_rng(args.seed),
         db.distances(),
         db.durations(),
         db.containers(),
         db.vehicles(),
     )
 
-    strategy = STRATEGIES[args.strategy]()
+    strategy = STRATEGIES[args.strategy](**vars(args))
 
     # Simulate and store results. First we create initial events: these are all
     # arrival events, and shift planning times. The simulation starts with
