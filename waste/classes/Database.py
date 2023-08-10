@@ -50,7 +50,7 @@ class Database:
             self.write.executescript(
                 """-- sql
                     CREATE TABLE arrival_events (
-                        time FLOAT,
+                        time DATETIME,
                         container VARCHAR,
                         volume FLOAT
                     );
@@ -61,7 +61,7 @@ class Database:
                     );
 
                     CREATE TABLE service_events (
-                        time FLOAT,
+                        time DATETIME,
                         container VARCHAR,
                         id_route INTEGER references routes,
                         num_arrivals INT,

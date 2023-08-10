@@ -1,11 +1,13 @@
 import argparse
 import logging
+from datetime import datetime, timedelta
 
 import numpy as np
 
+from waste.arrivals import equal_intervals
 from waste.classes import Database, Simulator
 from waste.classes.Event import ShiftPlanEvent
-from waste.constants import HOURS_IN_DAY, SHIFT_PLAN_TIME
+from waste.constants import SHIFT_PLAN_TIME, VOLUME_RANGE
 from waste.strategies import STRATEGIES
 
 logger = logging.getLogger(__name__)
@@ -18,11 +20,18 @@ def parse_args():
     parser.add_argument("res_db", help="Location of the output database.")
 
     parser.add_argument(
-        "--horizon",
+        "--start",
+        type=str,
         required=True,
-        type=int,
-        help="Time horizon for the simulation (in hours).",
+        help="Start datetime, e.g., 2023-08-10T07:00",
     )
+    parser.add_argument(
+        "--finish",
+        type=str,
+        required=True,
+        help="Finish datetime, e.g., 2023-08-10T07:00",
+    )
+
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument("--strategy", choices=STRATEGIES.keys(), required=True)
 
@@ -31,6 +40,12 @@ def parse_args():
 
 def main():
     args = parse_args()
+
+    from_time = datetime.strptime(args.start, "%Y-%m-%dT%H:%M")
+    until_time = datetime.strptime(args.finish, "%Y-%m-%dT%H:%M")
+    if from_time >= until_time:
+        raise ValueError("Start date lies after finish date.")
+
     logger.info(f"Running simulation with arguments {vars(args)}.")
 
     generator = np.random.default_rng(args.seed)
@@ -52,14 +67,22 @@ def main():
     # those events and processes them, which may add new ones as well.
     events = []
     for container in db.containers():
-        for arrival in container.arrivals_until(generator, args.horizon):
-            events.append(arrival)
+        deposits = list(
+            equal_intervals(from_time, until_time, timedelta(days=1))
+        )
+        volumes = generator.uniform(
+            low=VOLUME_RANGE[0], high=VOLUME_RANGE[1], size=len(deposits)
+        )
+        for deposit in container.deposits(deposits, volumes):
+            events.append(deposit)
 
-    for day in range(0, args.horizon, HOURS_IN_DAY):
-        if day + SHIFT_PLAN_TIME <= args.horizon:
-            events.append(ShiftPlanEvent(day + SHIFT_PLAN_TIME))
+    first_shift = from_time.replace(hour=SHIFT_PLAN_TIME)
+    if first_shift < from_time:
+        first_shift += timedelta(days=1)
+    for time in equal_intervals(first_shift, until_time, timedelta(days=1)):
+        events.append(ShiftPlanEvent(time))
 
-    sim(db.store, strategy, events)
+    sim(db.store, strategy, events, from_time, until_time)
 
 
 if __name__ == "__main__":
