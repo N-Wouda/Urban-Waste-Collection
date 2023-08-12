@@ -14,7 +14,31 @@ def equal_intervals(
         current_time += interval
 
 
+class PeriodAdder:
+    """Return arrival times seupared by PERIODS.
+
+    Starting from START,  add cyclically the period lengths of PERIODS.
+    """
+
+    def __init__(self, start: datetime, periods: list[timedelta]):
+        self.now = start
+        self.periods = periods
+        self.period = 0
+
+    def __call__(self):
+        self.now += self.periods[self.period]
+        self.period = (self.period + 1) % len(self.periods)
+        return self.now
+
+
 class NHPP:
+    """Return arrival times of a non-homogeneous Poisson process.
+
+    Start from START. The RATES are piecewise constant on the PERIODS.
+    The unit of rate is number per hour. The rates and periods  are used
+    be cyclicly.
+    """
+
     def __init__(
         self,
         start: datetime,
@@ -22,14 +46,6 @@ class NHPP:
         periods: list[timedelta],
         seed=3,
     ):
-        """Return arrival times of a non-homogeneous Poisson process, starting
-        from START.
-
-        The RATES are piecewise constant on the
-        PERIODS. The unit of rate is number per hour. A period is a time
-        interval specified in hours. The rates are assumed to be
-        cyclic: once we hit the end of PERIODS, we start again.
-        """
         if len(rates) != len(periods):
             raise ValueError(
                 "The length of the times and the rates are not the same."
@@ -39,8 +55,9 @@ class NHPP:
         self.deltas = periods
         self.gen = np.random.default_rng(seed)
 
-        # Down is the last time a rate change occured before time NOW.
-        # Up is the next time a rate change will occure after time NOW.
+        # self.now is the arrival time
+        # self.down is the last time a rate change occured before NOW.
+        # self.up is the next time a rate change will occure afte time NOW.
 
         # Find the right starting period.
         self.down = start.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -51,42 +68,45 @@ class NHPP:
             self.period += 1
             self.up += self.deltas[self.period]
 
-        # NOW is the arrival time
         self.now = self.down
 
     def __call__(self) -> datetime:
-        x = timedelta(hours=self.gen.exponential())
-        thres = x + self.rates[self.period] * (self.now - self.down)
-        tot = self.rates[self.period] * (self.up - self.down)
-        while tot < thres:
-            self.down = self.up
-            self.period = (self.period + 1) % len(self.rates)
-            self.up += self.deltas[self.period]
-            tot += self.rates[self.period] * (self.up - self.down)
-        self.now = self.up - (tot - thres) / self.rates[self.period]
+        self.now += (
+            timedelta(hours=self.gen.exponential()) / self.rates[self.period]
+        )
+        if self.now > self.up:
+            thres = self.rates[self.period] * (self.now - self.down)
+            tot = self.rates[self.period] * (self.up - self.down)
+            while tot < thres:
+                self.down = self.up
+                self.period = (self.period + 1) % len(self.rates)
+                self.up += self.deltas[self.period]
+                tot += self.rates[self.period] * (self.up - self.down)
+            self.now = self.up - (tot - thres) / self.rates[self.period]
         return self.now
 
 
 def main():
-    from_time = datetime(2023, 8, 9, 10, 0)
-    until_time = datetime(2023, 8, 9, 12, 0)
+    start = datetime(2023, 8, 9, 10, 0)
+    finish = datetime(2023, 8, 9, 18, 0)
+    periods = [timedelta(hours=1), timedelta(hours=2)]
 
-    for time in equal_intervals(
-        from_time, until_time, interval=timedelta(minutes=12)
-    ):
-        print(time.strftime("%Y-%m-%d %H:%M:%S"))
+    equal = PeriodAdder(start, periods)
 
-    s = datetime(2023, 8, 9, 10, 0)
-    finish = datetime(2023, 8, 19, 10, 0)
+    while (t := equal()) < finish:
+        print(t)
+
     rates = list(range(13))
     periods = [timedelta(hours=2)] * len(rates)
-    nhpp = NHPP(s, rates, periods)
+
+    nhpp = NHPP(start, rates, periods)
 
     num = 0
     while (t := nhpp()) < finish:
         num += 1
+        print(t)
 
-    total_hours = (t - s).total_seconds() // 3600
+    total_hours = (t - start).total_seconds() // 3600
     expected_arrrivals = total_hours * statistics.mean(rates)
     print(expected_arrrivals, num)
 
