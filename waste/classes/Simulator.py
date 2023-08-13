@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timedelta
 from heapq import heappop, heappush
 from itertools import count
 from typing import TYPE_CHECKING, Callable, Optional
@@ -70,6 +71,8 @@ class Simulator:
         store: Callable[[Event | Route], Optional[int]],
         strategy: Strategy,
         initial_events: list[Event],
+        from_time: datetime,
+        until_time: datetime,
     ):
         """
         Applies a strategy for a simulation starting with the given initial
@@ -80,13 +83,13 @@ class Simulator:
         for event in initial_events:
             events.push(event)
 
-        now = 0.0
+        now = from_time
 
         while events:
             event = events.pop()
 
             if event.time < now:
-                msg = f"{event} time is before current time {now:.2f}!"
+                msg = f"{event} time is before current time {now}!"
                 logger.error(msg)
                 raise ValueError(msg)
 
@@ -102,12 +105,12 @@ class Simulator:
             match event:
                 case ArrivalEvent(time=time, container=c, volume=vol):
                     c.arrive(vol)
-                    logger.debug(f"Arrival at {c.name} at t = {time:.2f}.")
+                    logger.debug(f"Arrival at {c.name} at t = {time}.")
                 case ServiceEvent(time=time, container=c):
                     c.service()
-                    logger.debug(f"Service at {c.name} at t = {time:.2f}.")
+                    logger.debug(f"Service at {c.name} at t = {time}.")
                 case ShiftPlanEvent(time=time):
-                    logger.info(f"Generating shift plan at t = {time:.2f}.")
+                    logger.info(f"Generating shift plan at t = {time}.")
 
                     for route in strategy(self, event):
                         id_route = store(route)
@@ -117,7 +120,9 @@ class Simulator:
                         prev = 0
 
                         for container_idx in route.plan:
-                            service_time += self.durations[prev, container_idx]
+                            service_time += timedelta(
+                                hours=self.durations[prev, container_idx]
+                            )
 
                             events.push(
                                 ServiceEvent(

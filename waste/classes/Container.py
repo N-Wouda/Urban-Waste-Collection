@@ -1,8 +1,7 @@
+from datetime import datetime
 from typing import Iterator
 
-from numpy.random import Generator
-
-from waste.constants import HOURS_IN_DAY, VOLUME_RANGE
+from waste.constants import HOURS_IN_DAY
 
 from .Event import ArrivalEvent
 
@@ -31,32 +30,14 @@ class Container:
         self.num_arrivals = 0  # number of arrivals since last service
         self.volume = 0.0  # current volume in container, in liters
 
-    def arrivals_until(
-        self,
-        gen: Generator,
-        until: int,
-        volume_range: tuple[float, float] = VOLUME_RANGE,
+    def deposits(
+        self, deposit_times: list[datetime], volumes: list[float]
     ) -> Iterator[ArrivalEvent]:
         """
-        Returns arrivals (events) for the period [0, until], where until is
-        assumed to be in hours. Each arrival event has a volume sampled
-        uniformly from U[volume_range].
+        Returns deposit events.
         """
-        for hour in range(until):
-            # Non-homogeneous Poisson arrivals, with hourly rates as given by
-            # the rates list for this container.
-            rate = self.rates[hour % len(self.rates)]
-            num_arrivals = gen.poisson(rate)
-
-            volumes = gen.uniform(*volume_range, size=num_arrivals)  # liters
-            arrivals = hour + gen.uniform(size=num_arrivals)
-
-            for arrival, volume in zip(arrivals, volumes):
-                yield ArrivalEvent(
-                    arrival,
-                    container=self,
-                    volume=volume,
-                )
+        for time, volume in zip(deposit_times, volumes):
+            yield ArrivalEvent(time, container=self, volume=volume)
 
     def arrive(self, volume: float):
         """
