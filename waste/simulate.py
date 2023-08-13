@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 import numpy as np
 
-from waste.arrivals import equal_intervals
+from waste.arrivals import PeriodAdder
 from waste.classes import Database, Simulator
 from waste.classes.Event import ShiftPlanEvent
 from waste.constants import SHIFT_PLAN_TIME, VOLUME_RANGE
@@ -94,19 +94,22 @@ def main():
     # those events and processes them, which may add new ones as well.
     events = []
     for container in db.containers():
-        deposits = list(
-            equal_intervals(from_time, until_time, timedelta(days=1))
-        )
+        deposits = []
+        gen = PeriodAdder(from_time, [timedelta(hours=1)])
+        while (time := gen()) <= until_time:
+            deposits.append(time)
         volumes = generator.uniform(
             low=VOLUME_RANGE[0], high=VOLUME_RANGE[1], size=len(deposits)
         )
         for deposit in container.deposits(deposits, volumes):
             events.append(deposit)
 
+    # The first shift should start after from_time
     first_shift = from_time.replace(hour=SHIFT_PLAN_TIME)
     if first_shift < from_time:
         first_shift += timedelta(days=1)
-    for time in equal_intervals(first_shift, until_time, timedelta(days=1)):
+    gen = PeriodAdder(from_time, [timedelta(days=1)])
+    while (time := gen()) <= until_time:
         events.append(ShiftPlanEvent(time))
 
     sim(db.store, strategy, events, from_time, until_time)
