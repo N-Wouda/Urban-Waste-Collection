@@ -7,7 +7,6 @@ __doc__ = """
 """
 
 # Stadsbeheer; the junkyard is ~200m down the road from this location.
-ID_DEPOT = 0
 DEPOT = (
     "Depot",  # name
     "Duinkerkenstraat 45",  # description

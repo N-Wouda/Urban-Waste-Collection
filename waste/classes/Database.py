@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
 
-from waste.constants import BUFFER_SIZE, HOURS_IN_DAY, ID_DEPOT
+from waste.constants import BUFFER_SIZE, HOURS_IN_DAY
 from waste.enums import LocationType
 
 from .Container import Container
@@ -126,7 +126,7 @@ class Database:
         distances = np.array(data).reshape((size, size))
 
         id_containers = _containers2loc(self.read, self.containers())
-        id_locations = [ID_DEPOT, *id_containers]
+        id_locations = [0, *id_containers]
         return distances[np.ix_(id_locations, id_locations)]
 
     @cache
@@ -142,7 +142,7 @@ class Database:
         durations = np.array(data).reshape((size, size))
 
         id_containers = _containers2loc(self.read, self.containers())
-        id_locations = [ID_DEPOT, *id_containers]
+        id_locations = [0, *id_containers]
         return durations[np.ix_(id_locations, id_locations)] / 3600  # in hours
 
     @cache
