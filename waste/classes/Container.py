@@ -1,9 +1,4 @@
-from datetime import datetime
-from typing import Iterator
-
 from waste.constants import HOURS_IN_DAY
-
-from .Event import ArrivalEvent
 
 
 class Container:
@@ -29,15 +24,6 @@ class Container:
 
         self.num_arrivals = 0  # number of arrivals since last service
         self.volume = 0.0  # current volume in container, in liters
-
-    def deposits(
-        self, deposit_times: list[datetime], volumes: list[float]
-    ) -> Iterator[ArrivalEvent]:
-        """
-        Returns deposit events.
-        """
-        for time, volume in zip(deposit_times, volumes):
-            yield ArrivalEvent(time, container=self, volume=volume)
 
     def arrive(self, volume: float):
         """
