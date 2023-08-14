@@ -71,8 +71,6 @@ class Simulator:
         store: Callable[[Event | Route], Optional[int]],
         strategy: Strategy,
         initial_events: list[Event],
-        from_time: datetime,
-        until_time: datetime,
     ):
         """
         Applies a strategy for a simulation starting with the given initial
@@ -83,7 +81,7 @@ class Simulator:
         for event in initial_events:
             events.push(event)
 
-        now = from_time
+        now = datetime.min
 
         while events:
             event = events.pop()

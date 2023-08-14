@@ -1,12 +1,12 @@
 import argparse
 import logging
-from datetime import datetime
+from datetime import date, datetime, time
 
 import numpy as np
 import pandas as pd
 
 from waste.classes import Database, Simulator
-from waste.classes.Event import ShiftPlanEvent
+from waste.classes.Event import ArrivalEvent, ShiftPlanEvent
 from waste.constants import SHIFT_PLAN_TIME, VOLUME_RANGE
 from waste.strategies import STRATEGIES
 
@@ -21,16 +21,16 @@ def parse_args():
     parser.add_argument("res_db", help="Location of the output database.")
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument(
-        "--from_time",
+        "--start",
         required=True,
-        type=datetime.fromisoformat,
-        help="Start datetime in ISO format, e.g., 2023-08-10T07:00.",
+        type=date.fromisoformat,
+        help="Start date in ISO format, e.g., 2023-08-10.",
     )
     parser.add_argument(
-        "--until_time",
+        "--end",
         required=True,
-        type=datetime.fromisoformat,
-        help="Finish datetime in ISO format, e.g., 2023-08-10T07:00.",
+        type=date.fromisoformat,
+        help="Finish date in ISO format, e.g., 2023-08-11.",
     )
 
     # TODO flesh out the following strategies
@@ -54,10 +54,9 @@ def main():
     if args.strategy not in STRATEGIES.keys():
         raise ValueError(f"Strategy '{args.strategy}' not understood.")
 
-    generator = np.random.default_rng(3)
-    from_time = args.from_time
-    until_time = args.until_time
-    if from_time >= until_time:
+    start = args.start
+    end = args.end
+    if start >= end:
         raise ValueError("Start date lies after finish date.")
 
     logger.info(f"Running simulation with arguments {vars(args)}.")
@@ -77,32 +76,21 @@ def main():
     # Simulate and store results. First we create initial events: these are all
     # arrival events, and shift planning times. The simulation starts with
     # those events and processes them, which may add new ones as well.
-    # deposit_times = pd.date_range(from_time, until_time, freq="H").to_
-    # print(deposit_times)
-    # quit()
 
     events = []
     for container in db.containers():
-        deposit_times = pd.date_range(
-            from_time, until_time, freq="H"
-        ).to_pydatetime()
-        volumes = generator.uniform(
+        deposit_times = pd.date_range(start, end, freq="H").to_pydatetime()
+        volumes = sim.generator.uniform(
             low=VOLUME_RANGE[0], high=VOLUME_RANGE[1], size=len(deposit_times)
         )
-        for deposit in container.deposits(deposit_times, volumes):
-            events.append(deposit)
-    # for event in events:
-    #     print(event.time, type(event.time))
-    #     quit()
+        for t, volume in zip(deposit_times, volumes):
+            events.append(ArrivalEvent(t, container=container, volume=volume))
 
-    first_shift = from_time.replace(hour=SHIFT_PLAN_TIME)
-    shiftplan_times = pd.date_range(
-        first_shift, until_time, freq="24H"
-    ).to_pydatetime()
-    for time in shiftplan_times:
-        events.append(ShiftPlanEvent(time))
+    first_shift = datetime.combine(start, time(SHIFT_PLAN_TIME, 0, 0))
+    for t in pd.date_range(first_shift, end, freq="24H").to_pydatetime():
+        events.append(ShiftPlanEvent(t))
 
-    sim(db.store, strategy, events, from_time, until_time)
+    sim(db.store, strategy, events)
 
 
 if __name__ == "__main__":
