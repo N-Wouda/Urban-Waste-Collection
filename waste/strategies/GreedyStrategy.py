@@ -5,7 +5,7 @@ from pyvrp import Model
 from pyvrp.stop import MaxRuntime
 
 from waste.classes import Route, ShiftPlanEvent, Simulator
-from waste.constants import DEPOT, TIME_PER_CONTAINER
+from waste.constants import DEPOT, TIME_PER_CONTAINER, WORK_HOURS_IN_DAY
 from waste.functions import f2i
 
 logger = logging.getLogger(__name__)
@@ -15,33 +15,43 @@ class GreedyStrategy:
     """
     A simple, greedy strategy that visits the containers with the largest
     number of arrivals since the last visit time.
+
+    Parameters
+    ----------
+    num_containers
+        Number of containers to schedule.
+    max_runtime
+        Maximum runtime (in seconds) to use for route optimisation.
     """
 
-    def __init__(
-        self, containers_per_route: int, max_runtime: float, **kwargs
-    ):
-        if containers_per_route < 0:
-            raise ValueError("Expected containers_per_route >= 0.")
+    def __init__(self, num_containers: int, max_runtime: float, **kwargs):
+        if num_containers < 0:
+            raise ValueError("Expected num_containers >= 0.")
 
         if max_runtime < 0:
             raise ValueError("Expected max_runtime >= 0.")
 
-        self.containers_per_route = containers_per_route
+        self.num_containers = num_containers
         self.max_runtime = max_runtime
 
     def __call__(self, sim: Simulator, event: ShiftPlanEvent) -> list[Route]:
         # Sort by arrivals, descending (highest number of arrivals first).
         sorted = np.argsort([-c.num_arrivals for c in sim.containers])
-        c_idcs = sorted[: len(sim.vehicles) * self.containers_per_route]
+        c_idcs = sorted[: self.num_containers]
         containers = [sim.containers[idx] for idx in c_idcs]
 
         m = Model()
-        depot = m.add_depot(x=f2i(DEPOT[2]), y=f2i(DEPOT[3]))
+
+        depot = m.add_depot(
+            x=f2i(DEPOT[2]), y=f2i(DEPOT[3]), tw_late=WORK_HOURS_IN_DAY
+        )
+
         clients = [
             m.add_client(
                 x=f2i(container.location[0]),
                 y=f2i(container.location[1]),
                 service_duration=TIME_PER_CONTAINER,
+                tw_late=WORK_HOURS_IN_DAY,
             )
             for container in containers
         ]

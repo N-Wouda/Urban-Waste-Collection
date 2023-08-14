@@ -29,7 +29,7 @@ def parse_args():
     subparsers.add_parser("baseline")
 
     greedy = subparsers.add_parser("greedy")
-    greedy.add_argument("--containers_per_route", type=int, default=20)
+    greedy.add_argument("--num_containers", type=int, default=20)
     greedy.add_argument("--max_iterations", type=float, default=5)
 
     subparsers.add_parser("prize")

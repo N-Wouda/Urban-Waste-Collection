@@ -17,6 +17,7 @@ DEPOT = (
 
 BUFFER_SIZE: int = 999
 HOURS_IN_DAY: int = 24
+WORK_HOURS_IN_DAY: float = 8
 VOLUME_RANGE: tuple[float, float] = (30, 65)  # in liters
 SHIFT_PLAN_TIME: float = 7  # 7 in the morning
 BREAKS: list[tuple[float, float, float]] = [
