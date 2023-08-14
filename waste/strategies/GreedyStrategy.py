@@ -23,6 +23,9 @@ class GreedyStrategy:
         if containers_per_route < 0:
             raise ValueError("Expected containers_per_route >= 0.")
 
+        if max_runtime < 0:
+            raise ValueError("Expected max_runtime >= 0.")
+
         self.containers_per_route = containers_per_route
         self.max_runtime = max_runtime
 
