@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from heapq import heappop, heappush
 from itertools import count
 from typing import TYPE_CHECKING, Callable, Optional
@@ -117,22 +117,20 @@ class Simulator:
                         service_time = now
                         prev = 0
 
-                        for container_idx in route.plan:
-                            service_time += timedelta(
-                                hours=self.durations[prev, container_idx]
-                            )
+                        for curr in route.plan:
+                            service_time += self.durations[prev, curr].item()
 
                             events.push(
                                 ServiceEvent(
                                     service_time,
                                     id_route=id_route,
-                                    container=self.containers[container_idx],
+                                    container=self.containers[curr],
                                     vehicle=route.vehicle,
                                 )
                             )
 
                             service_time += TIME_PER_CONTAINER
-                            prev = container_idx
+                            prev = curr
                 case _:
                     msg = f"Unhandled event of type {type(event)}."
                     logger.error(msg)
