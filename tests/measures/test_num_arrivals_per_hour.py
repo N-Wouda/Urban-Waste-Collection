@@ -22,7 +22,7 @@ def test_num_arrivals():
 
     sim = Simulator(default_rng(0), [], [], containers, [])
 
-    src_db = "data/waste.db"
+    src_db = ":memory:"
     res_db = ":memory:"
     db = Database(src_db, res_db)
 

@@ -28,9 +28,9 @@ def test_avg_arrivals_between_service():
     vehicles = [Vehicle("auto", 4000.0)]
     sim = Simulator(default_rng(0), distances, durations, containers, vehicles)
 
-    src_db = "data/waste.db"
+    src_db = ":memory:"
     res_db = ":memory:"
-    db = Database(src_db, res_db)  # , exists_ok=True)
+    db = Database(src_db, res_db)
 
     strategy = RandomStrategy(containers_per_route=2)
 
