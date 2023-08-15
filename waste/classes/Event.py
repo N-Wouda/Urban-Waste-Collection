@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING, Optional
 from waste.enums import EventStatus
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
     from .Container import Container
     from .Vehicle import Vehicle
 
@@ -16,7 +18,7 @@ class Event(ABC):
     more detail.
     """
 
-    def __init__(self, time: float):
+    def __init__(self, time: datetime):
         self.time = time
         self.status = EventStatus.PENDING
 
@@ -41,7 +43,7 @@ class ServiceEvent(Event):
 
     def __init__(
         self,
-        time: float,
+        time: datetime,
         id_route: int,
         container: Container,
         vehicle: Vehicle,
@@ -83,7 +85,7 @@ class ArrivalEvent(Event):
     Arrival event. This event models a deposit at a container.
     """
 
-    def __init__(self, time: float, container: Container, volume: float):
+    def __init__(self, time: datetime, container: Container, volume: float):
         super().__init__(time)
         self.container = container
         self.volume = volume
@@ -94,5 +96,5 @@ class ShiftPlanEvent(Event):
     Shift plan event. This event models the planning of a shift.
     """
 
-    def __init__(self, time: float):
+    def __init__(self, time: datetime):
         super().__init__(time)

@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from numpy.random import default_rng
 from numpy.testing import assert_, assert_equal
 
@@ -16,13 +18,21 @@ def test_events_are_sealed_and_stored_property():
     container = Container("test", [1] * HOURS_IN_DAY, 1.0, (0.0, 0.0))
     sim = Simulator(default_rng(0), [], [], [container], [])
 
-    # Create some initial events for the simulator. After creation, new events
-    # are not yet sealed.
+    now = datetime(2023, 8, 9, 10, 0, 0)
+
+    # Create some initial events for the simulator.
     init = [
-        ArrivalEvent(time=0, container=container, volume=0),
-        ServiceEvent(time=1, id_route=1, container=container, vehicle=1),
-        ShiftPlanEvent(time=2),
+        ArrivalEvent(time=now, container=container, volume=0),
+        ServiceEvent(
+            time=now + timedelta(hours=1),
+            id_route=1,
+            container=container,
+            vehicle=1,
+        ),
+        ShiftPlanEvent(time=now + timedelta(hours=2)),
     ]
+
+    # After creation, new events are not yet sealed.
     for event in init:
         assert_(event.is_pending())
         assert_(not event.is_sealed())
@@ -42,8 +52,12 @@ def test_events_are_sealed_and_stored_property():
 
 
 def test_stored_events_are_sorted_in_time():
+    now = datetime(2023, 8, 9)
     sim = Simulator(default_rng(0), [], [], [], [])
-    init = [ShiftPlanEvent(time=time) for time in range(5, 0, -1)]
+    init = [
+        ShiftPlanEvent(time=now + timedelta(hours=hour))
+        for hour in range(5, 0, -1)
+    ]
 
     stored = []
     sim(lambda event: stored.append(event), NullStrategy(), init)
