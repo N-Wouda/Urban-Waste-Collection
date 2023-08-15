@@ -50,7 +50,7 @@ class Database:
             self.write.executescript(
                 """-- sql
                     CREATE TABLE arrival_events (
-                        time FLOAT,
+                        time DATETIME,
                         container VARCHAR,
                         volume FLOAT
                     );
@@ -61,7 +61,7 @@ class Database:
                     );
 
                     CREATE TABLE service_events (
-                        time FLOAT,
+                        time DATETIME,
                         container VARCHAR,
                         id_route INTEGER references routes,
                         num_arrivals INT,
@@ -143,7 +143,8 @@ class Database:
 
         id_containers = _containers2loc(self.read, self.containers())
         id_locations = [ID_DEPOT, *id_containers]
-        return durations[np.ix_(id_locations, id_locations)] / 3600  # in hours
+        mat = durations[np.ix_(id_locations, id_locations)]
+        return mat.astype(np.timedelta64(1, "s"))
 
     @cache
     def vehicles(self) -> list[Vehicle]:
@@ -159,7 +160,7 @@ class Database:
         connection. Ensures all buffered data is committed before the measure
         is computed.
         """
-        self._commit()
+        self.commit()
         return measure(self.write)
 
     def store(self, item: Event | Route) -> Optional[int]:
@@ -171,7 +172,7 @@ class Database:
 
                 self.buffer.append(event)
                 if len(self.buffer) >= BUFFER_SIZE:
-                    self._commit()
+                    self.commit()
 
                 return None
             case Route(vehicle=vehicle):
@@ -182,7 +183,12 @@ class Database:
             case _:
                 return None
 
-    def _commit(self):
+    def commit(self):
+        """
+        Commits any events in the write buffer to the write connection. After
+        calling this method, the write buffer is empty and all events have been
+        written to the write connection's database.
+        """
         self.write.execute("BEGIN TRANSACTION;")
 
         arrivals = [
@@ -236,7 +242,7 @@ class Database:
 
     def __del__(self):
         if self.buffer:
-            self._commit()
+            self.commit()
 
         self.read.close()
         self.write.close()

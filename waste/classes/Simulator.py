@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from heapq import heappop, heappush
 from itertools import count
 from typing import TYPE_CHECKING, Callable, Optional
@@ -80,13 +81,13 @@ class Simulator:
         for event in initial_events:
             events.push(event)
 
-        now = 0.0
+        now = datetime.min
 
         while events:
             event = events.pop()
 
             if event.time < now:
-                msg = f"{event} time is before current time {now:.2f}!"
+                msg = f"{event} time is before current time {now}!"
                 logger.error(msg)
                 raise ValueError(msg)
 
@@ -102,12 +103,12 @@ class Simulator:
             match event:
                 case ArrivalEvent(time=time, container=c, volume=vol):
                     c.arrive(vol)
-                    logger.debug(f"Arrival at {c.name} at t = {time:.2f}.")
+                    logger.debug(f"Arrival at {c.name} at t = {time}.")
                 case ServiceEvent(time=time, container=c):
                     c.service()
-                    logger.debug(f"Service at {c.name} at t = {time:.2f}.")
+                    logger.debug(f"Service at {c.name} at t = {time}.")
                 case ShiftPlanEvent(time=time):
-                    logger.info(f"Generating shift plan at t = {time:.2f}.")
+                    logger.info(f"Generating shift plan at t = {time}.")
 
                     for route in strategy(self, event):
                         id_route = store(route)
@@ -116,20 +117,20 @@ class Simulator:
                         service_time = now
                         prev = 0
 
-                        for container_idx in route.plan:
-                            service_time += self.durations[prev, container_idx]
+                        for curr in route.plan:
+                            service_time += self.durations[prev, curr].item()
 
                             events.push(
                                 ServiceEvent(
                                     service_time,
                                     id_route=id_route,
-                                    container=self.containers[container_idx],
+                                    container=self.containers[curr],
                                     vehicle=route.vehicle,
                                 )
                             )
 
                             service_time += TIME_PER_CONTAINER
-                            prev = container_idx
+                            prev = curr
                 case _:
                     msg = f"Unhandled event of type {type(event)}."
                     logger.error(msg)
