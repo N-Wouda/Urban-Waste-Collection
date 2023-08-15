@@ -2,10 +2,12 @@ import argparse
 import sqlite3
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime, time
 
 import folium
 import pandas as pd
+
+from waste.classes import Database
 
 # The commented colors are (too) hard to read on screen
 colors = [
@@ -39,12 +41,41 @@ class Service:
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(prog="simulate")
+    parser = argparse.ArgumentParser(prog="plot_routes")
+    parser.add_argument(
+        "--start",
+        required=True,
+        type=date.fromisoformat,
+        help="Start date in ISO format, e.g. 2023-08-10.",
+    )
+    parser.add_argument(
+        "--end",
+        required=True,
+        type=date.fromisoformat,
+        help="Finish date in ISO format, e.g. 2023-08-11 (inclusive).",
+    )
+
     parser.add_argument("src_db", help="Location of the source database.")
     parser.add_argument("res_db", help="Location of the results database.")
     parser.add_argument("fig_name", help="Filename of figure.")
 
     return parser.parse_args()
+
+
+def service_event_locations(
+    start, end, con: sqlite3.Connection
+) -> pd.DataFrame:
+    """
+    Coordinates and routes of service event between start and end.
+    """
+    sql = """ --sql
+        SELECT se.*, l.latitude, l.longitude
+        FROM service_events se, containers c
+        JOIN locations l ON c.id_location = l.id_location
+        AND c.name = se.container
+        WHERE se.time >= ? AND se.time <= ?;
+    """
+    return pd.read_sql_query(sql, con, params=(start, end))
 
 
 def main():
@@ -53,16 +84,11 @@ def main():
     src_db = args.src_db
     res_db = args.res_db
     fig_name = args.fig_name
+    start = datetime.combine(args.start, time.min)
+    end = datetime.combine(args.end, time.max)
 
-    with sqlite3.connect(res_db) as conn:
-        conn.execute("ATTACH DATABASE ? AS source;", (src_db,))
-        merge_query = """
-            SELECT se.*, l.latitude, l.longitude
-            FROM service_events se, containers c
-            JOIN locations l ON c.id_location = l.id_location
-            AND c.name = se.container;
-        """
-        df = pd.read_sql_query(merge_query, conn)
+    db = Database(src_db, res_db, exists_ok=True)
+    df = db.compute(lambda con: service_event_locations(start, end, con))
 
     # A route is a list of services. Since we don't know the number of services
     # upfront, we use a defaultdict list to append the services
