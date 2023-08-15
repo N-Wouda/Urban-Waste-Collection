@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import time, timedelta
 
 from waste.enums import LocationType
 
@@ -21,7 +21,7 @@ DEPOT = (
 BUFFER_SIZE: int = 999
 HOURS_IN_DAY: int = 24
 VOLUME_RANGE: tuple[float, float] = (30, 65)  # in liters
-SHIFT_PLAN_TIME: float = 7  # 7 am in the morning
+SHIFT_PLAN_TIME: time = time(hour=7)
 BREAKS: list[tuple[float, float, float]] = [
     (3, 3.25, 0.25),  # coffee break: 15min, around 10 (three hours into shift)
     (5, 5.5, 0.5),  # lunch break: 30min, around 12 (five hours into shift)
