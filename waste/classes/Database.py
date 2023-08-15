@@ -50,7 +50,7 @@ class Database:
             self.write.executescript(
                 """-- sql
                     CREATE TABLE arrival_events (
-                        time FLOAT,
+                        time DATETIME,
                         container VARCHAR,
                         volume FLOAT
                     );
@@ -61,7 +61,7 @@ class Database:
                     );
 
                     CREATE TABLE service_events (
-                        time FLOAT,
+                        time DATETIME,
                         container VARCHAR,
                         id_route INTEGER references routes,
                         num_arrivals INT,
@@ -143,7 +143,8 @@ class Database:
 
         id_containers = _containers2loc(self.read, self.containers())
         id_locations = [0, *id_containers]
-        return durations[np.ix_(id_locations, id_locations)] / 3600  # in hours
+        mat = durations[np.ix_(id_locations, id_locations)]
+        return mat.astype(np.timedelta64(1, "s"))
 
     @cache
     def vehicles(self) -> list[Vehicle]:

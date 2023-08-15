@@ -1,11 +1,11 @@
 import argparse
 import logging
+from datetime import date
 
 import numpy as np
 
 from waste.classes import Database, Simulator
-from waste.classes.Event import ShiftPlanEvent
-from waste.constants import HOURS_IN_DAY, SHIFT_PLAN_TIME
+from waste.functions import generate_events
 from waste.strategies import STRATEGIES
 
 logger = logging.getLogger(__name__)
@@ -19,10 +19,16 @@ def parse_args():
     parser.add_argument("res_db", help="Location of the output database.")
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument(
-        "--horizon",
+        "--start",
         required=True,
-        type=int,
-        help="Time horizon for the simulation (in hours).",
+        type=date.fromisoformat,
+        help="Start date in ISO format, e.g. 2023-08-10.",
+    )
+    parser.add_argument(
+        "--end",
+        required=True,
+        type=date.fromisoformat,
+        help="Finish date in ISO format, e.g. 2023-08-11 (inclusive).",
     )
 
     # TODO flesh out the following strategies
@@ -40,10 +46,17 @@ def parse_args():
     return parser.parse_args()
 
 
-def main():
-    args = parse_args()
+def validate_args(args):
     if args.strategy not in STRATEGIES.keys():
         raise ValueError(f"Strategy '{args.strategy}' not understood.")
+
+    if args.start >= args.end:
+        raise ValueError("start >= end not understood.")
+
+
+def main():
+    args = parse_args()
+    validate_args(args)
 
     logger.info(f"Running simulation with arguments {vars(args)}.")
 
@@ -62,15 +75,7 @@ def main():
     # Simulate and store results. First we create initial events: these are all
     # arrival events, and shift planning times. The simulation starts with
     # those events and processes them, which may add new ones as well.
-    events = []
-    for container in db.containers():
-        for arrival in container.arrivals_until(sim.generator, args.horizon):
-            events.append(arrival)
-
-    for day in range(0, args.horizon, HOURS_IN_DAY):
-        if day + SHIFT_PLAN_TIME <= args.horizon:
-            events.append(ShiftPlanEvent(day + SHIFT_PLAN_TIME))
-
+    events = generate_events(sim, args.start, args.end)
     sim(db.store, strategy, events)
 
 
