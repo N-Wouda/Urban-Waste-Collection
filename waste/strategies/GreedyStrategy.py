@@ -5,7 +5,7 @@ from pyvrp import Model
 from pyvrp.stop import MaxRuntime
 
 from waste.classes import Route, ShiftPlanEvent, Simulator
-from waste.constants import DEPOT, TIME_PER_CONTAINER, WORK_HOURS_IN_DAY
+from waste.constants import DEPOT, SHIFT_DURATION, TIME_PER_CONTAINER
 from waste.functions import f2i
 
 logger = logging.getLogger(__name__)
@@ -43,7 +43,9 @@ class GreedyStrategy:
         m = Model()
 
         depot = m.add_depot(
-            x=f2i(DEPOT[2]), y=f2i(DEPOT[3]), tw_late=WORK_HOURS_IN_DAY
+            x=f2i(DEPOT[2]),
+            y=f2i(DEPOT[3]),
+            tw_late=SHIFT_DURATION.total_seconds(),
         )
 
         clients = [
@@ -51,7 +53,7 @@ class GreedyStrategy:
                 x=f2i(container.location[0]),
                 y=f2i(container.location[1]),
                 service_duration=TIME_PER_CONTAINER,
-                tw_late=WORK_HOURS_IN_DAY,
+                tw_late=SHIFT_DURATION.total_seconds(),
             )
             for container in containers
         ]
