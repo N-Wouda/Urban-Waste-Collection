@@ -11,12 +11,12 @@ def generate_events(sim: Simulator, start: date, end: date) -> list[Event]:
     Generates initial events for the simulator. This includes arrivals and the
     shift plan events.
     """
-    start = datetime.combine(start, time(0, 0, 0))
-    finish = datetime.combine(end, time(23, 59, 59))
+    earliest = datetime.combine(start, time.min)
+    latest = datetime.combine(end, time.max)
 
     events: list[Event] = []
     for container in sim.containers:
-        for now in pd.date_range(start, finish, freq="H").to_pydatetime():
+        for now in pd.date_range(earliest, latest, freq="H").to_pydatetime():
             # Non-homogeneous Poisson arrivals, with hourly rates as given by
             # the rates list for this container.
             num_deposits = sim.generator.poisson(container.rates[now.hour])
@@ -32,8 +32,8 @@ def generate_events(sim: Simulator, start: date, end: date) -> list[Event]:
                     )
                 )
 
-    first_shift = datetime.combine(start, SHIFT_PLAN_TIME)
-    for t in pd.date_range(first_shift, end, freq="D").to_pydatetime():
+    first_shift = datetime.combine(earliest, SHIFT_PLAN_TIME)
+    for t in pd.date_range(first_shift, latest, freq="D").to_pydatetime():
         events.append(ShiftPlanEvent(t))
 
     return events
