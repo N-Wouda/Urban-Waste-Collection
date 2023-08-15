@@ -14,9 +14,7 @@ from waste.classes import (
     Vehicle,
 )
 from waste.constants import HOURS_IN_DAY, SHIFT_PLAN_TIME
-from waste.measures import (
-    avg_num_arrivals_between_service,
-)
+from waste.measures import avg_num_arrivals_between_service
 from waste.strategies import RandomStrategy
 
 
