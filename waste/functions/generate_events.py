@@ -32,7 +32,7 @@ def generate_events(sim: Simulator, start: date, end: date) -> list[Event]:
                     )
                 )
 
-    first_shift = datetime.combine(earliest, SHIFT_PLAN_TIME)
+    first_shift = datetime.combine(start, SHIFT_PLAN_TIME)
     for t in pd.date_range(first_shift, latest, freq="D").to_pydatetime():
         events.append(ShiftPlanEvent(t))
 

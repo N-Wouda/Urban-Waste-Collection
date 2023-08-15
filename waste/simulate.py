@@ -70,7 +70,7 @@ def main():
 
     # Simulate and store results. First we create initial events: these are all
     # arrival events, and shift planning times. The simulation starts with
-    # those events and processes them.
+    # those events and processes them, which may add new ones as well.
     events = generate_events(sim, args.start, args.end)
     sim(db.store, strategy, events)
 
