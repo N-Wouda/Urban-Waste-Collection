@@ -9,7 +9,7 @@ __doc__ = """
 """
 
 # Stadsbeheer; the junkyard is ~200m down the road from this location.
-ID_DEPOT = 0
+# TODO get depot from database; don't rely on this
 DEPOT = (
     "Depot",  # name
     "Duinkerkenstraat 45",  # description
@@ -20,6 +20,7 @@ DEPOT = (
 
 BUFFER_SIZE: int = 999
 HOURS_IN_DAY: int = 24
+SHIFT_DURATION: timedelta = timedelta(hours=8)
 VOLUME_RANGE: tuple[float, float] = (30, 65)  # in liters
 SHIFT_PLAN_TIME: time = time(hour=7)
 BREAKS: list[tuple[float, float, float]] = [

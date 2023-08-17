@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
 
-from waste.constants import BUFFER_SIZE, HOURS_IN_DAY, ID_DEPOT
+from waste.constants import BUFFER_SIZE, HOURS_IN_DAY
 from waste.enums import LocationType
 
 from .Container import Container
@@ -57,7 +57,8 @@ class Database:
 
                     CREATE TABLE routes (
                         id_route INTEGER PRIMARY KEY,
-                        vehicle NAME
+                        vehicle NAME,
+                        start_time DATETIME
                     );
 
                     CREATE TABLE service_events (
@@ -126,7 +127,7 @@ class Database:
         distances = np.array(data).reshape((size, size))
 
         id_containers = _containers2loc(self.read, self.containers())
-        id_locations = [ID_DEPOT, *id_containers]
+        id_locations = [0, *id_containers]
         return distances[np.ix_(id_locations, id_locations)]
 
     @cache
@@ -142,7 +143,7 @@ class Database:
         durations = np.array(data).reshape((size, size))
 
         id_containers = _containers2loc(self.read, self.containers())
-        id_locations = [ID_DEPOT, *id_containers]
+        id_locations = [0, *id_containers]
         mat = durations[np.ix_(id_locations, id_locations)]
         return mat.astype(np.timedelta64(1, "s"))
 
@@ -175,9 +176,9 @@ class Database:
                     self.commit()
 
                 return None
-            case Route(vehicle=vehicle):
-                sql = "INSERT INTO routes (vehicle) VALUES (?)"
-                cursor = self.write.execute(sql, (vehicle.name,))
+            case Route(vehicle=vehicle, start_time=start_time):
+                sql = "INSERT INTO routes (vehicle, start_time) VALUES (?, ?)"
+                cursor = self.write.execute(sql, (vehicle.name, start_time))
                 self.write.commit()
                 return cursor.lastrowid
             case _:
