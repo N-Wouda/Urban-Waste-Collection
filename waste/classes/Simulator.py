@@ -89,6 +89,8 @@ class Simulator:
         while events:
             event = events.pop()
 
+            # TODO handle break events
+
             # First seal the event. This ensures all data that was previously
             # linked to changing objects is made static at their current
             # values ("sealed"). After sealing, an event's state has become
