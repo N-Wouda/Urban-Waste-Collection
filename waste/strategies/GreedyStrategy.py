@@ -36,19 +36,24 @@ class GreedyStrategy:
         self.max_runtime = max_runtime
 
     def __call__(self, sim: Simulator, event: ShiftPlanEvent) -> list[Route]:
-        container_idcs = self._get_container_idcs(sim)
+        # Sort by arrivals, descending (highest number of arrivals first).
+        sorted = np.argsort([-c.num_arrivals for c in sim.containers])
+        container_idcs = sorted[: self.num_containers]
+
         model = self._make_model(sim, container_idcs)
         result = model.solve(stop=MaxRuntime(self.max_runtime))
 
         if not result.is_feasible():
-            msg = f"Shiftplan at time {event.time:.2f} is infeasible!"
+            msg = f"Shiftplan at time {event.time} is infeasible!"
             logger.error(msg)
             raise RuntimeError(msg)
 
         return [
             Route(
-                # PyVRP considers 0 the depot. So we need to subtract one, and
-                # then map that back to an index the simulator understands.
+                # PyVRP considers 0 the depot, and start counting client
+                # (container) indices from 1. So we need to subtract 1 from
+                # the index returned by PyVRP before we map back to the
+                # container indices.
                 plan=[container_idcs[idx - 1] for idx in route],
                 vehicle=sim.vehicles[route.vehicle_type()],
                 start_time=event.time + timedelta(seconds=route.start_time()),
@@ -56,7 +61,9 @@ class GreedyStrategy:
             for route in result.best.get_routes()
         ]
 
-    def _make_model(self, sim: Simulator, container_idcs: list[int]) -> Model:
+    def _make_model(
+        self, sim: Simulator, container_idcs: np.ndarray[int]
+    ) -> Model:
         model = Model()
         model.add_depot(
             x=f2i(DEPOT[2]),
@@ -78,6 +85,9 @@ class GreedyStrategy:
                 capacity=int(vehicle.capacity), num_available=1
             )
 
+        # These are the full distance and duration matrices, but we are only
+        # interested in the subset we are actually visiting. That subset is
+        # given by the indices below.
         distances = sim.distances
         durations = sim.durations / np.timedelta64(1, "s")
         indices = [0] + [idx + 1 for idx in container_idcs]
@@ -92,8 +102,3 @@ class GreedyStrategy:
                 )
 
         return model
-
-    def _get_container_idcs(self, sim: Simulator) -> list[int]:
-        # Sort by arrivals, descending (highest number of arrivals first).
-        sorted = np.argsort([-c.num_arrivals for c in sim.containers])
-        return sorted[: self.num_containers]

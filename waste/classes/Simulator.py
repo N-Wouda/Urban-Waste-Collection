@@ -108,7 +108,6 @@ class Simulator:
                         prev = 0  # start from depot
 
                         for container_idx in route.plan:
-                            container = self.containers[container_idx]
                             idx = container_idx + 1  # + 1 because 0 is depot
                             service_time += self.durations[prev, idx].item()
 
@@ -116,7 +115,7 @@ class Simulator:
                                 ServiceEvent(
                                     service_time,
                                     id_route=id_route,
-                                    container=container,
+                                    container=self.containers[container_idx],
                                     vehicle=route.vehicle,
                                 )
                             )
