@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Optional
 from waste.enums import EventStatus
 
 if TYPE_CHECKING:
-    from datetime import datetime
+    from datetime import datetime, timedelta
 
     from .Container import Container
     from .Vehicle import Vehicle
@@ -98,3 +98,15 @@ class ShiftPlanEvent(Event):
 
     def __init__(self, time: datetime):
         super().__init__(time)
+
+
+class BreakEvent(Event):
+    """
+    Break event. This event models a driver (of the given vehicle) taking
+    a break of the given duration back at the depot.
+    """
+
+    def __init__(self, time: datetime, duration: timedelta, vehicle: Vehicle):
+        super().__init__(time)
+        self.duration = duration
+        self.vehicle = vehicle
