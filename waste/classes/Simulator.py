@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
 from heapq import heappop, heappush
 from itertools import count
 from typing import TYPE_CHECKING, Callable, Optional
@@ -81,17 +80,8 @@ class Simulator:
         for event in initial_events:
             events.push(event)
 
-        now = datetime.min
-
         while events:
             event = events.pop()
-
-            if event.time < now:
-                msg = f"{event} time is before current time {now}!"
-                logger.error(msg)
-                raise ValueError(msg)
-
-            now = event.time
 
             # First seal the event. This ensures all data that was previously
             # linked to changing objects is made static at their current
@@ -102,11 +92,11 @@ class Simulator:
 
             match event:
                 case ArrivalEvent(time=time, container=c, volume=vol):
-                    c.arrive(vol)
                     logger.debug(f"Arrival at {c.name} at t = {time}.")
+                    c.arrive(vol)
                 case ServiceEvent(time=time, container=c):
-                    c.service()
                     logger.debug(f"Service at {c.name} at t = {time}.")
+                    c.service()
                 case ShiftPlanEvent(time=time):
                     logger.info(f"Generating shift plan at t = {time}.")
 
@@ -114,23 +104,25 @@ class Simulator:
                         id_route = store(route)
                         assert id_route is not None
 
-                        service_time = now
-                        prev = 0
+                        service_time = route.start_time
+                        prev = 0  # start from depot
 
-                        for curr in route.plan:
-                            service_time += self.durations[prev, curr].item()
+                        for container_idx in route.plan:
+                            container = self.containers[container_idx]
+                            idx = container_idx + 1  # + 1 because 0 is depot
+                            service_time += self.durations[prev, idx].item()
 
                             events.push(
                                 ServiceEvent(
                                     service_time,
                                     id_route=id_route,
-                                    container=self.containers[curr],
+                                    container=container,
                                     vehicle=route.vehicle,
                                 )
                             )
 
                             service_time += TIME_PER_CONTAINER
-                            prev = curr
+                            prev = idx
                 case _:
                     msg = f"Unhandled event of type {type(event)}."
                     logger.error(msg)

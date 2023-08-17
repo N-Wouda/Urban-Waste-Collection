@@ -57,7 +57,8 @@ class Database:
 
                     CREATE TABLE routes (
                         id_route INTEGER PRIMARY KEY,
-                        vehicle NAME
+                        vehicle NAME,
+                        start_time DATETIME
                     );
 
                     CREATE TABLE service_events (
@@ -175,9 +176,9 @@ class Database:
                     self.commit()
 
                 return None
-            case Route(vehicle=vehicle):
-                sql = "INSERT INTO routes (vehicle) VALUES (?)"
-                cursor = self.write.execute(sql, (vehicle.name,))
+            case Route(vehicle=vehicle, start_time=start_time):
+                sql = "INSERT INTO routes (vehicle, start_time) VALUES (?, ?)"
+                cursor = self.write.execute(sql, (vehicle.name, start_time))
                 self.write.commit()
                 return cursor.lastrowid
             case _:

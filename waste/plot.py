@@ -1,7 +1,6 @@
 import argparse
 import sqlite3
 from collections import defaultdict
-from dataclasses import dataclass
 from datetime import date, datetime, time
 from itertools import cycle
 
@@ -36,13 +35,6 @@ colors = cycle(
 )
 
 
-@dataclass
-class Service:
-    location: tuple[float, float]
-    container: str
-    time: datetime
-
-
 def parse_args():
     parser = argparse.ArgumentParser(prog="plot_routes")
     parser.add_argument(
@@ -73,10 +65,13 @@ def service_event_locations(
     """
     sql = """--sql
         SELECT se.*, l.latitude, l.longitude
-        FROM service_events se, containers c
+        FROM service_events se
+        JOIN containers c
+            ON c.name = se.container
         JOIN locations l
-            ON c.id_location = l.id_location AND c.name = se.container
-        WHERE se.time >= ? AND se.time <= ?;
+            ON c.id_location = l.id_location
+        WHERE se.time >= ? AND se.time <= ?
+        ORDER BY se.id_route, se.time ASC;
     """
     return pd.read_sql_query(sql, con, params=(start, end))
 
@@ -97,31 +92,27 @@ def main():
     # upfront, we use a defaultdict list to append the services
     routes = defaultdict(list)
     for _, row in df.iterrows():
-        id_route = row["id_route"]
-        routes[id_route].append(
-            Service(
-                (row["latitude"], row["longitude"]),
-                row["container"],
-                datetime.strptime(row["time"], "%Y-%m-%d %H:%M:%S"),
-            )
-        )
+        routes[row["id_route"]].append(row)
 
     center = [df["latitude"].mean(), df["longitude"].mean()]
     fmap = folium.Map(location=center, zoom_start=13)
 
     for id_route, route in routes.items():
+        depot_loc = db.depot().location
+        locs = [(c["latitude"], c["longitude"]) for c in route]
+
         folium.PolyLine(
-            locations=[s.location for s in route],
+            locations=[loc for loc in [depot_loc, *locs, depot_loc]],
             tooltip=f"Route ID: {id_route}",
             color=next(colors),
         ).add_to(fmap)
 
         for service in route:
             folium.Marker(
-                location=service.location,
+                location=(service["latitude"], service["longitude"]),
                 tooltip=(
-                    f"Container ID: {service.container}<br>"
-                    f"Time: {service.time:%d-%b:%H:%M}"
+                    f"Container ID: {service['container']}<br>"
+                    f"Time: {service['time']}"
                 ),
             ).add_to(fmap)
 

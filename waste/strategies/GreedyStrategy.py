@@ -1,10 +1,11 @@
 import logging
+from datetime import timedelta
 
 import numpy as np
 from pyvrp import Model
 from pyvrp.stop import MaxRuntime
 
-from waste.classes import Container, Route, ShiftPlanEvent, Simulator
+from waste.classes import Route, ShiftPlanEvent, Simulator
 from waste.constants import DEPOT, SHIFT_DURATION, TIME_PER_CONTAINER
 from waste.functions import f2i
 
@@ -36,8 +37,7 @@ class GreedyStrategy:
 
     def __call__(self, sim: Simulator, event: ShiftPlanEvent) -> list[Route]:
         container_idcs = self._get_container_idcs(sim)
-        containers = [sim.containers[idx] for idx in container_idcs]
-        model = self._make_model(sim, containers)
+        model = self._make_model(sim, container_idcs)
         result = model.solve(stop=MaxRuntime(self.max_runtime))
 
         if not result.is_feasible():
@@ -51,13 +51,12 @@ class GreedyStrategy:
                 # then map that back to an index the simulator understands.
                 plan=[container_idcs[idx - 1] for idx in route],
                 vehicle=sim.vehicles[route.vehicle_type()],
+                start_time=event.time + timedelta(seconds=route.start_time()),
             )
             for route in result.best.get_routes()
         ]
 
-    def _make_model(
-        self, sim: Simulator, containers: list[Container]
-    ) -> Model:
+    def _make_model(self, sim: Simulator, container_idcs: list[int]) -> Model:
         model = Model()
         model.add_depot(
             x=f2i(DEPOT[2]),
@@ -65,7 +64,8 @@ class GreedyStrategy:
             tw_late=int(SHIFT_DURATION.total_seconds()),
         )
 
-        for container in containers:
+        for container_idx in container_idcs:
+            container = sim.containers[container_idx]
             model.add_client(
                 x=f2i(container.location[0]),
                 y=f2i(container.location[1]),
@@ -78,11 +78,12 @@ class GreedyStrategy:
                 capacity=int(vehicle.capacity), num_available=1
             )
 
-        distances = sim.distances.astype(int)
-        durations = sim.durations.astype(int)
+        distances = sim.distances
+        durations = sim.durations / np.timedelta64(1, "s")
+        indices = [0] + [idx + 1 for idx in container_idcs]
 
-        for frm_idx, frm in enumerate(model.locations):
-            for to_idx, to in enumerate(model.locations):
+        for frm_idx, frm in zip(indices, model.locations):
+            for to_idx, to in zip(indices, model.locations):
                 model.add_edge(
                     frm,
                     to,
