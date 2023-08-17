@@ -1,6 +1,11 @@
-import pytest
-from numpy.testing import assert_raises
+from datetime import datetime
 
+import numpy as np
+import pytest
+from numpy.random import default_rng
+from numpy.testing import assert_, assert_equal, assert_raises
+
+from waste.classes import Database, ShiftPlanEvent, Simulator
 from waste.strategies import GreedyStrategy
 
 
@@ -24,12 +29,51 @@ def test_init_does_not_raise_given_valid_arguments(
 
 
 def test_raises_when_route_plan_is_infeasible():
-    pass
+    db = Database("tests/test.db", ":memory:", exists_ok=True)
+    sim = Simulator(
+        default_rng(seed=42),
+        db.distances(),
+        db.durations(),
+        db.containers(),
+        db.vehicles(),
+    )
+
+    # We can never get to the first location in time: the total shift duration
+    # is only eight hours, yet with this modification it takes ten hours to
+    # get to location 1. There is no feasible route plan, and that should raise
+    # an error.
+    sim.durations[:, 1] = 36_000
+    greedy = GreedyStrategy(num_containers=5, max_runtime=0.1)
+
+    with assert_raises(RuntimeError):
+        greedy(sim, ShiftPlanEvent(datetime.now()))
 
 
-def test_one_container():
-    pass
+@pytest.mark.parametrize("num_containers", [1, 2, 5])
+def test_routes_containers_with_most_arrivals(num_containers: int):
+    db = Database("tests/test.db", ":memory:", exists_ok=True)
+    sim = Simulator(
+        default_rng(seed=42),
+        db.distances(),
+        db.durations(),
+        db.containers(),
+        db.vehicles(),
+    )
 
+    num_arrivals = sim.generator.integers(100, size=(len(sim.containers)))
+    for c, arrival in zip(sim.containers, num_arrivals):
+        c.num_arrivals = arrival
 
-def test_two_containers():
-    pass
+    greedy = GreedyStrategy(num_containers=num_containers, max_runtime=0.1)
+    res = greedy(sim, ShiftPlanEvent(datetime.now()))
+
+    # There should be exactly num_containers in the route plan.
+    actually_visited = {c for route in res for c in route.plan}
+    assert_equal(len(actually_visited), num_containers)
+
+    # The visited containers should be the ones with the highest number of
+    # arrivals. The other containers should not be visited.
+    sorted = np.argsort(-num_arrivals)
+    selected, not_selected = sorted[:num_containers], sorted[num_containers:]
+    assert_(all(c in actually_visited for c in selected))
+    assert_(all(c not in actually_visited for c in not_selected))

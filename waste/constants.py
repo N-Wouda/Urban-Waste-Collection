@@ -9,6 +9,7 @@ __doc__ = """
 """
 
 # Stadsbeheer; the junkyard is ~200m down the road from this location.
+# TODO get depot from database; don't rely on this
 DEPOT = (
     "Depot",  # name
     "Duinkerkenstraat 45",  # description

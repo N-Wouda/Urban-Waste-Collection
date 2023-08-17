@@ -4,7 +4,7 @@ import numpy as np
 from pyvrp import Model
 from pyvrp.stop import MaxRuntime
 
-from waste.classes import Route, ShiftPlanEvent, Simulator
+from waste.classes import Container, Route, ShiftPlanEvent, Simulator
 from waste.constants import DEPOT, SHIFT_DURATION, TIME_PER_CONTAINER
 from waste.functions import f2i
 
@@ -35,43 +35,9 @@ class GreedyStrategy:
         self.max_runtime = max_runtime
 
     def __call__(self, sim: Simulator, event: ShiftPlanEvent) -> list[Route]:
-        # Sort by arrivals, descending (highest number of arrivals first).
-        sorted = np.argsort([-c.num_arrivals for c in sim.containers])
-        c_idcs = sorted[: self.num_containers]
-        containers = [sim.containers[idx] for idx in c_idcs]
-
-        m = Model()
-
-        depot = m.add_depot(
-            x=f2i(DEPOT[2]),
-            y=f2i(DEPOT[3]),
-            tw_late=SHIFT_DURATION.total_seconds(),
-        )
-
-        clients = [
-            m.add_client(
-                x=f2i(container.location[0]),
-                y=f2i(container.location[1]),
-                service_duration=TIME_PER_CONTAINER,
-                tw_late=SHIFT_DURATION.total_seconds(),
-            )
-            for container in containers
-        ]
-
-        for vehicle in sim.vehicles:
-            m.add_vehicle_type(vehicle.capacity, num_available=1)
-
-        dist = sim.distances
-        dur = sim.durations
-
-        for t_idx, this in enumerate(clients, 1):
-            m.add_edge(this, depot, dist[t_idx, 0], dur[t_idx, 0])
-            m.add_edge(depot, this, dist[0, t_idx], dur[0, t_idx])
-
-            for o_idx, other in enumerate(clients[t_idx + 1 :], 1):
-                m.add_edge(this, other, dist[t_idx, o_idx], dur[t_idx, o_idx])
-                m.add_edge(other, this, dist[o_idx, t_idx], dur[o_idx, t_idx])
-
+        container_idcs = self._get_container_idcs(sim)
+        containers = [sim.containers[idx] for idx in container_idcs]
+        m = self._make_model(sim, containers)
         res = m.solve(stop=MaxRuntime(self.max_runtime))
 
         if not res.is_feasible():
@@ -80,6 +46,51 @@ class GreedyStrategy:
             raise RuntimeError(msg)
 
         return [
-            Route(route.visits(), sim.vehicles[route.vehicle_type()])
+            Route(
+                # PyVRP's considers 0 the depot. So we need to subtract one,
+                # and then map that back to an index the simulator understands.
+                plan=[container_idcs[idx - 1] for idx in route],
+                vehicle=sim.vehicles[route.vehicle_type()],
+            )
             for route in res.best.get_routes()
         ]
+
+    def _make_model(
+        self, sim: Simulator, containers: list[Container]
+    ) -> Model:
+        m = Model()
+        m.add_depot(
+            x=f2i(DEPOT[2]),
+            y=f2i(DEPOT[3]),
+            tw_late=int(SHIFT_DURATION.total_seconds()),
+        )
+
+        for container in containers:
+            m.add_client(
+                x=f2i(container.location[0]),
+                y=f2i(container.location[1]),
+                service_duration=int(TIME_PER_CONTAINER.total_seconds()),
+                tw_late=int(SHIFT_DURATION.total_seconds()),
+            )
+
+        for vehicle in sim.vehicles:
+            m.add_vehicle_type(capacity=int(vehicle.capacity), num_available=1)
+
+        distances = sim.distances.astype(int)
+        durations = sim.durations.astype(int)
+
+        for frm_idx, frm in enumerate(m.locations):
+            for to_idx, to in enumerate(m.locations):
+                m.add_edge(
+                    frm,
+                    to,
+                    distances[frm_idx, to_idx],
+                    durations[frm_idx, to_idx],
+                )
+
+        return m
+
+    def _get_container_idcs(self, sim: Simulator) -> list[int]:
+        # Sort by arrivals, descending (highest number of arrivals first).
+        sorted = np.argsort([-c.num_arrivals for c in sim.containers])
+        return sorted[: self.num_containers]
