@@ -22,7 +22,7 @@ class NullStrategy:
 
 class PeriodicStrategy:
     """
-    Strategy that generates routes in a deterministic, period, way. Vehicle i
+    Strategy that generates routes in a deterministic, periodic, way. Vehicle i
     serves containers i, i+l, i+2l, ... where l is the number of vehicles.
     """
 
