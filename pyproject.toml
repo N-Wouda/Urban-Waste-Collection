@@ -17,6 +17,7 @@ openpyxl = "^3.0.9"
 matplotlib = "^3.5.1"
 tomli = "^2.0.1"
 pyvrp = "0.5.0"
+folium = "^0.14.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
@@ -28,6 +29,7 @@ distance = "waste.distance:main"
 ingest = "waste.ingest:main"
 simulate = "waste.simulate:main"
 analyze = "waste.analyze:main"
+plot = "waste.plot_routes:main"
 
 [tool.black]
 line-length = 79
