@@ -18,9 +18,6 @@ from waste.measures import avg_route_stops
 def test_avg_route_stops():
     src_db = "tests/test.db"
     res_db = ":memory:"
-    # res_db = "/home/nicky/tmp/test_kpi.db"
-    # if Path(res_db).exists():
-    #     Path(res_db).unlink()
     db = Database(src_db, res_db)
 
     sim = Simulator(
