@@ -16,17 +16,17 @@ colors = cycle(
         #    'lightblue',
         "darkblue",
         #    'darkpurple',
-        "beige",
+        # "beige",
         "darkgreen",
         "orange",
         "green",
         #    'lightred',
         "red",
         "black",
-        "gray",
+        # "gray",
         "pink",
         "blue",
-        "white",
+        # "white",
         "purple",
         "cadetblue",
         #    'lightgray',
@@ -108,12 +108,14 @@ def main():
         ).add_to(fmap)
 
         for service in route:
-            folium.Marker(
+            folium.CircleMarker(
                 location=(service["latitude"], service["longitude"]),
                 tooltip=(
                     f"Container ID: {service['container']}<br>"
                     f"Time: {service['time']}"
                 ),
+                radius=8,
+                weight=5,
             ).add_to(fmap)
 
     fmap.save(fig_name)
