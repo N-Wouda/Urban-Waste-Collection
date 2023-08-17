@@ -151,6 +151,7 @@ class Simulator:
                         break_idx += 1
                         yield BreakEvent(
                             now,
+                            id_route=id_route,
                             duration=break_dur,
                             vehicle=route.vehicle,
                         )

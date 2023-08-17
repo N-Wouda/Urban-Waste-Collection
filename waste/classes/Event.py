@@ -106,7 +106,15 @@ class BreakEvent(Event):
     a break of the given duration back at the depot.
     """
 
-    def __init__(self, time: datetime, duration: timedelta, vehicle: Vehicle):
+    def __init__(
+        self,
+        time: datetime,
+        id_route: int,
+        duration: timedelta,
+        vehicle: Vehicle,
+    ):
         super().__init__(time)
+
+        self.id_route = id_route
         self.duration = duration
         self.vehicle = vehicle
