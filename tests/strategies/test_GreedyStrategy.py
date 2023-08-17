@@ -21,3 +21,15 @@ def test_init_does_not_raise_given_valid_arguments(
     num_containers: int, max_runtime: float
 ):
     GreedyStrategy(num_containers, max_runtime)
+
+
+def test_raises_when_route_plan_is_infeasible():
+    pass
+
+
+def test_one_container():
+    pass
+
+
+def test_two_containers():
+    pass
