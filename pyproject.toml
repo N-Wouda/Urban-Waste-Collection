@@ -29,7 +29,7 @@ distance = "waste.distance:main"
 ingest = "waste.ingest:main"
 simulate = "waste.simulate:main"
 analyze = "waste.analyze:main"
-plot = "waste.plot_routes:main"
+plot = "waste.plot:main"
 
 [tool.black]
 line-length = 79

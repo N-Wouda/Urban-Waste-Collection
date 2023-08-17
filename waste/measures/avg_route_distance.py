@@ -1,7 +1,5 @@
 import sqlite3
 
-from waste.constants import ID_DEPOT
-
 
 def avg_route_distance(con: sqlite3.Connection) -> float:
     """
@@ -42,5 +40,5 @@ def avg_route_distance(con: sqlite3.Connection) -> float:
                 AND prev_location = :depot
             );
     """
-    row = con.execute(sql, dict(depot=ID_DEPOT)).fetchone()
+    row = con.execute(sql, dict(depot=0)).fetchone()
     return row[0]

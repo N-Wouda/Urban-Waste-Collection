@@ -33,7 +33,11 @@ def parse_args():
 
     # TODO flesh out the following strategies
     subparsers.add_parser("baseline")
-    subparsers.add_parser("greedy")
+
+    greedy = subparsers.add_parser("greedy")
+    greedy.add_argument("--num_containers", type=int, default=20)
+    greedy.add_argument("--max_runtime", type=float, default=5)
+
     subparsers.add_parser("prize")
 
     random = subparsers.add_parser("random")
