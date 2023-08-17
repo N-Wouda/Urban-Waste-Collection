@@ -18,7 +18,7 @@ from waste.constants import HOURS_IN_DAY, SHIFT_PLAN_TIME
 from waste.measures import avg_route_stops
 
 
-def test_num_arrivals():
+def test_avg_route_stops():
     num_vehicles = 3
     num_containers = 20
     vehicles = [Vehicle(f"a{i}", 4000.0) for i in range(num_vehicles)]
