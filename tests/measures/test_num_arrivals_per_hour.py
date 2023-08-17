@@ -2,44 +2,44 @@ from datetime import date, datetime, time, timedelta
 
 import pandas as pd
 from numpy.random import default_rng
+from numpy.testing import assert_equal
 
 from tests.helpers import NullStrategy
 from waste.classes import (
     ArrivalEvent,
-    Container,
     Database,
     Simulator,
 )
-from waste.constants import HOURS_IN_DAY
 from waste.measures import num_arrivals_per_hour
 
 
-def test_num_arrivals():
-    containers = [
-        Container("test1", [1] * HOURS_IN_DAY, 1000.0, (53.0, 6.0)),
-        Container("test2", [1] * HOURS_IN_DAY, 1000.0, (53.1, 6.1)),
-    ]
-
-    sim = Simulator(default_rng(0), [], [], containers, [])
-
-    src_db = ":memory:"
+def test_num_arrivals_per_hour():
+    src_db = "tests/test.db"
     res_db = ":memory:"
     db = Database(src_db, res_db)
 
-    strategy = NullStrategy()
+    sim = Simulator(
+        default_rng(0),
+        db.distances(),
+        db.durations(),
+        db.containers(),
+        db.vehicles(),
+    )
 
-    # We generate for two full days one deposit every other hour for two
-    # containers.
-    tot_events = 48 / 2 * 2
+    strategy = NullStrategy()
 
     today = date.today()
     start = datetime.combine(today, time.min)
     end = datetime.combine(today, time.max) + timedelta(days=1)
+    period = 2  # hours between two deposits
+
+    tot_hours = (end - start).total_seconds() / 3600
+    tot_hours / period
 
     events = []
-    for container in containers:
+    for container in db.containers():
         deposit_times = pd.date_range(
-            start, end, freq="2H", inclusive="left"
+            start, end, freq=f"{period}H"
         ).to_pydatetime()
         volumes = [10] * len(deposit_times)
         for t, volume in zip(deposit_times, volumes):
@@ -47,5 +47,4 @@ def test_num_arrivals():
 
     sim(db.store, strategy, events)
 
-    res = db.compute(num_arrivals_per_hour)
-    assert sum(res) == tot_events
+    assert_equal(len(events), sum(db.compute(num_arrivals_per_hour)))
