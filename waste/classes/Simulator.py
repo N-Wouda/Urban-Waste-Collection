@@ -91,8 +91,6 @@ class Simulator:
         while events:
             event = events.pop()
 
-            # TODO handle break events
-
             # First seal the event. This ensures all data that was previously
             # linked to changing objects is made static at their current
             # values ("sealed"). After sealing, an event's state has become
@@ -107,6 +105,8 @@ class Simulator:
                 case ServiceEvent(time=time, container=c):
                     logger.debug(f"Service at {c.name} at t = {time}.")
                     c.service()
+                case BreakEvent(time=time, vehicle=v):
+                    logger.debug(f"Break for {v.name} at t = {time}.")
                 case ShiftPlanEvent(time=time):
                     logger.info(f"Generating shift plan at t = {time}.")
                     for event in self._plan_shift(store, strategy, event):
@@ -143,7 +143,7 @@ class Simulator:
                     dur_container = self.durations[prev, idx].item()
                     finish_at = now + dur_container + TIME_PER_CONTAINER
 
-                    if finish_at + dur_depot > late:
+                    if (finish_at + dur_depot).time() > late:
                         now += dur_depot
 
                         # We're taking this break, so increase the counter and
