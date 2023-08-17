@@ -37,36 +37,36 @@ class GreedyStrategy:
     def __call__(self, sim: Simulator, event: ShiftPlanEvent) -> list[Route]:
         container_idcs = self._get_container_idcs(sim)
         containers = [sim.containers[idx] for idx in container_idcs]
-        m = self._make_model(sim, containers)
-        res = m.solve(stop=MaxRuntime(self.max_runtime))
+        model = self._make_model(sim, containers)
+        result = model.solve(stop=MaxRuntime(self.max_runtime))
 
-        if not res.is_feasible():
+        if not result.is_feasible():
             msg = f"Shiftplan at time {event.time:.2f} is infeasible!"
             logger.error(msg)
             raise RuntimeError(msg)
 
         return [
             Route(
-                # PyVRP's considers 0 the depot. So we need to subtract one,
-                # and then map that back to an index the simulator understands.
+                # PyVRP considers 0 the depot. So we need to subtract one, and
+                # then map that back to an index the simulator understands.
                 plan=[container_idcs[idx - 1] for idx in route],
                 vehicle=sim.vehicles[route.vehicle_type()],
             )
-            for route in res.best.get_routes()
+            for route in result.best.get_routes()
         ]
 
     def _make_model(
         self, sim: Simulator, containers: list[Container]
     ) -> Model:
-        m = Model()
-        m.add_depot(
+        model = Model()
+        model.add_depot(
             x=f2i(DEPOT[2]),
             y=f2i(DEPOT[3]),
             tw_late=int(SHIFT_DURATION.total_seconds()),
         )
 
         for container in containers:
-            m.add_client(
+            model.add_client(
                 x=f2i(container.location[0]),
                 y=f2i(container.location[1]),
                 service_duration=int(TIME_PER_CONTAINER.total_seconds()),
@@ -74,21 +74,23 @@ class GreedyStrategy:
             )
 
         for vehicle in sim.vehicles:
-            m.add_vehicle_type(capacity=int(vehicle.capacity), num_available=1)
+            model.add_vehicle_type(
+                capacity=int(vehicle.capacity), num_available=1
+            )
 
         distances = sim.distances.astype(int)
         durations = sim.durations.astype(int)
 
-        for frm_idx, frm in enumerate(m.locations):
-            for to_idx, to in enumerate(m.locations):
-                m.add_edge(
+        for frm_idx, frm in enumerate(model.locations):
+            for to_idx, to in enumerate(model.locations):
+                model.add_edge(
                     frm,
                     to,
                     distances[frm_idx, to_idx],
                     durations[frm_idx, to_idx],
                 )
 
-        return m
+        return model
 
     def _get_container_idcs(self, sim: Simulator) -> list[int]:
         # Sort by arrivals, descending (highest number of arrivals first).
