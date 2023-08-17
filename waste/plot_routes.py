@@ -3,6 +3,7 @@ import sqlite3
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import date, datetime, time
+from itertools import cycle
 
 import folium
 import pandas as pd
@@ -10,27 +11,29 @@ import pandas as pd
 from waste.classes import Database
 
 # The commented colors are (too) hard to read on screen
-colors = [
-    #    'lightgreen',
-    #    'lightblue',
-    "darkblue",
-    #    'darkpurple',
-    "beige",
-    "darkgreen",
-    "orange",
-    "green",
-    #    'lightred',
-    "red",
-    "black",
-    "gray",
-    "pink",
-    "blue",
-    "white",
-    "purple",
-    "cadetblue",
-    #    'lightgray',
-    "darkred",
-]
+colors = cycle(
+    [
+        #    'lightgreen',
+        #    'lightblue',
+        "darkblue",
+        #    'darkpurple',
+        "beige",
+        "darkgreen",
+        "orange",
+        "green",
+        #    'lightred',
+        "red",
+        "black",
+        "gray",
+        "pink",
+        "blue",
+        "white",
+        "purple",
+        "cadetblue",
+        #    'lightgray',
+        "darkred",
+    ]
+)
 
 
 @dataclass
@@ -63,16 +66,16 @@ def parse_args():
 
 
 def service_event_locations(
-    start, end, con: sqlite3.Connection
+    start: datetime, end: datetime, con: sqlite3.Connection
 ) -> pd.DataFrame:
     """
     Coordinates and routes of service event between start and end.
     """
-    sql = """ --sql
+    sql = """--sql
         SELECT se.*, l.latitude, l.longitude
         FROM service_events se, containers c
-        JOIN locations l ON c.id_location = l.id_location
-        AND c.name = se.container
+        JOIN locations l
+            ON c.id_location = l.id_location AND c.name = se.container
         WHERE se.time >= ? AND se.time <= ?;
     """
     return pd.read_sql_query(sql, con, params=(start, end))
@@ -95,28 +98,24 @@ def main():
     routes = defaultdict(list)
     for _, row in df.iterrows():
         id_route = row["id_route"]
-        service = Service(
-            (row["latitude"], row["longitude"]),
-            row["container"],
-            datetime.strptime(row["time"], "%Y-%m-%d %H:%M:%S"),
+        routes[id_route].append(
+            Service(
+                (row["latitude"], row["longitude"]),
+                row["container"],
+                datetime.strptime(row["time"], "%Y-%m-%d %H:%M:%S"),
+            )
         )
-        routes[id_route].append(service)
 
     center = [df["latitude"].mean(), df["longitude"].mean()]
     fmap = folium.Map(location=center, zoom_start=13)
 
-    # Plot route
     for id_route, route in routes.items():
-        locations = [s.location for s in route]
-        color = colors[id_route % len(colors)]
         folium.PolyLine(
-            locations=locations,
+            locations=[s.location for s in route],
             tooltip=f"Route ID: {id_route}",
-            color=color,
+            color=next(colors),
         ).add_to(fmap)
 
-    # plot service locations
-    for id_route, route in routes.items():
         for service in route:
             folium.Marker(
                 location=service.location,
