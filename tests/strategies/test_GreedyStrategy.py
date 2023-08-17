@@ -5,8 +5,9 @@ import pytest
 from numpy.random import default_rng
 from numpy.testing import assert_, assert_equal, assert_raises
 
+from tests.helpers import dist
 from waste.classes import Database, ShiftPlanEvent, Simulator
-from waste.strategies import GreedyStrategy
+from waste.strategies import GreedyStrategy, RandomStrategy
 
 
 @pytest.mark.parametrize(
@@ -77,3 +78,33 @@ def test_routes_containers_with_most_arrivals(num_containers: int):
     selected, not_selected = sorted[:num_containers], sorted[num_containers:]
     assert_(all(c in actually_visited for c in selected))
     assert_(all(c not in actually_visited for c in not_selected))
+
+
+def test_greedy_better_than_random():
+    db = Database("tests/test.db", ":memory:", exists_ok=True)
+    sim = Simulator(
+        default_rng(seed=42),
+        db.distances(),
+        db.durations(),
+        db.containers(),
+        db.vehicles(),
+    )
+
+    num_arrivals = sim.generator.integers(100, size=(len(sim.containers)))
+    for c, arrival in zip(sim.containers, num_arrivals):
+        c.num_arrivals = arrival
+
+    # Four containers, or two containers per route (there are two vehicles, so
+    # also two routes). This works out to the same solution size.
+    greedy = GreedyStrategy(num_containers=4, max_runtime=0.5)
+    random = RandomStrategy(containers_per_route=2)
+
+    event = ShiftPlanEvent(datetime.now())
+    greedy_res = greedy(sim, event)
+    random_res = random(sim, event)
+
+    # There's no guarantee that greedy is always better than random, but it's
+    # pretty unlikely that that is not the case. Indeed, for this seed, it is
+    # not.
+    assert_(dist(sim.distances, greedy_res) < dist(sim.distances, random_res))
+    assert_(greedy_res != random_res)
