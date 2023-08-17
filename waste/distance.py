@@ -34,10 +34,7 @@ def query(base_url: str, points: str, **query) -> tuple[list[int], list[int]]:
     return distances, durations
 
 
-def main():
-    args = parse_args()
-    con = sqlite3.connect(args.database)
-
+def make_tables(con: sqlite3.Connection):
     sql = """-- sql
         CREATE TABLE distances (
             from_location INTEGER REFERENCES locations,
@@ -52,6 +49,14 @@ def main():
         );
     """
     con.executescript(sql)
+
+
+def main():
+    args = parse_args()
+    con = sqlite3.connect(args.database)
+
+    logger.info("Creating tables.")
+    make_tables(con)
 
     sql = """-- sql
         SELECT id_location, name, longitude, latitude
