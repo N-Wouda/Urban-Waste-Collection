@@ -139,12 +139,12 @@ class Simulator:
                     # If first servicing the current container makes us late
                     # for the break, we first plan the break. A break is had
                     # at the depot.
-                    dur_depot = self.durations[prev, 0].item()
-                    dur_container = self.durations[prev, idx].item()
-                    finish_at = now + dur_container + TIME_PER_CONTAINER
+                    travel_depot = self.durations[prev, 0].item()
+                    travel_container = self.durations[prev, idx].item()
+                    finish_at = now + travel_container + TIME_PER_CONTAINER
 
-                    if (finish_at + dur_depot).time() > late:
-                        now += dur_depot
+                    if (finish_at + travel_depot).time() > late:
+                        now += travel_depot
 
                         # We're taking this break, so increase the counter and
                         # yield a break event.
@@ -161,8 +161,8 @@ class Simulator:
 
                 # Add travel duration from prev to current container, and start
                 # service at the current container.
-                dur_container = self.durations[prev, idx].item()
-                now += dur_container
+                travel_container = self.durations[prev, idx].item()
+                now += travel_container
 
                 yield ServiceEvent(
                     now,
