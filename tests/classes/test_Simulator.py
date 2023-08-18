@@ -1,12 +1,16 @@
 from datetime import datetime, timedelta
+from itertools import count
 
 from numpy.random import default_rng
 from numpy.testing import assert_, assert_equal
 
-from tests.helpers import NullStrategy
+from tests.helpers import MockStrategy, NullStrategy
 from waste.classes import (
     ArrivalEvent,
+    BreakEvent,
     Container,
+    Database,
+    Route,
     ServiceEvent,
     ShiftPlanEvent,
     Simulator,
@@ -62,3 +66,32 @@ def test_stored_events_are_sorted_in_time():
     stored = []
     sim(lambda event: stored.append(event), NullStrategy(), init)
     assert_equal(stored, sorted(stored, key=lambda event: event.time))
+
+
+def test_breaks_are_stored():
+    db = Database("tests/test.db", ":memory:", exists_ok=True)
+    sim = Simulator(
+        default_rng(0),
+        db.distances(),
+        db.durations(),
+        db.containers(),
+        db.vehicles(),
+    )
+
+    id_route = count(0)
+    stored = []
+
+    def mock_store(event):
+        if isinstance(event, Route):
+            return next(id_route)
+
+        stored.append(event)
+        return None
+
+    # This strategy returns a single route with about 40 containers (visiting
+    # the same four containers ten times in a row). That takes about eight
+    # hours, so there should be breaks scheduled in between.
+    now = datetime(2023, 8, 18, 7, 0, 0)
+    strategy = MockStrategy([Route([1, 2, 3, 4] * 10, sim.vehicles[0], now)])
+    sim(mock_store, strategy, [ShiftPlanEvent(time=now)])
+    assert_(any(isinstance(e, BreakEvent) for e in stored))

@@ -20,6 +20,18 @@ class NullStrategy:
         return []
 
 
+class MockStrategy:
+    """
+    Simple mock strategy that returns the same routes upon each call.
+    """
+
+    def __init__(self, routes: list[Route], **kwargs):
+        self.routes = routes
+
+    def __call__(self, sim: Simulator, event: ShiftPlanEvent) -> list[Route]:
+        return self.routes
+
+
 def dist(mat: np.ndarray, routes: list[Route]) -> int:
     dist = 0
     for route in routes:
