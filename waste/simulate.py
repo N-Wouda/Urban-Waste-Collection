@@ -64,6 +64,7 @@ def main():
     db = Database(args.src_db, args.res_db)
     sim = Simulator(
         np.random.default_rng(args.seed),
+        db.depot(),
         db.distances(),
         db.durations(),
         db.containers(),
