@@ -33,6 +33,7 @@ def test_raises_when_route_plan_is_infeasible():
     db = Database("tests/test.db", ":memory:", exists_ok=True)
     sim = Simulator(
         default_rng(seed=42),
+        db.depot(),
         db.distances(),
         db.durations(),
         db.containers(),
@@ -55,6 +56,7 @@ def test_routes_containers_with_most_arrivals(num_containers: int):
     db = Database("tests/test.db", ":memory:", exists_ok=True)
     sim = Simulator(
         default_rng(seed=42),
+        db.depot(),
         db.distances(),
         db.durations(),
         db.containers(),
@@ -84,6 +86,7 @@ def test_greedy_better_than_random():
     db = Database("tests/test.db", ":memory:", exists_ok=True)
     sim = Simulator(
         default_rng(seed=42),
+        db.depot(),
         db.distances(),
         db.durations(),
         db.containers(),

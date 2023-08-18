@@ -10,6 +10,7 @@ from waste.classes import (
     BreakEvent,
     Container,
     Database,
+    Depot,
     Route,
     ServiceEvent,
     ShiftPlanEvent,
@@ -20,7 +21,8 @@ from waste.constants import HOURS_IN_DAY
 
 def test_events_are_sealed_and_stored_property():
     container = Container("test", [1] * HOURS_IN_DAY, 1.0, (0.0, 0.0))
-    sim = Simulator(default_rng(0), [], [], [container], [])
+    depot = Depot("depot", (0, 0))
+    sim = Simulator(default_rng(0), depot, [], [], [container], [])
 
     now = datetime(2023, 8, 9, 10, 0, 0)
 
@@ -57,7 +59,8 @@ def test_events_are_sealed_and_stored_property():
 
 def test_stored_events_are_sorted_in_time():
     now = datetime(2023, 8, 9)
-    sim = Simulator(default_rng(0), [], [], [], [])
+    depot = Depot("depot", (0, 0))
+    sim = Simulator(default_rng(0), depot, [], [], [], [])
     init = [
         ShiftPlanEvent(time=now + timedelta(hours=hour))
         for hour in range(5, 0, -1)
@@ -72,6 +75,7 @@ def test_breaks_are_stored():
     db = Database("tests/test.db", ":memory:", exists_ok=True)
     sim = Simulator(
         default_rng(0),
+        db.depot(),
         db.distances(),
         db.durations(),
         db.containers(),

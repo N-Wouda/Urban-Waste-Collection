@@ -6,7 +6,6 @@ from pyvrp import Model
 from pyvrp.stop import MaxRuntime
 
 from waste.classes import Route, ShiftPlanEvent, Simulator
-from waste.constants import DEPOT, SHIFT_DURATION, TIME_PER_CONTAINER
 from waste.functions import f2i
 
 logger = logging.getLogger(__name__)
@@ -64,11 +63,14 @@ class GreedyStrategy:
     def _make_model(
         self, sim: Simulator, container_idcs: np.ndarray[int]
     ) -> Model:
+        time_per_container = int(sim.config.TIME_PER_CONTAINER.total_seconds())
+        shift_duration = int(sim.config.SHIFT_DURATION.total_seconds())
+
         model = Model()
         model.add_depot(
-            x=f2i(DEPOT[2]),
-            y=f2i(DEPOT[3]),
-            tw_late=int(SHIFT_DURATION.total_seconds()),
+            x=f2i(sim.depot.location[0]),
+            y=f2i(sim.depot.location[1]),
+            tw_late=shift_duration,
         )
 
         for container_idx in container_idcs:
@@ -76,8 +78,8 @@ class GreedyStrategy:
             model.add_client(
                 x=f2i(container.location[0]),
                 y=f2i(container.location[1]),
-                service_duration=int(TIME_PER_CONTAINER.total_seconds()),
-                tw_late=int(SHIFT_DURATION.total_seconds()),
+                service_duration=time_per_container,
+                tw_late=shift_duration,
             )
 
         for vehicle in sim.vehicles:
