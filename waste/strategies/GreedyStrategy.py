@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class GreedyStrategy:
     """
     A simple, greedy strategy that visits the containers with the largest
-    number of arrivals since the last visit time.
+    number of arrivals over capacity since the last visit time.
 
     Parameters
     ----------
@@ -35,10 +35,7 @@ class GreedyStrategy:
         self.max_runtime = max_runtime
 
     def __call__(self, sim: Simulator, event: ShiftPlanEvent) -> list[Route]:
-        # Sort by arrivals, descending (highest number of arrivals first).
-        sorted = np.argsort([-c.num_arrivals for c in sim.containers])
-        container_idcs = sorted[: self.num_containers]
-
+        container_idcs = self._get_container_idcs(sim)
         model = self._make_model(sim, container_idcs)
         result = model.solve(stop=MaxRuntime(self.max_runtime))
 
@@ -104,3 +101,11 @@ class GreedyStrategy:
                 )
 
         return model
+
+    def _get_container_idcs(self, sim: Simulator) -> np.ndarray[int]:
+        # Returns indices of the containers with the highest number of arrivals
+        # over container size. This measure is a proxy for the container fill
+        # rate at shift plan time.
+        measure = [c.num_arrivals / c.capacity for c in sim.containers]
+        top_k = np.argpartition(measure, -self.num_containers)
+        return top_k[-self.num_containers :]
