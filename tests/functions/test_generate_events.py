@@ -4,8 +4,14 @@ from datetime import date, timedelta
 import numpy as np
 from numpy.testing import assert_, assert_allclose, assert_equal
 
-from waste.classes import ArrivalEvent, Container, ShiftPlanEvent, Simulator
-from waste.constants import HOURS_IN_DAY, SHIFT_PLAN_TIME
+from waste.classes import (
+    ArrivalEvent,
+    Container,
+    Depot,
+    ShiftPlanEvent,
+    Simulator,
+)
+from waste.constants import HOURS_IN_DAY
 from waste.functions import generate_events
 
 
@@ -14,7 +20,8 @@ def test_generates_shift_plan_events():
     tomorrow = today + timedelta(days=1)
 
     gen = np.random.default_rng(seed=42)
-    sim = Simulator(gen, [], [], [], [])
+    depot = Depot("depot", (0, 0))
+    sim = Simulator(gen, depot, [], [], [], [])
 
     # If the start and end date are the same, there is only a single shift plan
     # event. Additionally, because there are no containers in the simulator,
@@ -22,19 +29,23 @@ def test_generates_shift_plan_events():
     events = generate_events(sim, today, today)
     assert_equal(len(events), 1)
     assert_(isinstance(events[0], ShiftPlanEvent))
-    assert_equal(events[0].time.time(), SHIFT_PLAN_TIME)
+    assert_equal(events[0].time.time(), sim.config.SHIFT_PLAN_TIME)
 
     # A shift plan event is generated for each day in [start, end].
     events = generate_events(sim, today, tomorrow)
     assert_equal(len(events), 2)
     assert_(all(isinstance(event, ShiftPlanEvent)) for event in events)
-    assert_(all(event.time.time() == SHIFT_PLAN_TIME) for event in events)
+    assert_(
+        all(event.time.time() == sim.config.SHIFT_PLAN_TIME)
+        for event in events
+    )
 
 
 def test_does_not_generate_arrivals_when_container_rates_are_zero():
     gen = np.random.default_rng(seed=42)
     container = Container("test", [0] * HOURS_IN_DAY, 0, (0.0, 0.0))
-    sim = Simulator(gen, [], [], [container], [])
+    depot = Depot("depot", (0, 0))
+    sim = Simulator(gen, depot, [], [], [container], [])
 
     # Since the container's arrival rate is uniformly zero, no arrival events
     # should be generated. The only generated event from the call below is a
@@ -53,7 +64,8 @@ def test_generates_arrival_events_based_on_container_rates():
     rates[0] = 10
 
     container = Container("test", rates, 0, (0.0, 0.0))
-    sim = Simulator(gen, [], [], [container], [])
+    depot = Depot("depot", (0, 0))
+    sim = Simulator(gen, depot, [], [], [container], [])
 
     today = date.today()
     next_year = today.replace(year=today.year + 1)

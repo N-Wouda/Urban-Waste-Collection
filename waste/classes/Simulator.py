@@ -5,8 +5,7 @@ from heapq import heappop, heappush
 from itertools import count
 from typing import TYPE_CHECKING, Callable, Iterator, Optional
 
-from waste.constants import BREAKS, TIME_PER_CONTAINER
-
+from .Configuration import Configuration
 from .Event import (
     ArrivalEvent,
     BreakEvent,
@@ -22,6 +21,7 @@ if TYPE_CHECKING:
     from waste.strategies import Strategy
 
     from .Container import Container
+    from .Depot import Depot
     from .Route import Route
     from .Vehicle import Vehicle
 
@@ -62,16 +62,20 @@ class Simulator:
     def __init__(
         self,
         generator: Generator,
+        depot: Depot,
         distances: np.array,
         durations: np.array,
         containers: list[Container],
         vehicles: list[Vehicle],
+        config: Configuration = Configuration(),
     ):
         self.generator = generator
+        self.depot = depot
         self.distances = distances
         self.durations = durations
         self.containers = containers
         self.vehicles = vehicles
+        self.config = config
 
     def __call__(
         self,
@@ -109,67 +113,54 @@ class Simulator:
                     logger.debug(f"Break for {v.name} at t = {time}.")
                 case ShiftPlanEvent(time=time):
                     logger.info(f"Generating shift plan at t = {time}.")
-                    for event in self._plan_shift(store, strategy, event):
-                        events.push(event)
+                    for route in strategy(self, event):
+                        id_route = store(route)
+                        assert id_route is not None
+
+                        for event in self._plan_route(route, id_route):
+                            events.push(event)
                 case _:
                     msg = f"Unhandled event of type {type(event)}."
                     logger.error(msg)
                     raise ValueError(msg)
 
-    def _plan_shift(
-        self,
-        store: Callable[[Event | Route], Optional[int]],
-        strategy: Strategy,
-        event: ShiftPlanEvent,
-    ) -> Iterator[ServiceEvent | BreakEvent]:
-        for route in strategy(self, event):
-            id_route = store(route)
-            assert id_route is not None
+    def _plan_route(self, route: Route, id_route: int) -> Iterator[Event]:
+        now = route.start_time
+        break_idx = 0
+        prev = 0  # start from depot
 
-            now = route.start_time
-            break_idx = 0
-            prev = 0  # start from depot
+        for container_idx in route.plan:
+            idx = container_idx + 1  # + 1 because 0 is depot
 
-            for container_idx in route.plan:
-                idx = container_idx + 1  # + 1 because 0 is depot
+            if break_idx < len(self.config.BREAKS):
+                _, late, break_dur = self.config.BREAKS[break_idx]
 
-                if break_idx < len(BREAKS):
-                    _, late, break_dur = BREAKS[break_idx]
+                # If servicing the current container makes us late for the
+                # break, we first plan the break. A break is had at the depot.
+                dep_travel = self.durations[prev, 0].item()
+                cont_travel = self.durations[prev, idx].item()
+                finish_at = now + cont_travel + self.config.TIME_PER_CONTAINER
 
-                    # If first servicing the current container makes us late
-                    # for the break, we first plan the break. A break is had
-                    # at the depot.
-                    travel_depot = self.durations[prev, 0].item()
-                    travel_container = self.durations[prev, idx].item()
-                    finish_at = now + travel_container + TIME_PER_CONTAINER
+                if (finish_at + dep_travel).time() > late:
+                    # We're travelling back to the depot to take this break.
+                    # Increases the break index, and yield a break event.
+                    now += dep_travel
+                    break_idx += 1
 
-                    if (finish_at + travel_depot).time() > late:
-                        now += travel_depot
+                    yield BreakEvent(now, id_route, break_dur, route.vehicle)
 
-                        # We're taking this break, so increase the counter and
-                        # yield a break event.
-                        break_idx += 1
-                        yield BreakEvent(
-                            now,
-                            id_route=id_route,
-                            duration=break_dur,
-                            vehicle=route.vehicle,
-                        )
+                    now += break_dur
+                    prev = 0
 
-                        now += break_dur
-                        prev = 0
+            # Add travel duration from prev to current container, and start
+            # service at the current container.
+            now += self.durations[prev, idx].item()
+            yield ServiceEvent(
+                now,
+                id_route=id_route,
+                container=self.containers[container_idx],
+                vehicle=route.vehicle,
+            )
 
-                # Add travel duration from prev to current container, and start
-                # service at the current container.
-                travel_container = self.durations[prev, idx].item()
-                now += travel_container
-
-                yield ServiceEvent(
-                    now,
-                    id_route=id_route,
-                    container=self.containers[container_idx],
-                    vehicle=route.vehicle,
-                )
-
-                now += TIME_PER_CONTAINER
-                prev = idx
+            now += self.config.TIME_PER_CONTAINER
+            prev = idx
