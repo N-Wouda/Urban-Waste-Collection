@@ -31,13 +31,16 @@ def parse_args():
         help="Finish date in ISO format, e.g. 2023-08-11 (inclusive).",
     )
 
-    # TODO flesh out the following strategies
-    subparsers.add_parser("baseline")
+    baseline = subparsers.add_parser("baseline")
+    baseline.add_argument("--unit_threshold", type=float, default=0.017)
+    baseline.add_argument("--num_containers", type=int)
+    baseline.add_argument("--max_runtime", type=float)
 
     greedy = subparsers.add_parser("greedy")
-    greedy.add_argument("--num_containers", type=int, default=20)
-    greedy.add_argument("--max_runtime", type=float, default=5)
+    greedy.add_argument("--num_containers", type=int)
+    greedy.add_argument("--max_runtime", type=float)
 
+    # TODO flesh out the following strategy
     subparsers.add_parser("prize")
 
     random = subparsers.add_parser("random")
