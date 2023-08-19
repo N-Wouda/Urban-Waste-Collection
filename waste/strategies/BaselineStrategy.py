@@ -37,6 +37,9 @@ class BaselineStrategy(GreedyStrategy):
         self.deposit_volume = deposit_volume
 
     def _get_container_idcs(self, sim: Simulator) -> np.ndarray[int]:
+        if self.num_containers >= len(sim.containers):
+            return np.arange(0, len(sim.containers))
+
         # Step 1. Determine current volume in each container based on the
         # current number of arrivals.
         arrivals = np.array([c.num_arrivals for c in sim.containers])
@@ -47,7 +50,16 @@ class BaselineStrategy(GreedyStrategy):
         capacities = np.array([c.capacity for c in sim.containers])
         max_extra = np.maximum(capacities - curr_vols, 0) / self.deposit_volume
         avg_rates = np.array([np.mean(c.rates) for c in sim.containers])
-        num_hours = max_extra / avg_rates
+
+        # Divide max_extra / avg_rates, with some special precautions in case
+        # avg_rates is zero somewhere (we set num_hours to +inf in that case).
+        num_hours = np.full_like(arrivals, fill_value=np.infty, dtype=float)
+        num_hours = np.divide(
+            max_extra,
+            avg_rates,
+            out=num_hours,
+            where=~np.isclose(avg_rates, 0),
+        )
 
         # Step 3. Select the ``num_containers`` that will fill up the soonest.
         top_k = np.argpartition(num_hours, self.num_containers)
