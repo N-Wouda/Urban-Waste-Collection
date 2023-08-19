@@ -12,20 +12,29 @@ class BaselineStrategy(GreedyStrategy):
 
     Parameters
     ----------
-    unit_threshold
-        Threshold value per unit of container capacity. If there are more
-        arrivals than this threshold (scaled by the container capacity), then
-        the container is assumed to be full. We use this to extrapolate when
-        a container will be full.
+    deposit_volume
+        Assumed volume of the deposit with each arrival. This allows us to
+        translate the number of arrivals into a total volume, and thus
+        determine (as a rule-of-thumb) when a container will be full.
+    num_containers
+        See greedy.
+    max_runtime
+        See greedy.
     """
 
-    def __init__(self, unit_threshold: float, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(
+        self,
+        deposit_volume: float,
+        num_containers: int,
+        max_runtime: float,
+        **kwargs
+    ):
+        super().__init__(num_containers, max_runtime, **kwargs)
 
-        if unit_threshold < 0.0:
-            raise ValueError("Expected unit_threshold >= 0.")
+        if deposit_volume < 0.0:
+            raise ValueError("Expected deposit_volume >= 0.")
 
-        self.unit_threshold = unit_threshold
+        self.deposit_volume = deposit_volume
 
     def _get_container_idcs(self, sim: Simulator) -> np.ndarray[int]:
         # TODO

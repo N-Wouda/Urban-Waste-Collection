@@ -32,19 +32,19 @@ def parse_args():
     )
 
     baseline = subparsers.add_parser("baseline")
-    baseline.add_argument("--unit_threshold", type=float, default=0.017)
-    baseline.add_argument("--num_containers", type=int)
-    baseline.add_argument("--max_runtime", type=float)
+    baseline.add_argument("--deposit_volume", type=float, required=True)
+    baseline.add_argument("--num_containers", type=int, required=True)
+    baseline.add_argument("--max_runtime", type=float, required=True)
 
     greedy = subparsers.add_parser("greedy")
-    greedy.add_argument("--num_containers", type=int)
-    greedy.add_argument("--max_runtime", type=float)
+    greedy.add_argument("--num_containers", type=int, required=True)
+    greedy.add_argument("--max_runtime", type=float, required=True)
 
     # TODO flesh out the following strategy
     subparsers.add_parser("prize")
 
     random = subparsers.add_parser("random")
-    random.add_argument("--containers_per_route", type=int, default=20)
+    random.add_argument("--containers_per_route", type=int, required=True)
 
     return parser.parse_args()
 
