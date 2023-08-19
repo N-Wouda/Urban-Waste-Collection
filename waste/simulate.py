@@ -31,17 +31,20 @@ def parse_args():
         help="Finish date in ISO format, e.g. 2023-08-11 (inclusive).",
     )
 
-    # TODO flesh out the following strategies
-    subparsers.add_parser("baseline")
+    baseline = subparsers.add_parser("baseline")
+    baseline.add_argument("--deposit_volume", type=float, required=True)
+    baseline.add_argument("--num_containers", type=int, required=True)
+    baseline.add_argument("--max_runtime", type=float, required=True)
 
     greedy = subparsers.add_parser("greedy")
-    greedy.add_argument("--num_containers", type=int, default=20)
-    greedy.add_argument("--max_runtime", type=float, default=5)
+    greedy.add_argument("--num_containers", type=int, required=True)
+    greedy.add_argument("--max_runtime", type=float, required=True)
 
+    # TODO flesh out the following strategy
     subparsers.add_parser("prize")
 
     random = subparsers.add_parser("random")
-    random.add_argument("--containers_per_route", type=int, default=20)
+    random.add_argument("--containers_per_route", type=int, required=True)
 
     return parser.parse_args()
 

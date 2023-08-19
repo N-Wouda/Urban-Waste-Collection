@@ -103,6 +103,9 @@ class GreedyStrategy:
         return model
 
     def _get_container_idcs(self, sim: Simulator) -> np.ndarray[int]:
+        if self.num_containers >= len(sim.containers):
+            return np.arange(0, len(sim.containers))
+
         # Returns indices of the containers with the highest number of arrivals
         # over container size. This measure is a proxy for the container fill
         # rate at shift plan time.
