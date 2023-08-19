@@ -40,12 +40,12 @@ class BaselineStrategy(GreedyStrategy):
         # Step 1. Determine current volume in each container based on the
         # current number of arrivals.
         arrivals = np.array([c.num_arrivals for c in sim.containers])
-        curr_vol = self.deposit_volume * arrivals
+        curr_vols = self.deposit_volume * arrivals
 
         # Step 2. Determine the amount of time it'll take for each container to
         # fill up, given the current volume and the average arrival rate.
         capacities = np.array([c.capacity for c in sim.containers])
-        max_extra = np.maximum(capacities - curr_vol, 0) / self.deposit_volume
+        max_extra = np.maximum(capacities - curr_vols, 0) / self.deposit_volume
         avg_rates = np.array([np.mean(c.rates) for c in sim.containers])
         num_hours = max_extra / avg_rates
 
