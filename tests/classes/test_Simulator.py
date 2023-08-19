@@ -1,6 +1,7 @@
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 from itertools import count
 
+import pytest
 from numpy.random import default_rng
 from numpy.testing import assert_, assert_equal
 
@@ -8,6 +9,7 @@ from tests.helpers import MockStrategy, NullStrategy
 from waste.classes import (
     ArrivalEvent,
     BreakEvent,
+    Configuration,
     Container,
     Database,
     Depot,
@@ -71,8 +73,17 @@ def test_stored_events_are_sorted_in_time():
     assert_equal(stored, sorted(stored, key=lambda event: event.time))
 
 
-def test_breaks_are_stored():
+@pytest.mark.parametrize(
+    ("early", "late", "duration"),
+    (
+        (time(hour=8), time(hour=9), timedelta(minutes=30)),
+        (time(hour=7), time(hour=8), timedelta(minutes=45)),
+        (time(hour=9), time(hour=10), timedelta(hours=1)),
+    ),
+)
+def test_break_is_stored(early: time, late: time, duration: timedelta):
     db = Database("tests/test.db", ":memory:", exists_ok=True)
+    config = Configuration(BREAKS=((early, late, duration),))
     sim = Simulator(
         default_rng(0),
         db.depot(),
@@ -80,6 +91,7 @@ def test_breaks_are_stored():
         db.durations(),
         db.containers(),
         db.vehicles(),
+        config,
     )
 
     id_route = count(0)
@@ -92,10 +104,15 @@ def test_breaks_are_stored():
         stored.append(event)
         return None
 
-    # This strategy returns a single route with about 40 containers (visiting
-    # the same four containers ten times in a row). That takes about eight
-    # hours, so there should be breaks scheduled in between.
+    # This strategy returns a single route with about 20 containers (visiting
+    # the same four containers five times in a row). That takes about four
+    # hours, so the break should be scheduled during that time.
     now = datetime(2023, 8, 18, 7, 0, 0)
-    strategy = MockStrategy([Route([1, 2, 3, 4] * 10, sim.vehicles[0], now)])
+    strategy = MockStrategy([Route([1, 2, 3, 4] * 5, sim.vehicles[0], now)])
     sim(mock_store, strategy, [ShiftPlanEvent(time=now)])
-    assert_(any(isinstance(e, BreakEvent) for e in stored))
+
+    stored_breaks = list(filter(lambda e: isinstance(e, BreakEvent), stored))
+    assert_equal(len(stored_breaks), 1)
+    assert_equal(stored_breaks[0].duration, duration)
+    assert_(stored_breaks[0].time >= datetime.combine(now.date(), early))
+    assert_(stored_breaks[0].time <= datetime.combine(now.date(), late))
