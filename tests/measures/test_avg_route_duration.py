@@ -61,14 +61,14 @@ def test_for_routes_without_breaks(visits: list[list[int]]):
 
 
 @pytest.mark.parametrize(
-    ("container_time", "break_time"),
+    ("container_time", "break_time", "between"),
     [
-        (timedelta(minutes=0), timedelta(minutes=0)),
-        (timedelta(seconds=30), timedelta(minutes=10)),
-        (timedelta(minutes=10), timedelta(minutes=30)),
+        (timedelta(minutes=10), timedelta(minutes=0), (1, 2)),
+        (timedelta(minutes=15), timedelta(minutes=10), (4, 5)),
+        (timedelta(minutes=25), timedelta(minutes=30), (3, 4)),
     ],
 )
-def test_with_breaks(container_time, break_time):
+def test_with_breaks(container_time, break_time, between):
     """
     Tests that the average route duration also takes into account any breaks
     that were had during the route, which require travel back to the depot.
@@ -96,16 +96,17 @@ def test_with_breaks(container_time, break_time):
     routes = [Route([0, 1, 2, 3, 4] * 3, sim.vehicles[0], now)]
     sim(db.store, MockStrategy(routes), [ShiftPlanEvent(time=now)])
 
-    service_time = sim.config.TIME_PER_CONTAINER * len(routes[0])
-    helper_dur = cum_value(db.durations(), routes) + service_time
-    measure_dur = db.compute(avg_route_duration)
-
-    # Lets now compare numbers. The break is had after visiting container 1911
-    # (location ID 1), before visiting container 2488 (ID 2). So we should have
-    # additional duration of travelling 1 -> 0 -> 2, minus 1 -> 2, and taking
-    # the break.
+    # The break is had between the given two location IDs. So we should have
+    # additional duration of travelling back to the depot in between, minus
+    # direct travel, plus the break.
     mat = db.durations()
-    diff = (mat[1, 0] + mat[0, 2] - mat[1, 2]).item() + break_time
-    assert_allclose(
-        measure_dur.total_seconds(), (helper_dur + diff).total_seconds()
+    service_time = sim.config.TIME_PER_CONTAINER * len(routes[0])
+    expected_dur = (
+        cum_value(db.durations(), routes)
+        + service_time
+        + (mat[between[0], 0] + mat[0, between[1]]).item()
+        - mat[*between].item()
+        + break_time
     )
+    measure_dur = db.compute(avg_route_duration)
+    assert_allclose(measure_dur.total_seconds(), expected_dur.total_seconds())
