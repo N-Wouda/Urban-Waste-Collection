@@ -5,7 +5,7 @@ import pytest
 from numpy.random import default_rng
 from numpy.testing import assert_, assert_equal, assert_raises
 
-from tests.helpers import dist
+from tests.helpers import cum_value
 from waste.classes import Database, ShiftPlanEvent, Simulator
 from waste.strategies import GreedyStrategy, RandomStrategy
 
@@ -109,5 +109,6 @@ def test_greedy_better_than_random():
     # There's no guarantee that greedy is always better than random, but it's
     # pretty unlikely that that is not the case. Indeed, for this seed, it is
     # not.
-    assert_(dist(sim.distances, greedy_res) < dist(sim.distances, random_res))
+    dist_mat = db.distances()
+    assert_(cum_value(dist_mat, greedy_res) < cum_value(dist_mat, random_res))
     assert_(greedy_res != random_res)

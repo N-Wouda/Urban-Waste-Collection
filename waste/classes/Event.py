@@ -44,12 +44,14 @@ class ServiceEvent(Event):
     def __init__(
         self,
         time: datetime,
+        duration: timedelta,
         id_route: int,
         container: Container,
         vehicle: Vehicle,
     ):
         super().__init__(time)
 
+        self.duration = duration
         self.id_route = id_route
         self.container = container
         self.vehicle = vehicle

@@ -18,8 +18,8 @@ def main():
     db = Database(args.src_db, args.res_db, exists_ok=True)
 
     # Compute performance measures from stored data.
-    for name, func in MEASURES.items():
-        print(f"{name:30}: {db.compute(func)}")
+    for func in MEASURES:
+        print(f"{func.__name__:36}: {db.compute(func)}")
 
 
 if __name__ == "__main__":
