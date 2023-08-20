@@ -1,51 +1,30 @@
-from datetime import date, datetime, time, timedelta
+from datetime import datetime, timedelta
 
-import pandas as pd
-from numpy.random import default_rng
+import numpy as np
+import pytest
 from numpy.testing import assert_equal
 
-from tests.helpers import NullStrategy
-from waste.classes import (
-    ArrivalEvent,
-    Database,
-    Simulator,
-)
+from waste.classes import ArrivalEvent, Database
+from waste.constants import HOURS_IN_DAY
 from waste.measures import num_arrivals_per_hour
 
 
-def test_num_arrivals_per_hour():
-    src_db = "tests/test.db"
-    res_db = ":memory:"
-    db = Database(src_db, res_db)
+@pytest.mark.parametrize("num_events", [0, 1, 24, 25, 72, 73])
+def test_single_container(num_events: int):
+    db = Database("tests/test.db", ":memory:")
+    containers = db.containers()
 
-    sim = Simulator(
-        default_rng(0),
-        db.depot(),
-        db.distances(),
-        db.durations(),
-        db.containers(),
-        db.vehicles(),
-    )
+    now = datetime.now()
+    histogram = np.zeros((HOURS_IN_DAY,))
 
-    strategy = NullStrategy()
+    for hours in range(num_events):
+        time = now + timedelta(hours=hours)
+        histogram[time.hour] += 1
 
-    today = date.today()
-    start = datetime.combine(today, time.min)
-    end = datetime.combine(today, time.max) + timedelta(days=1)
-    period = 2  # hours between two deposits
+        event = ArrivalEvent(time, containers[0], volume=0.0)
+        event.seal()
+        db.store(event)
 
-    tot_hours = (end - start).total_seconds() / 3600
-    tot_hours / period
-
-    events = []
-    for container in db.containers():
-        deposit_times = pd.date_range(
-            start, end, freq=f"{period}H"
-        ).to_pydatetime()
-        volumes = [10] * len(deposit_times)
-        for t, volume in zip(deposit_times, volumes):
-            events.append(ArrivalEvent(t, container=container, volume=volume))
-
-    sim(db.store, strategy, events)
-
-    assert_equal(len(events), sum(db.compute(num_arrivals_per_hour)))
+    res = db.compute(num_arrivals_per_hour)
+    assert_equal(len(res), HOURS_IN_DAY)
+    assert_equal(res, histogram)
