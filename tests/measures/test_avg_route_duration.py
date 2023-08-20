@@ -60,16 +60,22 @@ def test_for_routes_without_breaks(visits: list[list[int]]):
     )
 
 
-def test_with_breaks():
+@pytest.mark.parametrize(
+    ("container_time", "break_time"),
+    [
+        (timedelta(minutes=0), timedelta(minutes=0)),
+        (timedelta(seconds=30), timedelta(minutes=10)),
+        (timedelta(minutes=10), timedelta(minutes=30)),
+    ],
+)
+def test_with_breaks(container_time, break_time):
     """
-    Tests that the average route distance also takes into account any breaks
+    Tests that the average route duration also takes into account any breaks
     that were had during the route, which require travel back to the depot.
     """
-    now = datetime.now()
-
-    # Set up a half-hour break one hour into the shift.
-    hour = timedelta(hours=1)
-    a_break = (now + hour).time(), (now + 2 * hour).time(), hour / 2
+    now = datetime(2023, 8, 20, 8, 0, 0)
+    hour = timedelta(hours=1)  # set up a break one hour into the shift
+    a_break = (now + hour).time(), (now + 2 * hour).time(), break_time
 
     db = Database("tests/test.db", ":memory:")
     sim = Simulator(
@@ -81,7 +87,7 @@ def test_with_breaks():
         db.vehicles(),
         Configuration(
             BREAKS=(a_break,),
-            TIME_PER_CONTAINER=timedelta(minutes=3),
+            TIME_PER_CONTAINER=container_time,
         ),
     )
 
@@ -99,7 +105,7 @@ def test_with_breaks():
     # additional duration of travelling 1 -> 0 -> 2, minus 1 -> 2, and taking
     # the break.
     mat = db.durations()
-    diff = (mat[1, 0] + mat[0, 2] - mat[1, 2]).item() + hour / 2
+    diff = (mat[1, 0] + mat[0, 2] - mat[1, 2]).item() + break_time
     assert_allclose(
         measure_dur.total_seconds(), (helper_dur + diff).total_seconds()
     )
