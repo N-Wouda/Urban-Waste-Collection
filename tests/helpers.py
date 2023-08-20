@@ -33,10 +33,14 @@ class MockStrategy:
 
 
 def dist(mat: np.ndarray, routes: list[Route]) -> int:
+    """
+    Computes the total distance of all routes in the route plan. This is a
+    dead simple implementation so that we know for sure it's correct.
+    """
     dist = 0
     for route in routes:
         plan = np.array(route.plan)
         stops = [0, *(plan + 1), 0]
-        for idx, stop in enumerate(route.plan[1:], 1):
+        for idx, stop in enumerate(stops[1:], 1):
             dist += mat[stops[idx - 1], stop]
     return dist

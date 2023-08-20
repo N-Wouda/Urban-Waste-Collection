@@ -1,10 +1,10 @@
-import sqlite3
+from waste.classes import Database
 
 
-def num_arrivals(con: sqlite3.Connection) -> float:
+def num_arrivals(db: Database) -> int:
     """
     Total number of arrivals during the entire simulation.
     """
     sql = "SELECT COUNT(*) FROM arrival_events;"
-    row = con.execute(sql).fetchone()
-    return row[0]
+    row = db.write.execute(sql).fetchone()
+    return row[0] if row[0] is not None else 0

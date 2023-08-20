@@ -1,5 +1,6 @@
-import sqlite3
 from typing import Any, Callable
+
+from waste.classes import Database
 
 from .avg_fill_factor import avg_fill_factor
 from .avg_num_arrivals_between_service import avg_num_arrivals_between_service
@@ -10,7 +11,7 @@ from .num_arrivals import num_arrivals
 from .num_arrivals_per_hour import num_arrivals_per_hour
 from .num_services import num_services
 
-Measure = Callable[[sqlite3.Connection], Any]
+Measure = Callable[[Database], Any]
 
 MEASURES: dict[str, Measure] = {
     "Avg. number of inter-service arrivals": avg_num_arrivals_between_service,
