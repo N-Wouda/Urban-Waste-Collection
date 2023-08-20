@@ -44,6 +44,14 @@ TODO
 Copyright (C) 2023, Niels Wouda and Nicky van Foreest
 
 Unless expressly noted otherwise, the code in this repository is free software:
-you can redistribute it and/or modify it under the terms of the GNU Affero 
+you can redistribute it and/or modify it under the terms of the GNU Affero
 General Public License as published by the Free Software Foundation, either
 version 3 of the License, or (at your option) any later version.
+
+The code in this repository is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License
+for more details.
+
+You should have received a copy of the GNU Affero General Public License as
+part of this repository. If not, see <https://www.gnu.org/licenses/>.
