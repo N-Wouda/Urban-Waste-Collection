@@ -10,8 +10,8 @@ from waste.classes import Database
 
 def avg_route_duration(db: Database) -> timedelta:
     """
-    Computes the average distance (in meters) travelled along routes, including
-    breaks and the arcs to and from the depot.
+    Computes the average duration travelled along routes, including taking
+    breaks, service time at containers, and the arcs to and from the depot.
     """
     loc2idx = {c.name: idx for idx, c in enumerate(db.containers(), 1)}
     loc2idx["Depot"] = 0
