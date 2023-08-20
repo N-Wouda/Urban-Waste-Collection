@@ -1,4 +1,5 @@
 import argparse
+import json
 
 from waste.classes import Database
 from waste.measures import MEASURES
@@ -9,6 +10,7 @@ def parse_args():
 
     parser.add_argument("src_db", help="Location of the input database.")
     parser.add_argument("res_db", help="Location of the output database.")
+    parser.add_argument("--output", help="Output file (should be JSON).")
 
     return parser.parse_args()
 
@@ -17,9 +19,15 @@ def main():
     args = parse_args()
     db = Database(args.src_db, args.res_db, exists_ok=True)
 
-    # Compute performance measures from stored data.
+    values = {}
     for func in MEASURES:
-        print(f"{func.__name__:36}: {db.compute(func)}")
+        name = func.__name__
+        values[name] = db.compute(func)
+        print(f"{name:36}: {values[name]}")
+
+    if args.output:
+        with open(args.output, "w+") as fh:
+            json.dump(values, fh, default=str)
 
 
 if __name__ == "__main__":

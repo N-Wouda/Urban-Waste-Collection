@@ -52,16 +52,21 @@ def test_for_routes_without_breaks(visits: list[list[int]]):
     assert_allclose(db.compute(avg_route_distance), avg_dist)
 
 
-def test_with_breaks():
+@pytest.mark.parametrize(
+    "break_time",
+    [
+        timedelta(seconds=1),  # it's not about the duration: any break *must*
+        timedelta(minutes=5),  # be had, no matter how long.
+    ],
+)
+def test_with_breaks(break_time):
     """
     Tests that the average route distance also takes into account any breaks
     that were had during the route, which require travel back to the depot.
     """
-    now = datetime.now()
-
-    # Set up a half-hour break one hour into the shift.
-    hour = timedelta(hours=1)
-    a_break = (now + hour).time(), (now + 2 * hour).time(), hour / 2
+    now = datetime(2023, 8, 20, 8, 0, 0)
+    hour = timedelta(hours=1)  # set up a break one hour into the shift
+    a_break = (now + hour).time(), (now + 2 * hour).time(), break_time
 
     db = Database("tests/test.db", ":memory:")
     sim = Simulator(
@@ -76,7 +81,7 @@ def test_with_breaks():
 
     # Single route plan visiting all five containers three times. That takes
     # several hours, so the break should definitely be scheduled.
-    routes = [Route([0, 1, 2, 3, 4] * 3, sim.vehicles[0], now)]
+    routes = [Route([0, 1, 2, 3, 4] * 4, sim.vehicles[0], now)]
     strategy = MockStrategy(routes)
     sim(db.store, strategy, [ShiftPlanEvent(time=now)])
 

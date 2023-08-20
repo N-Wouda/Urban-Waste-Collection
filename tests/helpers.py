@@ -39,9 +39,11 @@ def cum_value(mat: np.ndarray, routes: list[Route]):
     so that we know for sure it's correct.
     """
     cum_val = np.array([0], dtype=mat.dtype)
+
     for route in routes:
         plan = np.array(route.plan)
         stops = [0, *(plan + 1), 0]
         for idx, stop in enumerate(stops[1:], 1):
             cum_val += mat[stops[idx - 1], stop]
+
     return cum_val.item()
