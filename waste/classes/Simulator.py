@@ -157,6 +157,7 @@ class Simulator:
             now += self.durations[prev, idx].item()
             yield ServiceEvent(
                 now,
+                self.config.TIME_PER_CONTAINER,
                 id_route=id_route,
                 container=self.containers[container_idx],
                 vehicle=route.vehicle,

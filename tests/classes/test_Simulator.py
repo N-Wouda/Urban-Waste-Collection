@@ -33,6 +33,7 @@ def test_events_are_sealed_and_stored_property():
         ArrivalEvent(time=now, container=container, volume=0),
         ServiceEvent(
             time=now + timedelta(hours=1),
+            duration=timedelta(seconds=0),
             id_route=1,
             container=container,
             vehicle=1,

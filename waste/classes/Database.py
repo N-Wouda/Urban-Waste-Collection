@@ -75,6 +75,7 @@ class Database:
 
                     CREATE TABLE service_events (
                         time DATETIME,
+                        duration FLOAT,
                         container VARCHAR,
                         id_route INTEGER references routes,
                         num_arrivals INT,
@@ -221,14 +222,16 @@ class Database:
                         """--sql
                             INSERT INTO service_events (
                                 time,
+                                duration,
                                 container,
                                 id_route,
                                 num_arrivals,
                                 volume
-                            ) VALUES (?, ?, ?, ?, ?);
+                            ) VALUES (?, ?, ?, ?, ?, ?);
                         """,
                         (
                             e.time,
+                            e.duration.total_seconds(),
                             e.container.name,
                             e.id_route,
                             e.num_arrivals,

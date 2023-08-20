@@ -52,8 +52,15 @@ def test_for_single_container(event_pattern: str, expected: float):
             # This slightly abuses the id_route because no route with ID 0
             # exists in the routes table, but that should be OK since we're
             # not testing routes here.
-            event = ServiceEvent(time, 0, sim.containers[0], sim.vehicles[0])
-            events.append(event)
+            events.append(
+                ServiceEvent(
+                    time,
+                    timedelta(minutes=2),
+                    0,
+                    sim.containers[0],
+                    sim.vehicles[0],
+                )
+            )
 
     sim(db.store, NullStrategy(), events)
     assert_allclose(db.compute(avg_num_arrivals_between_service), expected)

@@ -17,6 +17,7 @@ def test_single_container(num_events: int):
     for hours in range(num_events):
         event = ServiceEvent(
             now + timedelta(hours=hours),
+            timedelta(minutes=2),
             0,  # slight abuse of id_route, but should be OK
             containers[0],
             vehicles[0],
