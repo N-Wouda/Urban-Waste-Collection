@@ -81,7 +81,7 @@ def test_with_breaks():
         db.vehicles(),
         Configuration(
             BREAKS=(a_break,),
-            TIME_PER_CONTAINER=timedelta(minutes=10),
+            TIME_PER_CONTAINER=timedelta(minutes=3),
         ),
     )
 

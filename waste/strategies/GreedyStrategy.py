@@ -80,7 +80,7 @@ class GreedyStrategy:
                 tw_late=shift_duration,
             )
 
-        vehicle_count = Counter([int(v.capacity) for v in sim.vehicles])
+        vehicle_count = Counter(int(v.capacity) for v in sim.vehicles)
         for capacity, num_available in vehicle_count.items():
             model.add_vehicle_type(capacity, num_available)
 
