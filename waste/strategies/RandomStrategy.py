@@ -26,6 +26,6 @@ class RandomStrategy:
         )
 
         return [
-            Route(plan=list(plan), vehicle=vehicle)
+            Route(plan=list(plan), vehicle=vehicle, start_time=event.time)
             for plan, vehicle in zip(containers, sim.vehicles)
         ]

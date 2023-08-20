@@ -11,7 +11,6 @@ from waste.classes import (
     ShiftPlanEvent,
     Simulator,
 )
-from waste.constants import SHIFT_PLAN_TIME
 from waste.measures import avg_num_arrivals_between_service
 
 
@@ -22,6 +21,7 @@ def test_avg_arrivals_between_service():
 
     sim = Simulator(
         default_rng(0),
+        db.depot(),
         db.distances(),
         db.durations(),
         db.containers(),
@@ -50,7 +50,7 @@ def test_avg_arrivals_between_service():
         for t, volume in zip(deposit_times, volumes):
             events.append(ArrivalEvent(t, container=container, volume=volume))
 
-    first_shift = datetime.combine(start.date(), SHIFT_PLAN_TIME)
+    first_shift = datetime.combine(start.date(), sim.config.SHIFT_PLAN_TIME)
     for t in pd.date_range(first_shift, end, freq="24H").to_pydatetime():
         events.append(ShiftPlanEvent(t))
 

@@ -9,12 +9,18 @@ from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
 
-from waste.constants import BUFFER_SIZE, HOURS_IN_DAY, ID_DEPOT
+from waste.constants import BUFFER_SIZE, HOURS_IN_DAY
 from waste.enums import LocationType
 
 from .Container import Container
 from .Depot import Depot
-from .Event import ArrivalEvent, Event, ServiceEvent
+from .Event import (
+    ArrivalEvent,
+    BreakEvent,
+    Event,
+    ServiceEvent,
+    ShiftPlanEvent,
+)
 from .Route import Route
 from .Vehicle import Vehicle
 
@@ -38,7 +44,7 @@ class Database:
         return super().__new__(cls)
 
     def __init__(self, src_db: str, res_db: str, exists_ok: bool = False):
-        self.buffer: list[ArrivalEvent | ServiceEvent] = []
+        self.buffer: list[Event] = []
         self.read = sqlite3.connect(src_db)
 
         # Prepare the result database
@@ -49,15 +55,22 @@ class Database:
         if not res_db_exists:
             self.write.executescript(
                 """-- sql
+                    CREATE TABLE routes (
+                        id_route INTEGER PRIMARY KEY,
+                        vehicle NAME,
+                        start_time DATETIME
+                    );
+
                     CREATE TABLE arrival_events (
                         time DATETIME,
                         container VARCHAR,
                         volume FLOAT
                     );
 
-                    CREATE TABLE routes (
-                        id_route INTEGER PRIMARY KEY,
-                        vehicle NAME
+                    CREATE TABLE break_events (
+                        time DATETIME,
+                        id_route INTEGER references routes,
+                        duration FLOAT
                     );
 
                     CREATE TABLE service_events (
@@ -126,7 +139,7 @@ class Database:
         distances = np.array(data).reshape((size, size))
 
         id_containers = _containers2loc(self.read, self.containers())
-        id_locations = [ID_DEPOT, *id_containers]
+        id_locations = [0, *id_containers]
         return distances[np.ix_(id_locations, id_locations)]
 
     @cache
@@ -142,7 +155,7 @@ class Database:
         durations = np.array(data).reshape((size, size))
 
         id_containers = _containers2loc(self.read, self.containers())
-        id_locations = [ID_DEPOT, *id_containers]
+        id_locations = [0, *id_containers]
         mat = durations[np.ix_(id_locations, id_locations)]
         return mat.astype(np.timedelta64(1, "s"))
 
@@ -167,17 +180,17 @@ class Database:
         # Only arrival, service and route events are logged; other arguments
         #  are currently an intended no-op.
         match item:
-            case (ArrivalEvent() | ServiceEvent()) as event:
-                assert event.is_sealed()
+            case Event():
+                assert item.is_sealed()
 
-                self.buffer.append(event)
+                self.buffer.append(item)
                 if len(self.buffer) >= BUFFER_SIZE:
                     self.commit()
 
                 return None
-            case Route(vehicle=vehicle):
-                sql = "INSERT INTO routes (vehicle) VALUES (?)"
-                cursor = self.write.execute(sql, (vehicle.name,))
+            case Route(vehicle=vehicle, start_time=start_time):
+                sql = "INSERT INTO routes (vehicle, start_time) VALUES (?, ?)"
+                cursor = self.write.execute(sql, (vehicle.name, start_time))
                 self.write.commit()
                 return cursor.lastrowid
             case _:
@@ -191,51 +204,59 @@ class Database:
         """
         self.write.execute("BEGIN TRANSACTION;")
 
-        arrivals = [
-            (
-                event.time,
-                event.container.name,
-                event.volume,
-            )
-            for event in self.buffer
-            if isinstance(event, ArrivalEvent)
-        ]
-
-        self.write.executemany(
-            """-- sql
-                INSERT INTO arrival_events (
-                    time,
-                    container,
-                    volume
-                ) VALUES (?, ?, ?)
-            """,
-            arrivals,
-        )
-
-        services = [
-            (
-                event.time,
-                event.container.name,
-                event.id_route,
-                event.num_arrivals,
-                event.volume,
-            )
-            for event in self.buffer
-            if isinstance(event, ServiceEvent)
-        ]
-
-        self.write.executemany(
-            """-- sql
-                INSERT INTO service_events (
-                    time,
-                    container,
-                    id_route,
-                    num_arrivals,
-                    volume
-                ) VALUES (?, ?, ?, ?, ?)
-            """,
-            services,
-        )
+        for event in self.buffer:
+            match event:
+                case ArrivalEvent() as e:
+                    self.write.execute(
+                        """--sql
+                            INSERT INTO arrival_events (
+                                time,
+                                container,
+                                volume
+                            ) VALUES (?, ?, ?);
+                        """,
+                        (e.time, e.container.name, e.volume),
+                    )
+                case ServiceEvent() as e:
+                    self.write.execute(
+                        """--sql
+                            INSERT INTO service_events (
+                                time,
+                                container,
+                                id_route,
+                                num_arrivals,
+                                volume
+                            ) VALUES (?, ?, ?, ?, ?);
+                        """,
+                        (
+                            e.time,
+                            e.container.name,
+                            e.id_route,
+                            e.num_arrivals,
+                            e.volume,
+                        ),
+                    )
+                case BreakEvent() as e:
+                    self.write.execute(
+                        """--sql
+                            INSERT INTO break_events (
+                                time,
+                                id_route,
+                                duration
+                            ) VALUES (?, ?, ?);
+                        """,
+                        (
+                            e.time,
+                            e.id_route,
+                            e.duration.total_seconds(),
+                        ),
+                    )
+                case ShiftPlanEvent():
+                    continue
+                case _:
+                    msg = f"Event of type {type(event)} not understood."
+                    logger.error(msg)
+                    raise TypeError(msg)
 
         self.write.commit()
         self.buffer = []

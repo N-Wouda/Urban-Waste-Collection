@@ -20,6 +20,7 @@ def test_num_arrivals():
 
     sim = Simulator(
         default_rng(0),
+        db.depot(),
         db.distances(),
         db.durations(),
         db.containers(),

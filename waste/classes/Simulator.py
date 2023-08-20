@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
 from heapq import heappop, heappush
 from itertools import count
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING, Callable, Iterator, Optional
 
-from waste.constants import TIME_PER_CONTAINER
-
-from .Event import ArrivalEvent, Event, ServiceEvent, ShiftPlanEvent
+from .Configuration import Configuration
+from .Event import (
+    ArrivalEvent,
+    BreakEvent,
+    Event,
+    ServiceEvent,
+    ShiftPlanEvent,
+)
 
 if TYPE_CHECKING:
     import numpy as np
@@ -17,6 +21,7 @@ if TYPE_CHECKING:
     from waste.strategies import Strategy
 
     from .Container import Container
+    from .Depot import Depot
     from .Route import Route
     from .Vehicle import Vehicle
 
@@ -37,6 +42,8 @@ class _EventQueue:
         return len(self._events)
 
     def push(self, event: Event):
+        logger.debug(f"Adding event {event} to the queue at t = {event.time}.")
+
         tiebreaker = next(self._counter)
         heappush(self._events, (event.time, tiebreaker, event))
 
@@ -55,16 +62,20 @@ class Simulator:
     def __init__(
         self,
         generator: Generator,
+        depot: Depot,
         distances: np.array,
         durations: np.array,
         containers: list[Container],
         vehicles: list[Vehicle],
+        config: Configuration = Configuration(),
     ):
         self.generator = generator
+        self.depot = depot
         self.distances = distances
         self.durations = durations
         self.containers = containers
         self.vehicles = vehicles
+        self.config = config
 
     def __call__(
         self,
@@ -81,17 +92,8 @@ class Simulator:
         for event in initial_events:
             events.push(event)
 
-        now = datetime.min
-
         while events:
             event = events.pop()
-
-            if event.time < now:
-                msg = f"{event} time is before current time {now}!"
-                logger.error(msg)
-                raise ValueError(msg)
-
-            now = event.time
 
             # First seal the event. This ensures all data that was previously
             # linked to changing objects is made static at their current
@@ -102,36 +104,63 @@ class Simulator:
 
             match event:
                 case ArrivalEvent(time=time, container=c, volume=vol):
-                    c.arrive(vol)
                     logger.debug(f"Arrival at {c.name} at t = {time}.")
+                    c.arrive(vol)
                 case ServiceEvent(time=time, container=c):
-                    c.service()
                     logger.debug(f"Service at {c.name} at t = {time}.")
+                    c.service()
+                case BreakEvent(time=time, vehicle=v):
+                    logger.debug(f"Break for {v.name} at t = {time}.")
                 case ShiftPlanEvent(time=time):
                     logger.info(f"Generating shift plan at t = {time}.")
-
                     for route in strategy(self, event):
                         id_route = store(route)
                         assert id_route is not None
 
-                        service_time = now
-                        prev = 0
-
-                        for curr in route.plan:
-                            service_time += self.durations[prev, curr].item()
-
-                            events.push(
-                                ServiceEvent(
-                                    service_time,
-                                    id_route=id_route,
-                                    container=self.containers[curr],
-                                    vehicle=route.vehicle,
-                                )
-                            )
-
-                            service_time += TIME_PER_CONTAINER
-                            prev = curr
+                        for event in self._plan_route(route, id_route):
+                            events.push(event)
                 case _:
                     msg = f"Unhandled event of type {type(event)}."
                     logger.error(msg)
                     raise ValueError(msg)
+
+    def _plan_route(self, route: Route, id_route: int) -> Iterator[Event]:
+        now = route.start_time
+        break_idx = 0
+        prev = 0  # start from depot
+
+        for container_idx in route.plan:
+            idx = container_idx + 1  # + 1 because 0 is depot
+
+            if break_idx < len(self.config.BREAKS):
+                _, late, break_dur = self.config.BREAKS[break_idx]
+
+                # If servicing the current container makes us late for the
+                # break, we first plan the break. A break is had at the depot.
+                dep_travel = self.durations[prev, 0].item()
+                cont_travel = self.durations[prev, idx].item()
+                finish_at = now + cont_travel + self.config.TIME_PER_CONTAINER
+
+                if (finish_at + dep_travel).time() > late:
+                    # We're travelling back to the depot to take this break.
+                    # Increases the break index, and yield a break event.
+                    now += dep_travel
+                    break_idx += 1
+
+                    yield BreakEvent(now, id_route, break_dur, route.vehicle)
+
+                    now += break_dur
+                    prev = 0
+
+            # Add travel duration from prev to current container, and start
+            # service at the current container.
+            now += self.durations[prev, idx].item()
+            yield ServiceEvent(
+                now,
+                id_route=id_route,
+                container=self.containers[container_idx],
+                vehicle=route.vehicle,
+            )
+
+            now += self.config.TIME_PER_CONTAINER
+            prev = idx
