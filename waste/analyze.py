@@ -22,9 +22,8 @@ def main():
     values = {}
     for func in MEASURES:
         name = func.__name__
-        val = db.compute(func)
-        values[name] = val
-        print(f"{name:36}: {val}")
+        values[name] = db.compute(func)
+        print(f"{name:36}: {values[name]}")
 
     if args.output:
         with open(args.output, "w+") as fh:
