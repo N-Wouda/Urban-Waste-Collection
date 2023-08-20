@@ -1,24 +1,36 @@
-from datetime import date, datetime, time, timedelta
+from datetime import datetime, timedelta
+from itertools import count
 
-import pandas as pd
+import pytest
 from numpy.random import default_rng
-from numpy.testing import assert_almost_equal
+from numpy.testing import assert_allclose
 
-from tests.helpers import PeriodicStrategy
+from tests.helpers import NullStrategy
 from waste.classes import (
     ArrivalEvent,
     Database,
-    ShiftPlanEvent,
+    Event,
+    ServiceEvent,
     Simulator,
 )
 from waste.measures import avg_num_arrivals_between_service
 
 
-def test_avg_arrivals_between_service():
-    src_db = "tests/test.db"
-    res_db = ":memory:"
-    db = Database(src_db, res_db)
-
+@pytest.mark.parametrize(
+    ("pattern", "expected"),
+    [
+        ("AASAS", 1.5),
+        ("AAAS", 3.0),
+        ("AAS", 2.0),
+        ("ASASAS", 1.0),
+        ("ASA", 1.0),
+        ("SAA", 0.0),
+        ("AAA", 0.0),
+        ("", 0.0),
+    ],
+)
+def test_for_single_container(pattern: str, expected: float):
+    db = Database("tests/test.db", ":memory:")
     sim = Simulator(
         default_rng(0),
         db.depot(),
@@ -28,33 +40,22 @@ def test_avg_arrivals_between_service():
         db.vehicles(),
     )
 
-    strategy = PeriodicStrategy()
+    now = datetime.now()
+    hour = count(0)
+    events: list[Event] = []
+    for char in pattern:
+        # The pattern provides a sequence of services (S) and arrivals (A),
+        # both at the same container. We separate each event by an hour.
+        time = now + timedelta(hours=next(hour))
 
-    num_days = 2
-    today = date.today()
-    start = datetime.combine(today, time.min)
-    end = datetime.combine(today, time.max) + timedelta(days=num_days)
-    period = 2  # hours between two deposits
+        if char == "A":
+            events.append(ArrivalEvent(time, sim.containers[0], volume=0.0))
+        else:
+            # This slightly abuses the id_route because no route with ID 0
+            # exists in the routes table, but that should be OK since we're
+            # not testing routes here.
+            event = ServiceEvent(time, 0, sim.containers[0], sim.vehicles[0])
+            events.append(event)
 
-    # Generate deposits every other hour for each container, starting from
-    # 0h00. As the first shift starts at 7 am, there will be 4 deposits per
-    # container for the first shift, and 12 deposits for each other day.
-    average = (4 + 12 * num_days) / (num_days + 1)
-
-    events = []
-    for container in db.containers():
-        deposit_times = pd.date_range(
-            start, end, freq=f"{period}H"
-        ).to_pydatetime()
-        volumes = [10] * len(deposit_times)
-        for t, volume in zip(deposit_times, volumes):
-            events.append(ArrivalEvent(t, container=container, volume=volume))
-
-    first_shift = datetime.combine(start.date(), sim.config.SHIFT_PLAN_TIME)
-    for t in pd.date_range(first_shift, end, freq="24H").to_pydatetime():
-        events.append(ShiftPlanEvent(t))
-
-    sim(db.store, strategy, events)
-
-    res = db.compute(avg_num_arrivals_between_service)
-    assert_almost_equal(res, average)
+    sim(db.store, NullStrategy(), events)
+    assert_allclose(db.compute(avg_num_arrivals_between_service), expected)
