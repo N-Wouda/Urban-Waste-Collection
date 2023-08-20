@@ -1,4 +1,5 @@
 import logging
+from collections import Counter
 from datetime import timedelta
 
 import numpy as np
@@ -79,10 +80,9 @@ class GreedyStrategy:
                 tw_late=shift_duration,
             )
 
-        for vehicle in sim.vehicles:
-            model.add_vehicle_type(
-                capacity=int(vehicle.capacity), num_available=1
-            )
+        vehicle_count = Counter([int(v.capacity) for v in sim.vehicles])
+        for capacity, num_available in vehicle_count.items():
+            model.add_vehicle_type(capacity, num_available)
 
         # These are the full distance and duration matrices, but we are only
         # interested in the subset we are actually visiting. That subset is
