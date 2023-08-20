@@ -18,12 +18,12 @@ from waste.measures import avg_route_stops
 @pytest.mark.parametrize(
     ("visits", "expected"),
     [
-        ([[0], [1, 2]], 1.5),
-        ([[0, 1], [2, 3]], 2.0),
-        ([[1]], 1.0),
-        ([[1, 2, 3, 4]], 4.0),
-        ([], 0.0),
-        ([[], [1, 2]], 1.0),
+        ([[0], [1, 2]], 1.5),  # 3 stops 2 routes: 1.5 average.
+        ([[0, 1], [2, 3]], 2.0),  # 4 stops 2 routes: 2.0 average.
+        ([[1]], 1.0),  # 1 stop 1 route: 1.0 average.
+        ([[1, 2, 3, 4]], 4.0),  # 4 stops 1 route: 4.0 average.
+        ([], 0.0),  # no routes: 0.0 average.
+        ([[], [1, 2]], 1.0),  # 2 stops, 2 routes (one empty): 1.0 average.
     ],
 )
 def test_for_several_routes(visits: list[list[int]], expected: float):
