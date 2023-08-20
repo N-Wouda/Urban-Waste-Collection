@@ -1,24 +1,36 @@
-from datetime import date, datetime, time, timedelta
+from datetime import datetime, timedelta
 
-import pandas as pd
+import pytest
 from numpy.random import default_rng
-from numpy.testing import assert_almost_equal
+from numpy.testing import assert_allclose
 
-from tests.helpers import PeriodicStrategy
+from tests.helpers import NullStrategy
 from waste.classes import (
     ArrivalEvent,
     Database,
-    ShiftPlanEvent,
+    Event,
+    ServiceEvent,
     Simulator,
 )
 from waste.measures import avg_service_level
 
 
-def test_avg_service_levels():
-    src_db = "tests/test.db"
-    res_db = ":memory:"
-    db = Database(src_db, res_db)
-
+@pytest.mark.parametrize(
+    ("event_pattern", "volume", "expected"),
+    [
+        ("AAA", 10_000, 1.0),  # never serviced
+        ("AS", 10_000, 0.0),  # overflowed
+        ("AS", 4_000, 1.0),  # boundary: did not overflow, should be OK
+        ("AAS", 2_000, 1.0),  # boundary: did not overflow, should be OK
+        ("SAA", 10_000, 1.0),  # overflow after last service has no impact
+        ("AAAS", 1_000, 1.0),  # below capacity
+        ("AASASAS", 2_500, 2 / 3),  # first overflowed, last two did not
+        ("ASSSS", 5_000, 3 / 4),  # first overflowed, last three did not
+        ("", 0, 1.0),  # nothing happened
+    ],
+)
+def test_single_container(event_pattern: str, volume: float, expected: float):
+    db = Database("tests/test.db", ":memory:")
     sim = Simulator(
         default_rng(0),
         db.depot(),
@@ -28,40 +40,24 @@ def test_avg_service_levels():
         db.vehicles(),
     )
 
-    strategy = PeriodicStrategy()
+    container = sim.containers[0]
+    assert_allclose(container.capacity, 4_000)
 
-    num_days = 2
-    today = date.today()
-    start = datetime.combine(today, time.min)
-    end = datetime.combine(today, time.max) + timedelta(days=num_days)
-    period = 2  # hours between two deposits
-    deposit_vol = 500  # liters
+    now = datetime.now()
+    events: list[Event] = []
+    for hours, event_type in enumerate(event_pattern):
+        # The pattern provides a sequence of service (S) and arrival (A) events
+        # at the same container. We separate each event by an hour.
+        time = now + timedelta(hours=hours)
 
-    events = []
-    for container in db.containers():
-        deposit_times = pd.date_range(
-            start, end, freq=f"{period}H"
-        ).to_pydatetime()
-        volumes = [deposit_vol] * len(deposit_times)
-        for t, volume in zip(deposit_times, volumes):
-            events.append(ArrivalEvent(t, container=container, volume=volume))
+        if event_type == "A":
+            events.append(ArrivalEvent(time, sim.containers[0], volume=volume))
+        else:
+            # This slightly abuses the id_route because no route with ID 0
+            # exists in the routes table, but that should be OK since we're
+            # not testing routes here.
+            event = ServiceEvent(time, 0, sim.containers[0], sim.vehicles[0])
+            events.append(event)
 
-    first_shift = datetime.combine(start.date(), sim.config.SHIFT_PLAN_TIME)
-    num_shifts = 0
-    for t in pd.date_range(first_shift, end, freq="24H").to_pydatetime():
-        events.append(ShiftPlanEvent(t))
-        num_shifts += 1
-
-    sim(db.store, strategy, events)
-
-    # On the first day, each container is emptied after 8 hours.
-    first_day_volume = 8 / period * deposit_vol
-    num_ok = sum(first_day_volume < c.capacity for c in db.containers())
-    # On the other days day, each container is emptied after 24 hours.
-    other_day_volume = 24 / period * deposit_vol
-    for day in range(num_days):
-        num_ok += sum(other_day_volume < c.capacity for c in db.containers())
-    average = num_ok / num_shifts / len(db.containers())
-
-    res = db.compute(avg_service_level)
-    assert_almost_equal(res, average)
+    sim(db.store, NullStrategy(), events)
+    assert_allclose(db.compute(avg_service_level), expected)

@@ -7,4 +7,4 @@ def avg_num_arrivals_between_service(con: sqlite3.Connection) -> float:
     """
     sql = "SELECT AVG(num_arrivals) FROM service_events;"
     row = con.execute(sql).fetchone()
-    return res if (res := row[0]) else 0.0
+    return row[0] if row[0] is not None else 0.0

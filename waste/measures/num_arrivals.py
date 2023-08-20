@@ -7,4 +7,4 @@ def num_arrivals(con: sqlite3.Connection) -> float:
     """
     sql = "SELECT COUNT(*) FROM arrival_events;"
     row = con.execute(sql).fetchone()
-    return res if (res := row[0]) else 0.0
+    return row[0] if row[0] is not None else 0.0
