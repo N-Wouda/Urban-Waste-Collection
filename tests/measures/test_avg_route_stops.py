@@ -23,6 +23,7 @@ from waste.measures import avg_route_stops
         ([[1]], 1.0),
         ([[1, 2, 3, 4]], 4.0),
         ([], 0.0),
+        ([[], [1, 2]], 1.0),
     ],
 )
 def tests_avg_route_stops_for_several_routes(
