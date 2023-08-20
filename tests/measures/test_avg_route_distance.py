@@ -92,9 +92,8 @@ def test_with_breaks():
     assert_(not np.isclose(measure_dist, helper_dist))
 
     # Lets now compare numbers. The break is had after visiting container 1911
-    # (location ID 1), before visiting container 2488 (location ID 2). So we
-    # should have additional distance of travelling 1 -> 0 -> 2, while not
-    # travelling 1 -> 2.
+    # (location ID 1), before visiting container 2488 (ID 2). So we should have
+    # additional distance of travelling 1 -> 0 -> 2, minus 1 -> 2.
     mat = db.distances()
     diff = mat[1, 0] + mat[0, 2] - mat[1, 2]
     assert_allclose(measure_dist, helper_dist + diff)
