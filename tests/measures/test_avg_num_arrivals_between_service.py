@@ -44,8 +44,8 @@ def test_for_single_container(pattern: str, expected: float):
     hour = count(0)
     events: list[Event] = []
     for char in pattern:
-        # The pattern provides a sequence of services (S) and arrivals (A),
-        # both at the same container. We separate each event by an hour.
+        # The pattern provides a sequence of service (S) and arrival (A) events
+        # at the same container. We separate each event by an hour.
         time = now + timedelta(hours=next(hour))
 
         if char == "A":
