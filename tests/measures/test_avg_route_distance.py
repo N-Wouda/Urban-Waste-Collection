@@ -19,12 +19,13 @@ from waste.measures import avg_route_distance
 @pytest.mark.parametrize(
     "visits",
     [
+        [],
+        [[], []],
+        [[], [1, 2]],
+        [[1]],
         [[0], [1, 2]],
         [[0, 1], [2, 3]],
-        [[1]],
         [[1, 2, 3, 4]],
-        [],
-        [[], [1, 2]],
     ],
 )
 def test_for_routes_without_breaks(visits: list[list[int]]):
