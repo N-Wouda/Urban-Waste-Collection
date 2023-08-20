@@ -1,24 +1,34 @@
-from datetime import date, datetime, time, timedelta
+from datetime import datetime
 
-import pandas as pd
+import pytest
 from numpy.random import default_rng
-from numpy.testing import assert_almost_equal
+from numpy.testing import assert_allclose
 
-from tests.helpers import PeriodicStrategy
+from tests.helpers import MockStrategy
 from waste.classes import (
-    ArrivalEvent,
     Database,
+    Event,
+    Route,
     ShiftPlanEvent,
     Simulator,
 )
 from waste.measures import avg_route_stops
 
 
-def test_avg_route_stops():
-    src_db = "tests/test.db"
-    res_db = ":memory:"
-    db = Database(src_db, res_db)
-
+@pytest.mark.parametrize(
+    ("visits", "expected"),
+    [
+        ([[0], [1, 2]], 1.5),
+        ([[0, 1], [2, 3]], 2.0),
+        ([[1]], 1.0),
+        ([[1, 2, 3, 4]], 4.0),
+        ([], 0.0),
+    ],
+)
+def tests_avg_route_stops_for_several_routes(
+    visits: list[list[int]], expected: float
+):
+    db = Database("tests/test.db", ":memory:")
     sim = Simulator(
         default_rng(0),
         db.depot(),
@@ -28,29 +38,13 @@ def test_avg_route_stops():
         db.vehicles(),
     )
 
-    strategy = PeriodicStrategy()
-    # The PeriodicStrategy distributes the containers evenly over the vehicles.
-    avg_stops_per_route = len(db.containers()) / len(db.vehicles())
+    now = datetime.now()
+    routes = [Route(plan, veh, now) for plan, veh in zip(visits, sim.vehicles)]
+    strategy = MockStrategy(routes)
 
-    num_days = 1
-    today = date.today()
-    start = datetime.combine(today, time.min)
-    end = datetime.combine(today, time.max) + timedelta(days=num_days)
-    period = 2  # hours between two deposits
-
-    events = []
-    for container in db.containers():
-        deposit_times = pd.date_range(
-            start, end, freq=f"{period}H"
-        ).to_pydatetime()
-        volumes = [10] * len(deposit_times)
-        for t, volume in zip(deposit_times, volumes):
-            events.append(ArrivalEvent(t, container=container, volume=volume))
-
-    first_shift = datetime.combine(start.date(), sim.config.SHIFT_PLAN_TIME)
-    for t in pd.date_range(first_shift, end, freq="24H").to_pydatetime():
-        events.append(ShiftPlanEvent(t))
-
+    events: list[Event] = [ShiftPlanEvent(time=now)]
     sim(db.store, strategy, events)
 
-    assert_almost_equal(db.compute(avg_route_stops), avg_stops_per_route)
+    # We're given a set of routes and the expected number of stops on those
+    # routes. Now let's check the measure computes the same thing.
+    assert_allclose(db.compute(avg_route_stops), expected)
