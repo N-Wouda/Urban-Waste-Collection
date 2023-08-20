@@ -7,4 +7,4 @@ def num_services(con: sqlite3.Connection) -> float:
     """
     sql = "SELECT COUNT(*) FROM service_events;"
     row = con.execute(sql).fetchone()
-    return row[0]
+    return res if (res := row[0]) else 0.0

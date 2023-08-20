@@ -12,4 +12,4 @@ def avg_fill_factor(con: sqlite3.Connection) -> float:
                 ON se.container = c.name;
     """
     row = con.execute(sql).fetchone()
-    return row[0]
+    return res if (res := row[0]) else 0.0

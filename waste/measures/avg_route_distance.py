@@ -41,4 +41,4 @@ def avg_route_distance(con: sqlite3.Connection) -> float:
             );
     """
     row = con.execute(sql, dict(depot=0)).fetchone()
-    return row[0]
+    return res if (res := row[0]) else 0.0
