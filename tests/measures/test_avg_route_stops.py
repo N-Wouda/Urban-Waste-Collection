@@ -26,9 +26,7 @@ from waste.measures import avg_route_stops
         ([[], [1, 2]], 1.0),
     ],
 )
-def tests_avg_route_stops_for_several_routes(
-    visits: list[list[int]], expected: float
-):
+def test_for_several_routes(visits: list[list[int]], expected: float):
     db = Database("tests/test.db", ":memory:")
     sim = Simulator(
         default_rng(0),

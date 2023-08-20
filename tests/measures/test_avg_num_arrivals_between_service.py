@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from itertools import count
 
 import pytest
 from numpy.random import default_rng
@@ -17,7 +16,7 @@ from waste.measures import avg_num_arrivals_between_service
 
 
 @pytest.mark.parametrize(
-    ("pattern", "expected"),
+    ("event_pattern", "expected"),
     [
         ("AASAS", 1.5),
         ("AAAS", 3.0),
@@ -29,7 +28,7 @@ from waste.measures import avg_num_arrivals_between_service
         ("", 0.0),
     ],
 )
-def test_for_single_container(pattern: str, expected: float):
+def test_for_single_container(event_pattern: str, expected: float):
     db = Database("tests/test.db", ":memory:")
     sim = Simulator(
         default_rng(0),
@@ -41,14 +40,13 @@ def test_for_single_container(pattern: str, expected: float):
     )
 
     now = datetime.now()
-    hour = count(0)
     events: list[Event] = []
-    for char in pattern:
+    for hours, event_type in enumerate(event_pattern):
         # The pattern provides a sequence of service (S) and arrival (A) events
         # at the same container. We separate each event by an hour.
-        time = now + timedelta(hours=next(hour))
+        time = now + timedelta(hours=hours)
 
-        if char == "A":
+        if event_type == "A":
             events.append(ArrivalEvent(time, sim.containers[0], volume=0.0))
         else:
             # This slightly abuses the id_route because no route with ID 0
