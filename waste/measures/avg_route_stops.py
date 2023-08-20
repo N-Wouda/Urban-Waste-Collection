@@ -1,7 +1,7 @@
-import sqlite3
+from waste.classes import Database
 
 
-def avg_route_stops(con: sqlite3.Connection) -> float:
+def avg_route_stops(db: Database) -> float:
     """
     Computes the average number of stops along routes, excluding the depot.
     """
@@ -15,5 +15,5 @@ def avg_route_stops(con: sqlite3.Connection) -> float:
             GROUP BY routes.id_route
         );
     """
-    row = con.execute(sql).fetchone()
+    row = db.write.execute(sql).fetchone()
     return row[0] if row[0] is not None else 0.0

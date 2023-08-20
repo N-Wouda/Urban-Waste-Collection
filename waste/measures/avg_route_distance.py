@@ -1,44 +1,34 @@
-import sqlite3
+from collections import defaultdict
+
+from waste.classes import Database
 
 
-def avg_route_distance(con: sqlite3.Connection) -> float:
+def avg_route_distance(db: Database) -> float:
     """
-    Computes the average distance (in meters) travelled along routes including
-    from/to the depot.
+    Computes the average distance (in meters) travelled along routes, including
+    breaks and the arcs to and from the depot.
     """
-    # TODO verify that this is indeed correct.
-    sql = """-- sql
-        SELECT AVG(to_dist.distance + from_depot.distance)
-        FROM (
-            SELECT id_route,
-                   loc.id_location,  -- if null then from/to depot
-                   IFNULL(loc_prev.id_location, :depot) AS prev_location,
-                   IFNULL(loc_next.id_location, :depot) AS next_location
-            FROM (
-                SELECT id_route,
-                       container,
-                       LAG(container) OVER (PARTITION BY id_route)  AS prev,
-                       LEAD(container) OVER (PARTITION BY id_route) AS next
-                FROM service_events
-            )
-            INNER JOIN source.locations AS loc ON loc.name = container
-            LEFT JOIN source.locations AS loc_prev ON loc_prev.name = prev
-            LEFT JOIN source.locations AS loc_next ON loc_next.name = next
-        )
-        -- This join gets us all distances to the next stop, including the
-        -- final return to the depot at the end of the route.
-        INNER JOIN source.distances AS to_dist
-            ON (
-                to_dist.from_location = id_location
-                AND to_dist.to_location = next_location
-            )
-        -- This join gets us the distance from the depot to the first stop.
-        INNER JOIN source.distances AS from_depot
-            ON (
-                from_depot.from_location = prev_location
-                AND from_depot.to_location = id_location
-                AND prev_location = :depot
-            );
+    sql = """--sql
+        SELECT se.id_route, c.id_location, se.time
+        FROM service_events AS se
+            INNER JOIN containers AS c
+                ON se.container = c.name
+        UNION
+        SELECT id_route, :depot, time
+        FROM break_events
+        ORDER BY id_route, time;  
     """
-    row = con.execute(sql, dict(depot=0)).fetchone()
-    return row[0] if row[0] is not None else 0.0
+    rows = db.write.execute(sql, dict(depot=0)).fetchall()
+    grouped = defaultdict(list)
+
+    for id_route, id_location, _ in rows:
+        grouped[id_route].append(id_location)
+
+    mat = db.distances()
+    dist = 0
+    for plan in grouped.values():
+        stops = [0, *plan, 0]
+        for idx, stop in enumerate(stops[1:], 1):
+            dist += mat[stops[idx - 1], stop]
+
+    return dist / max(len(grouped), 1)

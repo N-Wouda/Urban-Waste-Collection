@@ -169,12 +169,11 @@ class Database:
 
     def compute(self, measure: Measure) -> Any:
         """
-        Computes the given performance measure on the simulation database
-        connection. Ensures all buffered data is committed before the measure
-        is computed.
+        Computes the given performance measure from data managed by this
+        database.
         """
         self.commit()
-        return measure(self.write)
+        return measure(self)
 
     def store(self, item: Event | Route) -> Optional[int]:
         # Only arrival, service and route events are logged; other arguments

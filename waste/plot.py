@@ -1,5 +1,4 @@
 import argparse
-import sqlite3
 from collections import defaultdict
 from datetime import date, datetime, time
 from itertools import cycle
@@ -58,7 +57,7 @@ def parse_args():
 
 
 def service_event_locations(
-    start: datetime, end: datetime, con: sqlite3.Connection
+    start: datetime, end: datetime, db: Database
 ) -> pd.DataFrame:
     """
     Coordinates and routes of service event between start and end.
@@ -73,7 +72,7 @@ def service_event_locations(
         WHERE se.time >= ? AND se.time <= ?
         ORDER BY se.id_route, se.time ASC;
     """
-    return pd.read_sql_query(sql, con, params=(start, end))
+    return pd.read_sql_query(sql, db.write, params=(start, end))
 
 
 def main():
@@ -86,7 +85,7 @@ def main():
     end = datetime.combine(args.end, time.max)
 
     db = Database(src_db, res_db, exists_ok=True)
-    df = db.compute(lambda con: service_event_locations(start, end, con))
+    df = db.compute(lambda db: service_event_locations(start, end, db))
 
     # A route is a list of services. Since we don't know the number of services
     # upfront, we use a defaultdict list to append the services

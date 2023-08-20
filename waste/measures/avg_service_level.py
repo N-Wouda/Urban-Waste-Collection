@@ -1,7 +1,7 @@
-import sqlite3
+from waste.classes import Database
 
 
-def avg_service_level(con: sqlite3.Connection) -> float:
+def avg_service_level(db: Database) -> float:
     """
     This measure computes the service level of serviced containers.
     """
@@ -11,5 +11,5 @@ def avg_service_level(con: sqlite3.Connection) -> float:
             INNER JOIN source.containers AS c
                 ON se.container = c.name;
     """
-    row = con.execute(sql).fetchone()
+    row = db.write.execute(sql).fetchone()
     return row[0] if row[0] is not None else 1.0

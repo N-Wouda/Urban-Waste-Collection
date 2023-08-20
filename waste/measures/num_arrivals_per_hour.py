@@ -1,11 +1,10 @@
-import sqlite3
-
 import numpy as np
 
+from waste.classes import Database
 from waste.constants import HOURS_IN_DAY
 
 
-def num_arrivals_per_hour(con: sqlite3.Connection) -> list[float]:
+def num_arrivals_per_hour(db: Database) -> list[float]:
     """
     Number of arrivals at each hour of the day, over all containers.
     This is helpful to quickly check that our arrival process is OK.
@@ -18,7 +17,7 @@ def num_arrivals_per_hour(con: sqlite3.Connection) -> list[float]:
         ORDER BY hour;
     """
     histogram = np.zeros((HOURS_IN_DAY,))
-    for hour, num_arrivals in con.execute(sql):
+    for hour, num_arrivals in db.write.execute(sql):
         histogram[hour] = num_arrivals
 
     return histogram
