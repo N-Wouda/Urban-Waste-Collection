@@ -18,7 +18,7 @@ def avg_route_distance(db: Database) -> float:
     dist = 0
 
     for plan in _stops(db.write):
-        stops = np.array([loc2idx[name] for name in ["Depot", *plan, "Depot"]])
+        stops = np.array([0, *[loc2idx[name] for name in plan], 0])
         dist += mat[stops[:-1], stops[1:]].sum()
 
     return dist / max(_num_routes(db.write), 1)

@@ -32,15 +32,16 @@ class MockStrategy:
         return self.routes
 
 
-def dist(mat: np.ndarray, routes: list[Route]) -> int:
+def cum_value(mat: np.ndarray, routes: list[Route]):
     """
-    Computes the total distance of all routes in the route plan. This is a
-    dead simple implementation so that we know for sure it's correct.
+    Computes the total cumulative value of all routes in the route plan, given
+    the matrix describing the edge values. This is a dead simple implementation
+    so that we know for sure it's correct.
     """
-    dist = 0
+    cum_val = np.array([0], dtype=mat.dtype)
     for route in routes:
         plan = np.array(route.plan)
         stops = [0, *(plan + 1), 0]
         for idx, stop in enumerate(stops[1:], 1):
-            dist += mat[stops[idx - 1], stop]
-    return dist
+            cum_val += mat[stops[idx - 1], stop]
+    return cum_val.item()
