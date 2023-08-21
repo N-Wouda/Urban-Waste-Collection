@@ -22,7 +22,7 @@ class PrizeCollectingStrategy:
                 fit_intercept=False,
             )
 
-            model.fit([0, 150], [0, 1])  # TODO make this data an argument
+            model.fit([0, 100], [0, 1])  # TODO make this data an argument
             self.models.append(model)
 
     def plan(self, event: ShiftPlanEvent) -> list[Route]:
