@@ -1,3 +1,11 @@
+import logging.config
+
+import tomli
+
+# Must precede any imports, see https://stackoverflow.com/a/20280587.
+with open("logging.toml", "rb") as file:
+    logging.config.dictConfig(tomli.load(file))
+
 import argparse
 import glob
 import logging
