@@ -1,4 +1,4 @@
-from datetime import datetime, time, timedelta
+from datetime import date, datetime, time, timedelta
 from itertools import count
 
 import pytest
@@ -19,6 +19,7 @@ from waste.classes import (
     Simulator,
 )
 from waste.constants import HOURS_IN_DAY
+from waste.functions import generate_events
 
 
 def test_events_are_sealed_and_stored_property():
@@ -83,7 +84,7 @@ def test_stored_events_are_sorted_in_time():
     ),
 )
 def test_break_is_stored(early: time, late: time, duration: timedelta):
-    db = Database("tests/test.db", ":memory:", exists_ok=True)
+    db = Database("tests/test.db", ":memory:")
     config = Configuration(BREAKS=((early, late, duration),))
     sim = Simulator(
         default_rng(0),
@@ -117,3 +118,39 @@ def test_break_is_stored(early: time, late: time, duration: timedelta):
     assert_equal(stored_breaks[0].duration, duration)
     assert_(stored_breaks[0].time >= datetime.combine(now.date(), early))
     assert_(stored_breaks[0].time <= datetime.combine(now.date(), late))
+
+
+def test_observing_events():
+    """
+    Smoke test that checks the strategy gets to see all generated events.
+    """
+    db = Database("tests/test.db", ":memory:")
+    sim = Simulator(
+        default_rng(0),
+        db.depot(),
+        db.distances(),
+        db.durations(),
+        db.containers(),
+        db.vehicles(),
+    )
+
+    class Mock:
+        def __init__(self, **kwargs):
+            pass
+
+        def plan(self, *args, **kwargs):
+            return []
+
+        def observe(self, event):
+            # Each observed event has already happened, so they should be
+            # sealed by the time we get here.
+            assert_(event.is_sealed())
+            seen.append(event)
+
+    seen = []
+    init = generate_events(sim, date.today(), date.today() + timedelta(days=4))
+    sim(lambda event: None, Mock(), init)
+
+    # Should have seen all initial events. Since the mock strategy above does
+    # not generate new events, the length of seen should correspond with init.
+    assert_equal(len(seen), len(init))
