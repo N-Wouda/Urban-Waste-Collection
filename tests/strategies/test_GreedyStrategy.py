@@ -48,7 +48,7 @@ def test_raises_when_route_plan_is_infeasible():
     greedy = GreedyStrategy(num_containers=5, max_runtime=0.1)
 
     with assert_raises(RuntimeError):
-        greedy(sim, ShiftPlanEvent(datetime.now()))
+        greedy.plan(sim, ShiftPlanEvent(datetime.now()))
 
 
 @pytest.mark.parametrize("num_containers", [1, 2, 5])
@@ -68,10 +68,10 @@ def test_routes_containers_with_most_arrivals(num_containers: int):
         c.num_arrivals = arrival
 
     greedy = GreedyStrategy(num_containers=num_containers, max_runtime=0.1)
-    res = greedy(sim, ShiftPlanEvent(datetime.now()))
+    routes = greedy.plan(sim, ShiftPlanEvent(datetime.now()))
 
     # There should be exactly num_containers in the route plan.
-    actually_visited = {c for route in res for c in route.plan}
+    actually_visited = {c for route in routes for c in route.plan}
     assert_equal(len(actually_visited), num_containers)
 
     # The visited containers should be the ones with the highest number of
@@ -103,8 +103,8 @@ def test_greedy_better_than_random():
     random = RandomStrategy(containers_per_route=2)
 
     event = ShiftPlanEvent(datetime.now())
-    greedy_res = greedy(sim, event)
-    random_res = random(sim, event)
+    greedy_res = greedy.plan(sim, event)
+    random_res = random.plan(sim, event)
 
     # There's no guarantee that greedy is always better than random, but it's
     # pretty unlikely that that is not the case. Indeed, for this seed, it is

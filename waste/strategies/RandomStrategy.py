@@ -1,6 +1,6 @@
 import numpy as np
 
-from waste.classes import Route, ShiftPlanEvent, Simulator
+from waste.classes import Event, Route, ShiftPlanEvent, Simulator
 
 
 class RandomStrategy:
@@ -14,7 +14,7 @@ class RandomStrategy:
 
         self.containers_per_route = containers_per_route
 
-    def __call__(self, sim: Simulator, event: ShiftPlanEvent) -> list[Route]:
+    def plan(self, sim: Simulator, event: ShiftPlanEvent) -> list[Route]:
         # We select randomly from containers with arrivals, favouring those
         # with more arrivals.
         arrivals = [c.num_arrivals for c in sim.containers]
@@ -29,3 +29,6 @@ class RandomStrategy:
             Route(plan=list(plan), vehicle=vehicle, start_time=event.time)
             for plan, vehicle in zip(containers, sim.vehicles)
         ]
+
+    def observe(self, event: Event):
+        pass  # unused by this strategy

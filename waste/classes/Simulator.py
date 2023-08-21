@@ -100,7 +100,11 @@ class Simulator:
             # values ("sealed"). After sealing, an event's state has become
             # independent from that of the objects it references.
             event.seal()
+
+            # Store the event, and pass it to the strategy so it can do its
+            # own thing.
             store(event)
+            strategy.observe(event)
 
             match event:
                 case ArrivalEvent(time=time, container=c, volume=vol):
@@ -113,7 +117,7 @@ class Simulator:
                     logger.debug(f"Break for {v.name} at t = {time}.")
                 case ShiftPlanEvent(time=time):
                     logger.info(f"Generating shift plan at t = {time}.")
-                    for route in strategy(self, event):
+                    for route in strategy.plan(self, event):
                         id_route = store(route)
                         assert id_route is not None
 

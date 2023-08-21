@@ -6,7 +6,7 @@ import numpy as np
 from pyvrp import Model
 from pyvrp.stop import MaxRuntime
 
-from waste.classes import Route, ShiftPlanEvent, Simulator
+from waste.classes import Event, Route, ShiftPlanEvent, Simulator
 from waste.functions import f2i
 
 logger = logging.getLogger(__name__)
@@ -35,7 +35,7 @@ class GreedyStrategy:
         self.num_containers = num_containers
         self.max_runtime = max_runtime
 
-    def __call__(self, sim: Simulator, event: ShiftPlanEvent) -> list[Route]:
+    def plan(self, sim: Simulator, event: ShiftPlanEvent) -> list[Route]:
         container_idcs = self._get_container_idcs(sim)
         model = self._make_model(sim, container_idcs)
         result = model.solve(stop=MaxRuntime(self.max_runtime))
@@ -57,6 +57,9 @@ class GreedyStrategy:
             )
             for route in result.best.get_routes()
         ]
+
+    def observe(self, event: Event):
+        pass  # unused by this strategy
 
     def _make_model(
         self, sim: Simulator, container_idcs: np.ndarray[int]

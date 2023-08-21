@@ -81,7 +81,7 @@ def test_strategy_with_a_lot_of_arrivals():
     # Only first two containers have any arrivals (and a lot of them, too).
     # Since num_containers = 2, only those two should show up in the routing
     # decisions.
-    routes = baseline(sim, ShiftPlanEvent(time=datetime.now()))
+    routes = baseline.plan(sim, ShiftPlanEvent(time=datetime.now()))
     assert_equal(len(routes), 1)
     assert_equal(len(routes[0]), 2)
     assert_(0 in routes[0].plan)
@@ -118,7 +118,7 @@ def test_strategy_considers_container_capacities():
     # Both containers have seen two arrivals. But the second container has
     # double the capacity of the first. Since we can visit only a single
     # container, the baseline strategy should visit the smaller container.
-    routes = baseline(sim, ShiftPlanEvent(time=datetime.now()))
+    routes = baseline.plan(sim, ShiftPlanEvent(time=datetime.now()))
     assert_equal(len(routes), 1)
     assert_equal(len(routes[0]), 1)
     assert_(0 in routes[0].plan)
@@ -150,7 +150,7 @@ def test_strategy_considers_container_arrival_rates():
     # Neither container has seen any arrival. The second container fills up
     # twice as fast as the first container. Since we can visit only a single
     # container, we should prioritise the second one.
-    routes = baseline(sim, ShiftPlanEvent(time=datetime.now()))
+    routes = baseline.plan(sim, ShiftPlanEvent(time=datetime.now()))
     assert_equal(len(routes), 1)
     assert_equal(len(routes[0]), 1)
     assert_(1 in routes[0].plan)

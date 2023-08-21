@@ -1,4 +1,4 @@
-from waste.classes import Route, ShiftPlanEvent, Simulator
+from waste.classes import Event, Route, ShiftPlanEvent, Simulator
 
 
 class PrizeCollectingStrategy:
@@ -9,6 +9,10 @@ class PrizeCollectingStrategy:
     def __init__(self, **kwargs):
         pass
 
-    def __call__(self, sim: Simulator, event: ShiftPlanEvent) -> list[Route]:
+    def plan(self, sim: Simulator, event: ShiftPlanEvent) -> list[Route]:
         # TODO
         return []
+
+    def observe(self, event: Event):
+        # TODO
+        pass

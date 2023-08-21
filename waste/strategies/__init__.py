@@ -8,7 +8,7 @@ from .PrizeCollectingStrategy import PrizeCollectingStrategy
 from .RandomStrategy import RandomStrategy
 
 if TYPE_CHECKING:
-    from waste.classes import Route, ShiftPlanEvent, Simulator
+    from waste.classes import Event, Route, ShiftPlanEvent, Simulator
 
 
 class Strategy(Protocol):
@@ -19,7 +19,10 @@ class Strategy(Protocol):
     def __init__(self, **kwargs):
         pass
 
-    def __call__(self, sim: Simulator, event: ShiftPlanEvent) -> list[Route]:
+    def plan(self, sim: Simulator, event: ShiftPlanEvent) -> list[Route]:
+        pass
+
+    def observe(self, event: Event):
         pass
 
 
