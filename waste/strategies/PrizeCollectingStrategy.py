@@ -1,4 +1,4 @@
-from waste.classes import Event, Route, ShiftPlanEvent, Simulator
+from waste.classes import Event, Route, ServiceEvent, ShiftPlanEvent, Simulator
 
 
 class PrizeCollectingStrategy:
@@ -14,5 +14,13 @@ class PrizeCollectingStrategy:
         return []
 
     def observe(self, event: Event):
-        # TODO
-        pass
+        if not isinstance(event, ServiceEvent):
+            # We're only interested in service events, since those tell us
+            # something about whether a container has overflowed.
+            return
+
+        # container = event.container
+        # num_arrivals = event.num_arrivals
+        # has_overflow = event.volume > container.capacity
+
+        # TODO update parameter estimate for container
