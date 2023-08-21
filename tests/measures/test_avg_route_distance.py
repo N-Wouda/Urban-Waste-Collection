@@ -44,7 +44,7 @@ def test_for_routes_without_breaks(visits: list[list[int]]):
     now = datetime.now()
     routes = [Route(plan, veh, now) for plan, veh in zip(visits, sim.vehicles)]
     events: list[Event] = [ShiftPlanEvent(time=now)]
-    sim(db.store, MockStrategy(routes), events)
+    sim(db.store, MockStrategy(sim, routes), events)
 
     # We're given a set of routes, and we already have a known-good helper for
     # computing the distance. Let's check the measure computes the same thing.
@@ -82,7 +82,7 @@ def test_with_breaks(break_time):
     # Single route plan visiting all five containers three times. That takes
     # several hours, so the break should definitely be scheduled.
     routes = [Route([0, 1, 2, 3, 4] * 4, sim.vehicles[0], now)]
-    strategy = MockStrategy(routes)
+    strategy = MockStrategy(sim, routes)
     sim(db.store, strategy, [ShiftPlanEvent(time=now)])
 
     # First check that the total distance returned by avg_route_distance is

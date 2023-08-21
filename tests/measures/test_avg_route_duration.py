@@ -46,7 +46,7 @@ def test_for_routes_without_breaks(visits: list[list[int]]):
     now = datetime.now()
     routes = [Route(plan, veh, now) for plan, veh in zip(visits, sim.vehicles)]
     events: list[Event] = [ShiftPlanEvent(time=now)]
-    sim(db.store, MockStrategy(routes), events)
+    sim(db.store, MockStrategy(sim, routes), events)
 
     # We're given a set of routes, and we already have a known-good helper for
     # computing the travel duration. When we add the actual number of stops,
@@ -94,7 +94,7 @@ def test_with_breaks(container_time, break_time, between):
     # Single route plan visiting all five containers three times. That takes
     # several hours, so the break should definitely be scheduled.
     routes = [Route([0, 1, 2, 3, 4] * 3, sim.vehicles[0], now)]
-    sim(db.store, MockStrategy(routes), [ShiftPlanEvent(time=now)])
+    sim(db.store, MockStrategy(sim, routes), [ShiftPlanEvent(time=now)])
 
     # The break is had between the given two location IDs. So we should have
     # additional duration of travelling back to the depot in between, minus

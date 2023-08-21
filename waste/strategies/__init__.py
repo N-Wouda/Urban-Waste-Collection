@@ -16,10 +16,10 @@ class Strategy(Protocol):
     # Should be able to take arbitrary arguments, some of which may be
     # discarded. This makes it much easier to work with the strategies from
     # the simulate entrypoint.
-    def __init__(self, **kwargs):
+    def __init__(self, sim: Simulator, **kwargs):
         pass
 
-    def plan(self, sim: Simulator, event: ShiftPlanEvent) -> list[Route]:
+    def plan(self, event: ShiftPlanEvent) -> list[Route]:
         pass
 
     def observe(self, event: Event):

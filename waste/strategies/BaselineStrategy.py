@@ -12,6 +12,8 @@ class BaselineStrategy(GreedyStrategy):
 
     Parameters
     ----------
+    sim
+        The simulation environment.
     deposit_volume
         Assumed volume of the deposit with each arrival. This allows us to
         translate the number of arrivals into a total volume, and thus
@@ -24,32 +26,33 @@ class BaselineStrategy(GreedyStrategy):
 
     def __init__(
         self,
+        sim: Simulator,
         deposit_volume: float,
         num_containers: int,
         max_runtime: float,
         **kwargs
     ):
-        super().__init__(num_containers, max_runtime, **kwargs)
+        super().__init__(sim, num_containers, max_runtime, **kwargs)
 
         if deposit_volume <= 0.0:
             raise ValueError("Expected deposit_volume > 0.")
 
         self.deposit_volume = deposit_volume
 
-    def _get_container_idcs(self, sim: Simulator) -> np.ndarray[int]:
-        if self.num_containers >= len(sim.containers):
-            return np.arange(0, len(sim.containers))
+    def _get_container_idcs(self) -> np.ndarray[int]:
+        if self.num_containers >= len(self.sim.containers):
+            return np.arange(0, len(self.sim.containers))
 
         # Step 1. Determine current volume in each container based on the
         # current number of arrivals.
-        arrivals = np.array([c.num_arrivals for c in sim.containers])
+        arrivals = np.array([c.num_arrivals for c in self.sim.containers])
         curr_vols = self.deposit_volume * arrivals
 
         # Step 2. Determine the amount of time it'll take for each container to
         # fill up, given the current volume and the average arrival rate.
-        capacities = np.array([c.capacity for c in sim.containers])
+        capacities = np.array([c.capacity for c in self.sim.containers])
         max_extra = np.maximum(capacities - curr_vols, 0) / self.deposit_volume
-        avg_rates = np.array([np.mean(c.rates) for c in sim.containers])
+        avg_rates = np.array([np.mean(c.rates) for c in self.sim.containers])
 
         # Divide max_extra / avg_rates, with some special precautions in case
         # avg_rates is zero somewhere (we set num_hours to +inf in that case).

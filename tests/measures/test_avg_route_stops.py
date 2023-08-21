@@ -39,7 +39,7 @@ def test_for_several_routes(visits: list[list[int]], expected: float):
 
     now = datetime.now()
     routes = [Route(plan, veh, now) for plan, veh in zip(visits, sim.vehicles)]
-    strategy = MockStrategy(routes)
+    strategy = MockStrategy(sim, routes)
 
     events: list[Event] = [ShiftPlanEvent(time=now)]
     sim(db.store, strategy, events)

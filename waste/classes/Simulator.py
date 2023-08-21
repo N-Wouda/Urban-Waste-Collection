@@ -117,7 +117,7 @@ class Simulator:
                     logger.debug(f"Break for {v.name} at t = {time}.")
                 case ShiftPlanEvent(time=time):
                     logger.info(f"Generating shift plan at t = {time}.")
-                    for route in strategy.plan(self, event):
+                    for route in strategy.plan(event):
                         id_route = store(route)
                         assert id_route is not None
 

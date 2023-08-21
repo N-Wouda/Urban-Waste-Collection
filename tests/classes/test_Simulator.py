@@ -49,7 +49,7 @@ def test_events_are_sealed_and_stored_property():
 
     # Simulate and 'store' the sealed events to a list.
     stored = []
-    sim(lambda event: stored.append(event), NullStrategy(), init)
+    sim(lambda event: stored.append(event), NullStrategy(sim), init)
 
     # Simulation should not have created any new events.
     assert_equal(len(init), len(stored))
@@ -71,7 +71,7 @@ def test_stored_events_are_sorted_in_time():
     ]
 
     stored = []
-    sim(lambda event: stored.append(event), NullStrategy(), init)
+    sim(lambda event: stored.append(event), NullStrategy(sim), init)
     assert_equal(stored, sorted(stored, key=lambda event: event.time))
 
 
@@ -110,7 +110,8 @@ def test_break_is_stored(early: time, late: time, duration: timedelta):
     # the same four containers five times in a row). That takes about four
     # hours, so the break should be scheduled during that time.
     now = datetime(2023, 8, 18, 7, 0, 0)
-    strategy = MockStrategy([Route([1, 2, 3, 4] * 5, sim.vehicles[0], now)])
+    routes = [Route([1, 2, 3, 4] * 5, sim.vehicles[0], now)]
+    strategy = MockStrategy(sim, routes)
     sim(mock_store, strategy, [ShiftPlanEvent(time=now)])
 
     stored_breaks = list(filter(lambda e: isinstance(e, BreakEvent), stored))
@@ -135,7 +136,7 @@ def test_observing_events():
     )
 
     class Mock:
-        def __init__(self, **kwargs):
+        def __init__(self, sim, **kwargs):
             pass
 
         def plan(self, *args, **kwargs):
@@ -149,7 +150,7 @@ def test_observing_events():
 
     seen = []
     init = generate_events(sim, date.today(), date.today() + timedelta(days=4))
-    sim(lambda event: None, Mock(), init)
+    sim(lambda event: None, Mock(sim), init)
 
     # Should have seen all initial events. Since the mock strategy above does
     # not generate new events, the length of seen should correspond with init.

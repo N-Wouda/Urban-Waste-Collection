@@ -58,7 +58,7 @@ def parse_args():
 
 
 def validate_args(args):
-    if args.strategy not in STRATEGIES.keys():
+    if args.strategy not in STRATEGIES:
         raise ValueError(f"Strategy '{args.strategy}' not understood.")
 
     if args.start >= args.end:
@@ -82,7 +82,7 @@ def main():
         db.vehicles(),
     )
 
-    strategy = STRATEGIES[args.strategy](**vars(args))
+    strategy = STRATEGIES[args.strategy](sim, **vars(args))
 
     # Simulate and store results. First we create initial events: these are all
     # arrival events, and shift planning times. The simulation starts with

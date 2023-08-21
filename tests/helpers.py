@@ -13,10 +13,10 @@ class NullStrategy:
     Strategy that does nothing.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, sim: Simulator, **kwargs):
         pass
 
-    def plan(self, sim: Simulator, event: ShiftPlanEvent) -> list[Route]:
+    def plan(self, event: ShiftPlanEvent) -> list[Route]:
         return []
 
     def observe(self, event: Event):
@@ -28,10 +28,10 @@ class MockStrategy:
     Simple mock strategy that returns the same routes upon each call.
     """
 
-    def __init__(self, routes: list[Route], **kwargs):
+    def __init__(self, sim: Simulator, routes: list[Route], **kwargs):
         self.routes = routes
 
-    def plan(self, sim: Simulator, event: ShiftPlanEvent) -> list[Route]:
+    def plan(self, event: ShiftPlanEvent) -> list[Route]:
         return self.routes
 
     def observe(self, event: Event):

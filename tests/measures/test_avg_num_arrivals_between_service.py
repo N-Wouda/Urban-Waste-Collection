@@ -62,5 +62,5 @@ def test_for_single_container(event_pattern: str, expected: float):
                 )
             )
 
-    sim(db.store, NullStrategy(), events)
+    sim(db.store, NullStrategy(sim), events)
     assert_allclose(db.compute(avg_num_arrivals_between_service), expected)
