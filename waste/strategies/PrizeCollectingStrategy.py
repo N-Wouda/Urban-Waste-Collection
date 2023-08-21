@@ -1,5 +1,6 @@
 from collections import defaultdict
 
+import numpy as np
 from sklearn.linear_model import SGDClassifier
 
 from waste.classes import Event, Route, ServiceEvent, ShiftPlanEvent, Simulator
@@ -10,10 +11,13 @@ class PrizeCollectingStrategy:
     Dispatching via prize-collecting.
     """
 
-    def __init__(self, sim: Simulator, **kwargs):
+    def __init__(self, sim: Simulator, rho: int, threshold: float, **kwargs):
         self.sim = sim
-        self.models = []
+        self.rho = rho
+        self.threshold = threshold
+
         self.data: dict[int, list[tuple[int, bool]]] = defaultdict(list)
+        self.models: list[SGDClassifier] = []
 
         for _ in sim.containers:
             model = SGDClassifier(
@@ -28,9 +32,20 @@ class PrizeCollectingStrategy:
     def plan(self, event: ShiftPlanEvent) -> list[Route]:
         # Step 1. Update the models with data observed since the last shift
         # plan, and clear the data.
-        # TODO
+        for idx, container in enumerate(self.sim.containers):
+            data = np.array(self.data[id(container)])
+            self.models[idx].partial_fit(data[0, :], data[1, :])
+            self.data[id(container)] = []
 
         # Step 2. Determine prizes, required containers, and solve the VRP.
+        # probs = [
+        #     m.predict_proba(c.num_arrivals)
+        #     for c, m in zip(self.sim.containers, self.models)
+        # ]
+
+        # prizes = [int(self.rho * prob) for prob in probs]
+        # required = [prob > self.threshold for prob in probs]
+
         # TODO
 
         # Step 3. Return the route plan.
