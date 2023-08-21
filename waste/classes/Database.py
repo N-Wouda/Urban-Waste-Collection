@@ -69,8 +69,8 @@ class Database:
 
                     CREATE TABLE break_events (
                         time DATETIME,
-                        id_route INTEGER references routes,
-                        duration FLOAT
+                        duration FLOAT,
+                        id_route INTEGER references routes
                     );
 
                     CREATE TABLE service_events (
@@ -243,14 +243,14 @@ class Database:
                         """--sql
                             INSERT INTO break_events (
                                 time,
-                                id_route,
-                                duration
+                                duration,
+                                id_route
                             ) VALUES (?, ?, ?);
                         """,
                         (
                             e.time,
-                            e.id_route,
                             e.duration.total_seconds(),
+                            e.id_route,
                         ),
                     )
                 case ShiftPlanEvent():

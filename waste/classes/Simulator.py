@@ -147,7 +147,7 @@ class Simulator:
                     now += dep_travel
                     break_idx += 1
 
-                    yield BreakEvent(now, id_route, break_dur, route.vehicle)
+                    yield BreakEvent(now, break_dur, id_route, route.vehicle)
 
                     now += break_dur
                     prev = 0

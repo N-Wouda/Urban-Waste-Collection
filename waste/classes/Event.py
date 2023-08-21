@@ -111,12 +111,12 @@ class BreakEvent(Event):
     def __init__(
         self,
         time: datetime,
-        id_route: int,
         duration: timedelta,
+        id_route: int,
         vehicle: Vehicle,
     ):
         super().__init__(time)
 
-        self.id_route = id_route
         self.duration = duration
+        self.id_route = id_route
         self.vehicle = vehicle
