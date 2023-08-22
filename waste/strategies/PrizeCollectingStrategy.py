@@ -74,8 +74,8 @@ class PrizeCollectingStrategy:
 
     def plan(self, event: ShiftPlanEvent) -> list[Route]:
         probs = [
-            self.models[id(c)].prob(c.num_arrivals)
-            for c in self.sim.containers
+            self.models[id(container)].prob(container.num_arrivals)
+            for container in self.sim.containers
         ]
 
         model = make_model(
