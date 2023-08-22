@@ -50,7 +50,7 @@ class GreedyStrategy:
 
         return [
             Route(
-                # PyVRP considers 0 the depot, and start counting client
+                # PyVRP considers 0 the depot, and starts counting client
                 # (container) indices from 1. So we need to subtract 1 from
                 # the index returned by PyVRP before we map back to the
                 # container indices.
