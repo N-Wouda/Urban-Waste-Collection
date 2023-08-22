@@ -66,5 +66,5 @@ def test_single_container(event_pattern: str, volume: float, expected: float):
                 )
             )
 
-    sim(db.store, NullStrategy(), events)
+    sim(db.store, NullStrategy(sim), events)
     assert_allclose(db.compute(avg_excess_volume), expected)
