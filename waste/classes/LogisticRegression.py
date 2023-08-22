@@ -10,11 +10,24 @@ logger = logging.getLogger(__name__)
 
 class LogisticRegression:
     """
-    A class implementing a self-adjusting logistic regression. TODO
+    A class implementing a self-adjusting logistic regression. Initially,
+    default parameters are fitted base on the container capacity, deposit
+    volume, and the epsilon parameter. After a number of observations, the
+    method switches to fitting parameters based on the observed data, rather
+    than the initial values.
 
     Parameters
     ----------
-    TODO
+    container
+        Container whose arrival behaviour we're trying to model here.
+    deposit_volume
+        Estimated volume of a single deposit. Used to determine initial
+        parameters.
+    obs_until_switch
+        Number of observations needed before switching from initial parameters
+        to those based on observed data. Default 10.
+    eps
+        Epsilon value to use when determining the initial parameters.
     """
 
     def __init__(
