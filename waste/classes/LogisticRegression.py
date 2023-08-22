@@ -33,12 +33,12 @@ class LogisticRegression:
         #   p(0) = eps
         #   p(full_after) = 1 - eps
         full_after = self.container.capacity / deposit_volume
-        b0 = np.log(1 / eps - 1)
-        b1 = (np.log(1 / (1 - eps) - 1) - b0) / full_after
-        self.params = [b0, b1]
+        b0 = -np.log(1 / eps - 1)
+        b1 = (-np.log(1 / (1 - eps) - 1) - b0) / full_after
+        self.params = np.array([b0, b1])
 
     def prob(self, num_arrivals: float) -> float:
-        return 1 / (1 + np.exp(self.params[0] + self.params[1] * num_arrivals))
+        return 1 / (1 + np.exp(-self.params @ [1, num_arrivals]))
 
     def observe(self, x: int, y: bool):
         logger.debug(f"{self.container.name}: observing ({x}, {y}).")
@@ -53,8 +53,11 @@ class LogisticRegression:
         X = data[:, :2]
         y = data[:, 2]
 
-        def loglik(b):
+        def loglik(b):  # minus since we want to maximize
             return -np.sum(y * (X @ b) - np.log(1 + np.exp(X @ b)))
 
-        res = optimize.minimize(loglik, self.params, bounds=[(0, 15), (0, 1)])
+        params = self.params
+        inf = np.inf
+
+        res = optimize.minimize(loglik, params, bounds=((-inf, inf), (0, 1)))
         self.params = res.x

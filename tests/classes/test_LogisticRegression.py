@@ -37,8 +37,24 @@ def test_switch_to_actual_model_all_zero_obs(obs_before_switch: int):
 
         lr.observe(0, False)
 
-    # All our data is (0, False). It is then optimal to set all parameters to
-    # zero, which gives a prediction of 1 / 2 everywhere.
-    assert_allclose(lr.prob(-100), 0.5)
-    assert_allclose(lr.prob(0), 0.5)
-    assert_allclose(lr.prob(100), 0.5)
+    # All our data is (0, False), so
+    assert_allclose(lr.prob(-100), 0, atol=1e-2)
+    assert_allclose(lr.prob(0), 0, atol=1e-2)
+    assert_allclose(lr.prob(100), 1, atol=1e-2)
+
+
+def test_switch_increasing_sequence():
+    """
+    Simple test that checks whether learning on 100 structured observations of
+    50 False, 50 True fits the data correctly: p(0) is definitely 0, p(99) is
+    definitely 1, and the mid way point p(49.5) is 0.5.
+    """
+    container = Container("test", [0] * HOURS_IN_DAY, 4_000, (0, 0))
+    lr = LogisticRegression(container, 60)
+
+    for idx in range(100):
+        lr.observe(idx, idx >= 50)
+
+    assert_allclose(lr.prob(0), 0, atol=1e-5)
+    assert_allclose(lr.prob(99 / 2), 0.5, atol=1e-5)
+    assert_allclose(lr.prob(99), 1, atol=1e-5)
