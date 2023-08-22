@@ -9,6 +9,10 @@ from .f2i import f2i
 
 
 def make_model(sim: Simulator, container_idcs: list[int]) -> Model:
+    """
+    Creates a PyVRP model instance with the given containers as clients, using
+    data from the passed-in simulation environment.
+    """
     time_per_container = sim.config.TIME_PER_CONTAINER
     shift_duration = sim.config.SHIFT_DURATION
 
