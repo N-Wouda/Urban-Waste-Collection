@@ -37,10 +37,10 @@ def test_switch_to_actual_model_all_zero_obs(obs_before_switch: int):
 
         lr.observe(0, False)
 
-    # All our data is (0, False), so
-    assert_allclose(lr.prob(-100), 0, atol=1e-2)
-    assert_allclose(lr.prob(0), 0, atol=1e-2)
-    assert_allclose(lr.prob(100), 1, atol=1e-2)
+    # All our data is (0, False), so the fitted value at zero (and before)
+    # should be zero as well.
+    assert_allclose(lr.prob(-100), 0, atol=1e-5)
+    assert_allclose(lr.prob(0), 0, atol=1e-5)
 
 
 def test_switch_increasing_sequence():
