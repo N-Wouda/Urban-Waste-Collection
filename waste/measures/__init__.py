@@ -2,6 +2,7 @@ from typing import Any, Callable
 
 from waste.classes import Database
 
+from .avg_excess_volume import avg_excess_volume
 from .avg_fill_factor import avg_fill_factor
 from .avg_num_arrivals_between_service import avg_num_arrivals_between_service
 from .avg_num_routes_per_day import avg_num_routes_per_day
@@ -16,6 +17,7 @@ from .num_services import num_services
 Measure = Callable[[Database], Any]
 
 MEASURES: list[Measure] = [
+    avg_excess_volume,
     avg_fill_factor,
     avg_num_arrivals_between_service,
     avg_num_routes_per_day,
