@@ -101,9 +101,12 @@ class PrizeCollectingStrategy:
 
     def observe(self, event: Event):
         if isinstance(event, ServiceEvent):
-            # Store the new data. We will update the model in one batch the
-            # next time we plan a shift.
+            # Store the new observations. We will update the model in one batch
+            # the next time we plan a shift.
             container = event.container
             num_arrivals = event.num_arrivals
             has_overflow = event.volume > container.capacity
-            self.data[id(container)].append((num_arrivals, has_overflow))
+            obs = (num_arrivals, has_overflow)
+
+            logger.debug(f"Adding observation for {container.name}: {obs}.")
+            self.data[id(container)].append(obs)
