@@ -1,5 +1,4 @@
 import logging
-from collections import defaultdict
 from datetime import timedelta
 
 import numpy as np
@@ -41,15 +40,13 @@ class PrizeCollectingStrategy:
         max_runtime: float,
         **kwargs,
     ):
+        self.sim = sim
         self.rho = rho
         self.threshold = threshold
         self.max_runtime = max_runtime
 
-        self.sim = sim
-        self.data: dict[int, list[tuple[int, bool]]] = defaultdict(list)
-        self.models: list[SGDClassifier] = []
-
-        for _ in sim.containers:
+        self.models: dict[int, SGDClassifier] = {}
+        for container in sim.containers:
             model = SGDClassifier(
                 loss="log_loss",
                 penalty=None,
@@ -57,22 +54,14 @@ class PrizeCollectingStrategy:
             )
 
             model.fit([0, 100], [0, 1])  # TODO make this data an argument
-            self.models.append(model)
+            self.models[id(container)] = model
 
     def plan(self, event: ShiftPlanEvent) -> list[Route]:
-        # Step 1. Update the models with data observed since the last shift
-        # plan, clear the data, and compute the overflow probabilities.
-        for idx, container in enumerate(self.sim.containers):
-            data = np.array(self.data[id(container)])
-            self.models[idx].partial_fit(data[0, :], data[1, :])
-            self.data[id(container)] = []
-
         probs = [
-            m.predict_proba(c.num_arrivals)
-            for c, m in zip(self.sim.containers, self.models)
+            self.models[id(c)].predict_proba(c.num_arrivals)
+            for c in self.sim.containers
         ]
 
-        # Step 2. Determine prizes, required containers, and solve the VRP.
         model = make_model(
             self.sim,
             np.arange(len(self.sim.containers)),
@@ -86,7 +75,6 @@ class PrizeCollectingStrategy:
             logger.error(msg)
             raise RuntimeError(msg)
 
-        # Step 3. Return the route plan.
         return [
             Route(
                 # PyVRP considers 0 the depot, and starts counting client
@@ -100,13 +88,14 @@ class PrizeCollectingStrategy:
         ]
 
     def observe(self, event: Event):
-        if isinstance(event, ServiceEvent):
-            # Store the new observations. We will update the model in one batch
-            # the next time we plan a shift.
-            container = event.container
-            num_arrivals = event.num_arrivals
-            has_overflow = event.volume > container.capacity
-            obs = (num_arrivals, has_overflow)
+        if not isinstance(event, ServiceEvent):
+            return
 
-            logger.debug(f"Adding observation for {container.name}: {obs}.")
-            self.data[id(container)].append(obs)
+        container = event.container
+        x = event.num_arrivals
+        y = event.volume > container.capacity
+        logger.debug(f"Observing ({x}, {y}) for {container.name}.")
+
+        model = self.models[id(container)]
+        model.partial_fit(x, y)
+        logger.debug(f"Updated coefficient to {model.coef_:.2f}.")
