@@ -3,9 +3,15 @@ from datetime import timedelta
 
 import numpy as np
 from pyvrp.stop import MaxRuntime
-from sklearn.linear_model import SGDClassifier
 
-from waste.classes import Event, Route, ServiceEvent, ShiftPlanEvent, Simulator
+from waste.classes import (
+    Event,
+    LogisticRegression,
+    Route,
+    ServiceEvent,
+    ShiftPlanEvent,
+    Simulator,
+)
 from waste.functions import make_model
 
 logger = logging.getLogger(__name__)
@@ -30,6 +36,9 @@ class PrizeCollectingStrategy:
         full are visited.
     max_runtime
         Maximum runtime (in seconds) to use for route optimisation.
+    definitely_full_after
+        Upper bound on the number of deposits that fill up the largest
+        container in the simulation.
     """
 
     def __init__(
@@ -37,6 +46,7 @@ class PrizeCollectingStrategy:
         sim: Simulator,
         rho: float,
         threshold: float,
+        deposit_volume: float,
         max_runtime: float,
         **kwargs,
     ):
@@ -46,6 +56,9 @@ class PrizeCollectingStrategy:
         if not (0 <= threshold <= 1):
             raise ValueError("Expected threshold in [0, 1].")
 
+        if deposit_volume <= 0.0:
+            raise ValueError("Expected deposit_volume > 0.")
+
         if max_runtime < 0:
             raise ValueError("Expected max_runtime >= 0.")
 
@@ -54,20 +67,14 @@ class PrizeCollectingStrategy:
         self.threshold = threshold
         self.max_runtime = max_runtime
 
-        self.models: dict[int, SGDClassifier] = {}
-        for container in sim.containers:
-            model = SGDClassifier(
-                loss="log_loss",
-                penalty=None,
-                fit_intercept=False,
-            )
-
-            model.fit([0, 100], [0, 1])  # TODO make this data an argument
-            self.models[id(container)] = model
+        self.models: dict[int, LogisticRegression] = {
+            id(container): LogisticRegression(container, deposit_volume)
+            for container in sim.containers
+        }
 
     def plan(self, event: ShiftPlanEvent) -> list[Route]:
         probs = [
-            self.models[id(c)].predict_proba(c.num_arrivals)
+            self.models[id(c)].prob(c.num_arrivals)
             for c in self.sim.containers
         ]
 
@@ -97,14 +104,10 @@ class PrizeCollectingStrategy:
         ]
 
     def observe(self, event: Event):
-        if not isinstance(event, ServiceEvent):
-            return
+        if isinstance(event, ServiceEvent):
+            container = event.container
+            num_arrivals = event.num_arrivals
+            has_overflow = event.volume > container.capacity
 
-        container = event.container
-        x = event.num_arrivals
-        y = event.volume > container.capacity
-        logger.debug(f"Observing ({x}, {y}) for {container.name}.")
-
-        model = self.models[id(container)]
-        model.partial_fit(x, y)
-        logger.debug(f"Updated coefficient to {model.coef_:.2f}.")
+            model = self.models[id(container)]
+            model.observe(num_arrivals, has_overflow)
