@@ -32,9 +32,9 @@ class LogisticRegression:
         # Initially set b0 and b1 such that:
         #   p(0) = eps
         #   p(full_after) = 1 - eps
+        full_after = self.container.capacity / deposit_volume
         b0 = np.log(1 / eps - 1)
-        full_after = container.capacity / deposit_volume
-        b1 = b0 / full_after + np.log(1 / (1 - eps) - 1)
+        b1 = (np.log(1 / (1 - eps) - 1) - b0) / full_after
         self.params = [b0, b1]
 
     def prob(self, num_arrivals: float) -> float:
@@ -48,7 +48,7 @@ class LogisticRegression:
             self.optimize()
 
     def optimize(self):
-        data = np.ones((len(self.data), 2))
+        data = np.ones((len(self.data), 3))
         data[:, 1:] = self.data
         X = data[:, :2]
         y = data[:, 2]
@@ -56,5 +56,5 @@ class LogisticRegression:
         def loglik(b):
             return -np.sum(y * (X @ b) - np.log(1 + np.exp(X @ b)))
 
-        res = optimize(loglik, self.params, bounds=[(0, 15), (0, 1)])
+        res = optimize.minimize(loglik, self.params, bounds=[(0, 15), (0, 1)])
         self.params = res.x
