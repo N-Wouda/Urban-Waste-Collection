@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol
 
-from .BaselineStrategy import BaselineStrategy
-from .GreedyStrategy import GreedyStrategy
-from .PrizeCollectingStrategy import PrizeCollectingStrategy
-from .RandomStrategy import RandomStrategy
+from .BaselineStrategy import BaselineStrategy as BaselineStrategy
+from .GreedyStrategy import GreedyStrategy as GreedyStrategy
+from .PrizeCollectingStrategy import (
+    PrizeCollectingStrategy as PrizeCollectingStrategy,
+)
+from .RandomStrategy import RandomStrategy as RandomStrategy
 
 if TYPE_CHECKING:
     from waste.classes import Event, Route, ShiftPlanEvent, Simulator
