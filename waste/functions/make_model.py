@@ -1,4 +1,5 @@
 from collections import Counter
+from typing import Optional
 
 import numpy as np
 from pyvrp import Model
@@ -8,11 +9,22 @@ from waste.classes import Simulator
 from .f2i import f2i
 
 
-def make_model(sim: Simulator, container_idcs: list[int]) -> Model:
+def make_model(
+    sim: Simulator,
+    container_idcs: list[int],
+    prizes: Optional[list[int]] = None,
+    required: Optional[list[bool]] = None,
+) -> Model:
     """
     Creates a PyVRP model instance with the given containers as clients, using
     data from the passed-in simulation environment.
     """
+    if prizes is None:
+        prizes = np.zeros_like(container_idcs, dtype=int)
+
+    if required is None:
+        required = np.ones_like(container_idcs, dtype=bool)
+
     time_per_container = sim.config.TIME_PER_CONTAINER
     shift_duration = sim.config.SHIFT_DURATION
 
@@ -23,13 +35,15 @@ def make_model(sim: Simulator, container_idcs: list[int]) -> Model:
         tw_late=int(shift_duration.total_seconds()),
     )
 
-    for container_idx in container_idcs:
+    for idx, container_idx in enumerate(container_idcs):
         container = sim.containers[container_idx]
         model.add_client(
             x=f2i(container.location[0]),
             y=f2i(container.location[1]),
             service_duration=int(time_per_container.total_seconds()),
             tw_late=int(shift_duration.total_seconds()),
+            prize=prizes[idx],
+            required=required[idx],
         )
 
     vehicle_count = Counter(int(v.capacity) for v in sim.vehicles)

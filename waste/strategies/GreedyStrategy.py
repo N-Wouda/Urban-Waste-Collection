@@ -41,8 +41,8 @@ class GreedyStrategy:
     def plan(self, event: ShiftPlanEvent) -> list[Route]:
         container_idcs = self._get_container_idcs()
         model = make_model(self.sim, container_idcs)
-        result = model.solve(stop=MaxRuntime(self.max_runtime))
 
+        result = model.solve(stop=MaxRuntime(self.max_runtime))
         if not result.is_feasible():
             msg = f"Shiftplan at time {event.time} is infeasible!"
             logger.error(msg)

@@ -48,8 +48,10 @@ def parse_args():
     greedy.add_argument("--num_containers", type=int, required=True)
     greedy.add_argument("--max_runtime", type=float, required=True)
 
-    # TODO flesh out the following strategy
-    subparsers.add_parser("prize")
+    prize = subparsers.add_parser("prize")
+    prize.add_argument("--rho", type=float, required=True)
+    prize.add_argument("--threshold", type=float, required=True)
+    prize.add_argument("--max_runtime", type=float, required=True)
 
     random = subparsers.add_parser("random")
     random.add_argument("--containers_per_route", type=int, required=True)
