@@ -40,6 +40,15 @@ class PrizeCollectingStrategy:
         max_runtime: float,
         **kwargs,
     ):
+        if rho < 0:
+            raise ValueError("Expected rho >= 0.")
+
+        if not (0 <= threshold <= 1):
+            raise ValueError("Expected threshold in [0, 1].")
+
+        if max_runtime < 0:
+            raise ValueError("Expected max_runtime >= 0.")
+
         self.sim = sim
         self.rho = rho
         self.threshold = threshold
