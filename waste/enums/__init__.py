@@ -1,2 +1,2 @@
-from .EventStatus import EventStatus
-from .LocationType import LocationType
+from .EventStatus import EventStatus as EventStatus
+from .LocationType import LocationType as LocationType

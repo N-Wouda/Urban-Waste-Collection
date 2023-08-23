@@ -48,8 +48,11 @@ def parse_args():
     greedy.add_argument("--num_containers", type=int, required=True)
     greedy.add_argument("--max_runtime", type=float, required=True)
 
-    # TODO flesh out the following strategy
-    subparsers.add_parser("prize")
+    prize = subparsers.add_parser("prize")
+    prize.add_argument("--rho", type=float, required=True)
+    prize.add_argument("--threshold", type=float, required=True)
+    prize.add_argument("--deposit_volume", type=float, required=True)
+    prize.add_argument("--max_runtime", type=float, required=True)
 
     random = subparsers.add_parser("random")
     random.add_argument("--containers_per_route", type=int, required=True)
@@ -58,7 +61,7 @@ def parse_args():
 
 
 def validate_args(args):
-    if args.strategy not in STRATEGIES.keys():
+    if args.strategy not in STRATEGIES:
         raise ValueError(f"Strategy '{args.strategy}' not understood.")
 
     if args.start >= args.end:
@@ -82,7 +85,7 @@ def main():
         db.vehicles(),
     )
 
-    strategy = STRATEGIES[args.strategy](**vars(args))
+    strategy = STRATEGIES[args.strategy](sim, **vars(args))
 
     # Simulate and store results. First we create initial events: these are all
     # arrival events, and shift planning times. The simulation starts with

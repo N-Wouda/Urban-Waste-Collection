@@ -19,6 +19,7 @@ tomli = "^2.0.1"
 pyvrp = "0.5.0"
 folium = "^0.14.0"
 jupyter = "^1.0.0"
+scipy = "^1.11.2"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
@@ -36,11 +37,11 @@ plot = "waste.plot:main"
 line-length = 79
 
 [tool.ruff]
+ignore-init-module-imports = true
 line-length = 79
-select = ["E", "F", "I", "RET", "RSE", "RUF", "SLF", "SIM", "TCH"]
-
-[tool.ruff.per-file-ignores]
-"__init__.py" = ["F401"]  # unused imports
+select = [
+    "E", "F", "I", "NPY", "PYI", "Q", "RET", "RSE", "RUF", "SLF", "SIM", "TCH"
+]
 
 [tool.ruff.isort]
 case-sensitive = true

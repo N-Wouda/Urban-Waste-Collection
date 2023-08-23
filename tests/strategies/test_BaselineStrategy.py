@@ -37,8 +37,10 @@ from waste.strategies import BaselineStrategy, GreedyStrategy
 def test_init_raises_given_invalid_arguments(
     deposit_volume: float, num_containers: int, max_runtime: float
 ):
+    sim = Simulator(default_rng(0), Depot("", (0, 0)), [], [], [], [])
+
     with assert_raises(ValueError):
-        BaselineStrategy(deposit_volume, num_containers, max_runtime)
+        BaselineStrategy(sim, deposit_volume, num_containers, max_runtime)
 
 
 @pytest.mark.parametrize(
@@ -48,7 +50,8 @@ def test_init_raises_given_invalid_arguments(
 def test_init_does_not_raise_given_valid_arguments(
     deposit_volume: float, num_containers: int, max_runtime: float
 ):
-    BaselineStrategy(deposit_volume, num_containers, max_runtime)
+    sim = Simulator(default_rng(0), Depot("", (0, 0)), [], [], [], [])
+    BaselineStrategy(sim, deposit_volume, num_containers, max_runtime)
 
 
 def test_strategy_with_a_lot_of_arrivals():
@@ -70,6 +73,7 @@ def test_strategy_with_a_lot_of_arrivals():
     )
 
     baseline = BaselineStrategy(
+        sim,
         deposit_volume=1.0,
         num_containers=2,
         max_runtime=0.1,
@@ -81,7 +85,7 @@ def test_strategy_with_a_lot_of_arrivals():
     # Only first two containers have any arrivals (and a lot of them, too).
     # Since num_containers = 2, only those two should show up in the routing
     # decisions.
-    routes = baseline(sim, ShiftPlanEvent(time=datetime.now()))
+    routes = baseline.plan(ShiftPlanEvent(time=datetime.now()))
     assert_equal(len(routes), 1)
     assert_equal(len(routes[0]), 2)
     assert_(0 in routes[0].plan)
@@ -107,6 +111,7 @@ def test_strategy_considers_container_capacities():
     )
 
     baseline = BaselineStrategy(
+        sim,
         deposit_volume=1.0,
         num_containers=1,
         max_runtime=0.1,
@@ -118,7 +123,7 @@ def test_strategy_considers_container_capacities():
     # Both containers have seen two arrivals. But the second container has
     # double the capacity of the first. Since we can visit only a single
     # container, the baseline strategy should visit the smaller container.
-    routes = baseline(sim, ShiftPlanEvent(time=datetime.now()))
+    routes = baseline.plan(ShiftPlanEvent(time=datetime.now()))
     assert_equal(len(routes), 1)
     assert_equal(len(routes[0]), 1)
     assert_(0 in routes[0].plan)
@@ -142,6 +147,7 @@ def test_strategy_considers_container_arrival_rates():
     )
 
     baseline = BaselineStrategy(
+        sim,
         deposit_volume=1.0,
         num_containers=1,
         max_runtime=0.1,
@@ -150,7 +156,7 @@ def test_strategy_considers_container_arrival_rates():
     # Neither container has seen any arrival. The second container fills up
     # twice as fast as the first container. Since we can visit only a single
     # container, we should prioritise the second one.
-    routes = baseline(sim, ShiftPlanEvent(time=datetime.now()))
+    routes = baseline.plan(ShiftPlanEvent(time=datetime.now()))
     assert_equal(len(routes), 1)
     assert_equal(len(routes[0]), 1)
     assert_(1 in routes[0].plan)
@@ -162,7 +168,7 @@ def test_baseline_not_greedy():
     greedy strategy.
     """
 
-    def simulate(db, strategy):
+    def simulate(db, strategy_cls, *args, **kwargs):
         """
         Simulates one week's worth of events, using the given database and
         strategy.
@@ -178,15 +184,16 @@ def test_baseline_not_greedy():
 
         today = date.today()
         next_week = date.today() + timedelta(days=7)
-        sim(db.store, strategy, generate_events(sim, today, next_week))
+        strat = strategy_cls(sim, *args, **kwargs)
+        sim(db.store, strat, generate_events(sim, today, next_week))
 
     db1 = Database("tests/test.db", ":memory:")
     db2 = Database("tests/test.db", ":memory:")
 
     # For baseline we also need to specify the deposit volume. Same runtime and
     # number of selected containers for both, to facilitate a fair comparison.
-    simulate(db1, BaselineStrategy(60, num_containers=3, max_runtime=0.05))
-    simulate(db2, GreedyStrategy(num_containers=3, max_runtime=0.05))
+    simulate(db1, BaselineStrategy, 60, num_containers=3, max_runtime=0.05)
+    simulate(db2, GreedyStrategy, num_containers=3, max_runtime=0.05)
 
     # Test that both databases agree on the basic number of events.
     assert_equal(db1.compute(num_services), db2.compute(num_services))
