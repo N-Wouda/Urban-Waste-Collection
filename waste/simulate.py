@@ -38,7 +38,7 @@ def parse_args():
         type=date.fromisoformat,
         help="Finish date in ISO format, e.g. 2023-08-11 (inclusive).",
     )
-    parser.add_argumemt(
+    parser.add_argument(
         "--warmup_end",
         type=datetime.fromisoformat,
         default=datetime.min,
