@@ -19,6 +19,7 @@ from .num_arrivals_per_hour import (
     num_arrivals_per_hour as num_arrivals_per_hour,
 )
 from .num_services import num_services as num_services
+from .num_unserved_containers import num_unserved_containers
 
 Measure = Callable[[Database], Any]
 
@@ -34,4 +35,5 @@ MEASURES: list[Measure] = [
     num_arrivals_per_hour,
     num_arrivals,
     num_services,
+    num_unserved_containers,
 ]
