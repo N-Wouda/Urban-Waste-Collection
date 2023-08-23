@@ -1,10 +1,16 @@
-from datetime import date
+from datetime import date, datetime, time, timedelta
 
 import pytest
 from numpy.random import default_rng
-from numpy.testing import assert_allclose, assert_raises
+from numpy.testing import assert_allclose, assert_equal, assert_raises
 
-from waste.classes import Configuration, Database, Depot, Simulator
+from waste.classes import (
+    Configuration,
+    Database,
+    Depot,
+    ShiftPlanEvent,
+    Simulator,
+)
 from waste.functions import generate_events
 from waste.measures import avg_route_stops
 from waste.strategies import PrizeCollectingStrategy
@@ -60,7 +66,7 @@ def test_zero_threshold_schedules_all_containers():
         db.distances(),
         db.durations(),
         db.containers(),
-        db.vehicles(),
+        db.vehicles()[:1],  # just one vehicle
         config=Configuration(BREAKS=tuple()),
     )
 
@@ -88,7 +94,7 @@ def test_prizes_determine_selected_containers(rho: float, expected: int):
         db.distances(),
         db.durations(),
         db.containers(),
-        db.vehicles(),
+        db.vehicles()[:1],  # just one vehicle
         config=Configuration(BREAKS=tuple()),
     )
 
@@ -114,7 +120,7 @@ def test_threshold_works_with_predicted_full_containers(containers: list[int]):
         db.distances(),
         db.durations(),
         db.containers(),
-        db.vehicles(),
+        db.vehicles()[:1],  # just one vehicle
         config=Configuration(BREAKS=tuple()),
     )
 
@@ -145,7 +151,7 @@ def test_larger_prizes_result_in_more_visits(rho: float, expected: int):
         db.distances(),
         db.durations(),
         db.containers(),
-        db.vehicles(),
+        db.vehicles()[:1],  # just one vehicle
         config=Configuration(BREAKS=tuple()),
     )
 
@@ -161,3 +167,35 @@ def test_larger_prizes_result_in_more_visits(rho: float, expected: int):
     # All containers must be visited, and that takes only a single vehicle, so
     # the average number of stops is the total number visited.
     assert_allclose(db.compute(avg_route_stops), expected)
+
+
+def test_breaks():
+    db = Database("tests/test.db", ":memory:")
+    sim = Simulator(
+        default_rng(seed=42),
+        db.depot(),
+        db.distances(),
+        db.durations(),
+        db.containers(),
+        db.vehicles()[:1],  # just one vehicle
+        config=Configuration(
+            BREAKS=(
+                (time(hour=7, minute=30), time(hour=8), timedelta(hours=1)),
+                (time(hour=8, minute=50), time(hour=9), timedelta(hours=4)),
+            )
+        ),
+    )
+
+    # First make sure all containers must be scheduled because their overflow
+    # probability exceeds the threshold.
+    threshold = 0.95
+    for container in sim.containers:
+        container.num_arrivals = 150
+
+    now = datetime.combine(date.today(), sim.config.SHIFT_PLAN_TIME)
+    strategy = PrizeCollectingStrategy(sim, 0, threshold, 60, 0.1)
+    (route,) = strategy.plan(ShiftPlanEvent(now))
+
+    # The single scheduled route should explicitly include the two breaks, so
+    # they're not added by the simulator.
+    assert_equal(len(route), len(sim.containers) + 2)

@@ -138,6 +138,11 @@ class Simulator:
             idx = container_idx + 1  # + 1 because 0 is depot
 
             if break_idx < len(self.config.BREAKS):
+                # At least one more break must be had. If the strategy planned
+                # the break (idx == 0), we take the break now. If it did not,
+                # we test if this is the latest possible moment at which we
+                # can take the upcoming break. If it is, we schedule it now,
+                # else we first visit the container.
                 early, late, break_dur = self.config.BREAKS[break_idx]
 
                 # If servicing the current container makes us late for the
@@ -163,6 +168,11 @@ class Simulator:
 
                     now += break_dur
                     prev = 0
+
+            if idx == 0:
+                # Then we just had a break, and we aren't currently servicing
+                # a container. Continue to the next point of the route.
+                continue
 
             # Add travel duration from prev to current container, and start
             # service at the current container.

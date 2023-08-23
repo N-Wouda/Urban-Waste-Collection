@@ -3,7 +3,8 @@ from waste.classes import Database
 
 def avg_route_stops(db: Database) -> float:
     """
-    Computes the average number of stops along routes, excluding the depot.
+    Computes the average number of stops along routes, excluding the depot
+    and breaks.
     """
     sql = """-- sql
         SELECT AVG(num_stops)
