@@ -4,7 +4,7 @@ import pytest
 from numpy.random import default_rng
 from numpy.testing import assert_allclose, assert_raises
 
-from waste.classes import Database, Depot, Simulator
+from waste.classes import Configuration, Database, Depot, Simulator
 from waste.functions import generate_events
 from waste.measures import avg_route_stops
 from waste.strategies import PrizeCollectingStrategy
@@ -61,6 +61,7 @@ def test_zero_threshold_schedules_all_containers():
         db.durations(),
         db.containers(),
         db.vehicles(),
+        config=Configuration(BREAKS=tuple()),
     )
 
     threshold = 0.0
@@ -88,6 +89,7 @@ def test_prizes_determine_selected_containers(rho: float, expected: int):
         db.durations(),
         db.containers(),
         db.vehicles(),
+        config=Configuration(BREAKS=tuple()),
     )
 
     strategy = PrizeCollectingStrategy(sim, rho, 1.0, 60, 0.05)
@@ -113,6 +115,7 @@ def test_threshold_works_with_predicted_full_containers(containers: list[int]):
         db.durations(),
         db.containers(),
         db.vehicles(),
+        config=Configuration(BREAKS=tuple()),
     )
 
     for container in containers:
@@ -143,6 +146,7 @@ def test_larger_prizes_result_in_more_visits(rho: float, expected: int):
         db.durations(),
         db.containers(),
         db.vehicles(),
+        config=Configuration(BREAKS=tuple()),
     )
 
     # This and the threshold value ensure at least container 0 is going to be

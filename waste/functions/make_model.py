@@ -1,19 +1,22 @@
 from collections import Counter
+from datetime import datetime
 from typing import Optional
 
 import numpy as np
 from pyvrp import Model
 
-from waste.classes import Simulator
+from waste.classes import ShiftPlanEvent, Simulator
 
 from .f2i import f2i
 
 
 def make_model(
     sim: Simulator,
+    event: ShiftPlanEvent,
     container_idcs: list[int],
     prizes: Optional[list[int]] = None,
     required: Optional[list[bool]] = None,
+    plan_breaks: bool = False,
 ) -> Model:
     """
     Creates a PyVRP model instance with the given containers as clients, using
@@ -65,5 +68,41 @@ def make_model(
                 distances[frm_idx, to_idx],
                 durations[frm_idx, to_idx],
             )
+
+    if plan_breaks:
+        # Then we plan breaks. These are new "clients" at the depot location,
+        # one for each vehicle. We add edges from and to the real locations, so
+        # that we can 'visit' the break from anywhere.
+        size_no_breaks = len(model.locations)
+
+        for early, late, duration in sim.config.BREAKS:
+            early_today = datetime.combine(event.time.date(), early)
+            late_today = datetime.combine(event.time.date(), late)
+
+            for _ in sim.vehicles:
+                model.add_client(
+                    x=f2i(sim.depot.location[0]),
+                    y=f2i(sim.depot.location[1]),
+                    service_duration=int(duration.total_seconds()),
+                    tw_early=int((early_today - event.time).total_seconds()),
+                    tw_late=int((late_today - event.time).total_seconds()),
+                    required=True,
+                )
+
+        for loc_idx, loc in zip(indices, model.locations[:size_no_breaks]):
+            for brk in model.locations[size_no_breaks:]:
+                model.add_edge(
+                    loc,
+                    brk,
+                    distances[loc_idx, 0],
+                    durations[loc_idx, 0],
+                )
+
+                model.add_edge(
+                    brk,
+                    loc,
+                    distances[0, loc_idx],
+                    durations[0, loc_idx],
+                )
 
     return model

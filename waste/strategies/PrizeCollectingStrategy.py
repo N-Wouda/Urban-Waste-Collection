@@ -80,9 +80,11 @@ class PrizeCollectingStrategy:
 
         model = make_model(
             self.sim,
+            event,
             np.arange(len(self.sim.containers)),
             prizes=[int(self.rho * prob) for prob in probs],
             required=[prob > self.threshold for prob in probs],
+            plan_breaks=True,
         )
 
         result = model.solve(stop=MaxRuntime(self.max_runtime))
@@ -93,14 +95,21 @@ class PrizeCollectingStrategy:
 
         return [
             Route(
-                # PyVRP considers 0 the depot, and starts counting client
-                # (container) indices from 1. So we need to subtract 1 from
-                # the index returned by PyVRP.
-                plan=[idx - 1 for idx in route],
+                plan=[
+                    # idx - 1 if we're visiting a container. Else we're taking
+                    # a break, which is had at the depot (which we model as
+                    # -1).
+                    idx - 1 if idx <= len(self.sim.containers) else -1
+                    for idx in route
+                ],
                 vehicle=self.sim.vehicles[route.vehicle_type()],
                 start_time=event.time + timedelta(seconds=route.start_time()),
             )
             for route in result.best.get_routes()
+            # All vehicles are used for breaks, but that is only a virtual
+            # assignment. If the vehicle never leaves the depot (distance zero)
+            # then we do not use it in practice, and don't have to return it.
+            if route.distance() > 0
         ]
 
     def observe(self, event: Event):
