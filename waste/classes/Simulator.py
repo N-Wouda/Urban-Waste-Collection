@@ -85,7 +85,18 @@ class Simulator:
     ):
         """
         Applies a strategy for a simulation starting with the given initial
-        events.        .
+        events.
+
+        Parameters
+        ----------
+        store
+            Function that is called for each new event. Can be used to log
+            events to e.g. a database.
+        strategy
+            Shift plan strategy to apply. Is called to generate new shift
+            plans on shift plan events.
+        initial_events
+            Initial list of events to seed the simulation with.
         """
         events = _EventQueue()
 

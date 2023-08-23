@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any, Callable
 
 from waste.classes import Database
@@ -21,7 +22,7 @@ from .num_arrivals_per_hour import (
 from .num_services import num_services as num_services
 from .num_unserved_containers import num_unserved_containers
 
-Measure = Callable[[Database], Any]
+Measure = Callable[[Database, datetime], Any]
 
 MEASURES: list[Measure] = [
     avg_excess_volume,

@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import math
 import sqlite3
+from datetime import datetime
 from functools import cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
@@ -168,13 +169,13 @@ class Database:
             for name, capacity in self.read.execute(sql)
         ]
 
-    def compute(self, measure: Measure) -> Any:
+    def compute(self, measure: Measure, after: datetime = datetime.min) -> Any:
         """
         Computes the given performance measure from data managed by this
-        database.
+        database, using data collected after the given datetime.
         """
         self.commit()
-        return measure(self)
+        return measure(self, after)
 
     def store(self, item: Event | Route) -> Optional[int]:
         # Only arrival, service and route events are logged; other arguments
