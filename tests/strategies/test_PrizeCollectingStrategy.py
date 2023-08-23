@@ -1,8 +1,12 @@
+from datetime import date
+
 import pytest
 from numpy.random import default_rng
-from numpy.testing import assert_raises
+from numpy.testing import assert_allclose, assert_raises
 
-from waste.classes import Depot, Simulator
+from waste.classes import Database, Depot, Simulator
+from waste.functions import generate_events
+from waste.measures import avg_num_routes_per_day, avg_route_stops
 from waste.strategies import PrizeCollectingStrategy
 
 
@@ -43,3 +47,29 @@ def test_init_does_not_raise_given_edge_case_valid_arguments(
 ):
     sim = Simulator(default_rng(0), Depot("", (0, 0)), [], [], [], [])
     PrizeCollectingStrategy(sim, rho, threshold, deposit_volume, max_runtime)
+
+
+def test_zero_threshold_schedules_all_containers():
+    """
+    If the threshold value is zero, then all containers are always required.
+    """
+    db = Database("tests/test.db", ":memory:", exists_ok=True)
+    sim = Simulator(
+        default_rng(seed=42),
+        db.depot(),
+        db.distances(),
+        db.durations(),
+        db.containers(),
+        db.vehicles(),
+    )
+
+    threshold = 0.0
+    strategy = PrizeCollectingStrategy(sim, 1_000, threshold, 60, 0.1)
+    sim(db.store, strategy, generate_events(sim, date.today(), date.today()))
+
+    # All containers must be visited, so the avg number of route stops times
+    # the average number of routes should equal the number of containers (since
+    # we simulate only a single day).
+    avg_stops = db.compute(avg_route_stops)
+    avg_num_routes = db.compute(avg_num_routes_per_day)
+    assert_allclose(avg_stops * avg_num_routes, len(sim.containers))
