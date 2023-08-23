@@ -8,7 +8,7 @@ with open("logging.toml", "rb") as file:
 
 import argparse
 import logging
-from datetime import date, datetime
+from datetime import date
 
 import numpy as np
 
@@ -37,12 +37,6 @@ def parse_args():
         required=True,
         type=date.fromisoformat,
         help="Finish date in ISO format, e.g. 2023-08-11 (inclusive).",
-    )
-    parser.add_argument(
-        "--warmup_end",
-        type=datetime.fromisoformat,
-        default=datetime.min,
-        help="End ISO datetime of the warmup period. Default no warmup.",
     )
 
     baseline = subparsers.add_parser("baseline")
@@ -97,7 +91,7 @@ def main():
     # arrival events, and shift planning times. The simulation starts with
     # those events and processes them, which may add new ones as well.
     events = generate_events(sim, args.start, args.end)
-    sim(db.store, strategy, events, store_after=args.warmup_end)
+    sim(db.store, strategy, events)
 
 
 if __name__ == "__main__":

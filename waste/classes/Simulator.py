@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
 from heapq import heappop, heappush
 from itertools import count
 from typing import TYPE_CHECKING, Callable, Iterator, Optional
@@ -83,7 +82,6 @@ class Simulator:
         store: Callable[[Event | Route], Optional[int]],
         strategy: Strategy,
         initial_events: list[Event],
-        store_after: datetime = datetime.min,
     ):
         """
         Applies a strategy for a simulation starting with the given initial
@@ -99,10 +97,6 @@ class Simulator:
             plans on shift plan events.
         initial_events
             Initial list of events to seed the simulation with.
-        store_after
-            Datetime after which events are store is called on events. Events
-            that happen before this moment are not passed to store, letting the
-            simulation run for a warm up period.
         """
         events = _EventQueue()
 
@@ -118,11 +112,9 @@ class Simulator:
             # independent from that of the objects it references.
             event.seal()
 
-            if event.time >= store_after:
-                store(event)  # store if we are no longer warming up
-
-            # The strategy observes every event. This can be used to update
-            # internal state, e.g., fitted models.
+            # Store the event, and pass it to the strategy so it can do its
+            # own thing.
+            store(event)
             strategy.observe(event)
 
             match event:

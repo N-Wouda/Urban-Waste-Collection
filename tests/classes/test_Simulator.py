@@ -13,7 +13,6 @@ from waste.classes import (
     Container,
     Database,
     Depot,
-    Event,
     Route,
     ServiceEvent,
     ShiftPlanEvent,
@@ -156,31 +155,3 @@ def test_observing_events():
     # Should have seen all initial events. Since the mock strategy above does
     # not generate new events, the length of seen should correspond with init.
     assert_equal(len(seen), len(init))
-
-
-@pytest.mark.parametrize(
-    ("warmup", "expected"),
-    [
-        (datetime(2023, 8, 9, 10, 0, 0), 5),
-        (datetime(2023, 8, 9, 11, 0, 0), 4),
-        (datetime(2023, 8, 9, 14, 0, 0), 1),
-        (datetime(2023, 8, 9, 16, 0, 0), 0),
-    ],
-)
-def test_warmup_period(warmup: datetime, expected: int):
-    """
-    Tests that events that happen during the warmup period are not stored.
-    """
-    container = Container("test", [1] * HOURS_IN_DAY, 1.0, (0.0, 0.0))
-    depot = Depot("depot", (0, 0))
-    sim = Simulator(default_rng(0), depot, [], [], [container], [])
-
-    now = datetime(2023, 8, 9, 10, 0, 0)
-    init: list[Event] = [
-        ArrivalEvent(now + timedelta(hours=hours), container, volume=0)
-        for hours in range(5)
-    ]
-
-    stored = []
-    sim(lambda event: stored.append(event), NullStrategy(sim), init, warmup)
-    assert_equal(len(stored), expected)

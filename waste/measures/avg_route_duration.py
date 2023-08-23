@@ -1,6 +1,6 @@
 import sqlite3
 from collections import defaultdict
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any
 
 import numpy as np
@@ -8,7 +8,7 @@ import numpy as np
 from waste.classes import Database
 
 
-def avg_route_duration(db: Database) -> timedelta:
+def avg_route_duration(db: Database, after: datetime) -> timedelta:
     """
     Computes the average duration travelled along routes, including taking
     breaks, service time at containers, and the arcs to and from the depot.
@@ -19,24 +19,30 @@ def avg_route_duration(db: Database) -> timedelta:
     mat = db.durations()
     dur = timedelta(seconds=0)
 
-    for route in _routes_with_stops(db.write):
+    for route in _routes_with_stops(db.write, after):
         stops = np.array([0, *[loc2idx[name] for name in route["plan"]], 0])
         dur += mat[stops[:-1], stops[1:]].sum().item()
         dur += timedelta(seconds=route["duration"])
 
-    return dur / max(_num_routes(db.write), 1)
+    return dur / max(_num_routes(db.write, after), 1)
 
 
-def _num_routes(con: sqlite3.Connection) -> int:
+def _num_routes(con: sqlite3.Connection, after: datetime) -> int:
     """
     Returns the number of routes in the database.
     """
-    sql = "SELECT COUNT(*) FROM routes;"
-    row = con.execute(sql).fetchone()
+    sql = """--sql
+        SELECT COUNT(*)
+        FROM routes
+        WHERE start_time > ?;
+    """
+    row = con.execute(sql, [after]).fetchone()
     return row[0] if row[0] is not None else 0
 
 
-def _routes_with_stops(con: sqlite3.Connection) -> list[dict[str, Any]]:
+def _routes_with_stops(
+    con: sqlite3.Connection, after: datetime
+) -> list[dict[str, Any]]:
     """
     Returns lists of stops, one list for each route. Includes returns to the
     depot for breaks.
@@ -46,9 +52,11 @@ def _routes_with_stops(con: sqlite3.Connection) -> list[dict[str, Any]]:
         FROM service_events AS se
             INNER JOIN containers AS c
                 ON se.container = c.name
+        WHERE time > ?
         UNION
         SELECT id_route, 'Depot', duration, time
         FROM break_events
+        WHERE time > ?
         ORDER BY id_route, time;  
     """
 
@@ -56,7 +64,7 @@ def _routes_with_stops(con: sqlite3.Connection) -> list[dict[str, Any]]:
     # the stops (route plan), and the duration taken at each stop. The latter
     # is stored in seconds.
     grouped = defaultdict(lambda: dict(plan=[], duration=0.0))  # type: ignore
-    for id_route, loc_name, duration, _ in con.execute(sql).fetchall():
+    for id_route, loc_name, duration, _ in con.execute(sql, [after, after]):
         grouped[id_route]["plan"].append(loc_name)  # type: ignore
         grouped[id_route]["duration"] += duration
 
