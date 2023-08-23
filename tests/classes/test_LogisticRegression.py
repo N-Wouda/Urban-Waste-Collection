@@ -36,11 +36,16 @@ def test_switch_to_actual_model_all_zero_obs(obs_before_switch: int):
         assert_allclose(lr.prob(container.capacity / 60), 1 - eps)
 
         lr.observe(0, False)
+        lr.observe(100, True)
 
-    # All our data is (0, False), so the fitted value at zero (and before)
-    # should be zero as well.
+    # All our data is (0, False) or (100, True), so the fitted value at zero
+    # (and before) should basically be zero as well.
     assert_allclose(lr.prob(-100), 0, atol=1e-5)
     assert_allclose(lr.prob(0), 0, atol=1e-5)
+
+    # And at 100 (and beyond) they should basically be 1.
+    assert_allclose(lr.prob(100), 1, atol=1e-5)
+    assert_allclose(lr.prob(500), 1, atol=1e-5)
 
 
 def test_switch_increasing_sequence():
