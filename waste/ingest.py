@@ -102,7 +102,10 @@ def insert_containers(con: sqlite3.Connection, containers: pd.DataFrame):
             r.ClusterCode,
             r.ContainerCode,
             name2loc[r.ClusterCode + "-" + r.ContainerCode],
-            "12:00:00" if "Binnenstad" in r.City else "23:59:59",  # tw late
+            # Time windows. The actual limit is something around 12h, but
+            # since we do not always take breaks into account, putting it a
+            # little earlier is not a bad thing.
+            "11:00:00" if "Binnenstad" in r.City else "23:59:59",
             1000 * float(r.PitCapacity),  # capacity in liters
         )
         for _, r in containers.iterrows()
