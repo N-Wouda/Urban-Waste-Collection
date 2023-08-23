@@ -85,7 +85,7 @@ def main():
     end = datetime.combine(args.end, time.max)
 
     db = Database(src_db, res_db, exists_ok=True)
-    df = db.compute(lambda db: service_event_locations(start, end, db))
+    df = db.compute(lambda db, _: service_event_locations(start, end, db))
 
     # A route is a list of services. Since we don't know the number of services
     # upfront, we use a defaultdict list to append the services
