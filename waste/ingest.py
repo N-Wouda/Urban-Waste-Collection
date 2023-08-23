@@ -45,6 +45,7 @@ def make_tables(con: sqlite3.Connection):
             cluster VARCHAR,
             container VARCHAR,
             id_location INT REFERENCES locations,
+            tw_late TIME CHECK(tw_late IS strftime('%H:%M:%S', tw_late)),
             capacity FLOAT
         );
 
@@ -101,12 +102,20 @@ def insert_containers(con: sqlite3.Connection, containers: pd.DataFrame):
             r.ClusterCode,
             r.ContainerCode,
             name2loc[r.ClusterCode + "-" + r.ContainerCode],
+            "12:00:00" if "Binnenstad" in r.City else "23:59:59",  # tw late
             1000 * float(r.PitCapacity),  # capacity in liters
         )
         for _, r in containers.iterrows()
     ]
 
-    columns = ["name", "cluster", "container", "id_location", "capacity"]
+    columns = [
+        "name",
+        "cluster",
+        "container",
+        "id_location",
+        "tw_late",
+        "capacity",
+    ]
     df = pd.DataFrame(columns=columns, data=values)
     df.to_sql("containers", con, index=False, if_exists="replace")
 
