@@ -33,7 +33,7 @@ def test_init_does_not_raise_given_valid_arguments(
 
 
 def test_raises_when_route_plan_is_infeasible():
-    db = Database("tests/test.db", ":memory:", exists_ok=True)
+    db = Database("tests/test.db", ":memory:")
     sim = Simulator(
         default_rng(seed=42),
         db.depot(),
@@ -56,7 +56,7 @@ def test_raises_when_route_plan_is_infeasible():
 
 @pytest.mark.parametrize("num_containers", [1, 2, 5])
 def test_routes_containers_with_most_arrivals(num_containers: int):
-    db = Database("tests/test.db", ":memory:", exists_ok=True)
+    db = Database("tests/test.db", ":memory:")
     sim = Simulator(
         default_rng(seed=42),
         db.depot(),
@@ -86,7 +86,7 @@ def test_routes_containers_with_most_arrivals(num_containers: int):
 
 
 def test_greedy_better_than_random():
-    db = Database("tests/test.db", ":memory:", exists_ok=True)
+    db = Database("tests/test.db", ":memory:")
     sim = Simulator(
         default_rng(seed=42),
         db.depot(),
