@@ -64,7 +64,7 @@ def test_zero_threshold_schedules_all_containers():
     )
 
     threshold = 0.0
-    strategy = PrizeCollectingStrategy(sim, 1_000, threshold, 60, 0.1)
+    strategy = PrizeCollectingStrategy(sim, 1_000, threshold, 60, 0.05)
     sim(db.store, strategy, generate_events(sim, date.today(), date.today()))
 
     # All containers must be visited, so the avg number of route stops times
@@ -73,3 +73,29 @@ def test_zero_threshold_schedules_all_containers():
     avg_stops = db.compute(avg_route_stops)
     avg_num_routes = db.compute(avg_num_routes_per_day)
     assert_allclose(avg_stops * avg_num_routes, len(sim.containers))
+
+
+@pytest.mark.filterwarnings("ignore::pyvrp.exceptions.EmptySolutionWarning")
+@pytest.mark.parametrize(("rho", "expected"), [(0, 0), (1_000_000, 5)])
+def test_prizes_determine_selected_containers(rho: float, expected: int):
+    """
+    When the prize scaling parameter rho is zero, no containers should be
+    visited: the prize is zero. When the parameter is really large (in this
+    test, one million), all containers should be visited.
+    """
+    db = Database("tests/test.db", ":memory:", exists_ok=True)
+    sim = Simulator(
+        default_rng(seed=42),
+        db.depot(),
+        db.distances(),
+        db.durations(),
+        db.containers(),
+        db.vehicles(),
+    )
+
+    strategy = PrizeCollectingStrategy(sim, rho, 1.0, 60, 0.05)
+    sim(db.store, strategy, generate_events(sim, date.today(), date.today()))
+
+    avg_stops = db.compute(avg_route_stops)
+    avg_num_routes = db.compute(avg_num_routes_per_day)
+    assert_allclose(avg_stops * avg_num_routes, expected)
