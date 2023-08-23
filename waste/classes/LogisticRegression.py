@@ -24,8 +24,8 @@ class LogisticRegression:
         Estimated volume of a single deposit. Used to determine initial
         parameters.
     obs_until_switch
-        Number of observations needed before switching from initial parameters
-        to those based on observed data. Default 10.
+        Number of observations needed in both categories before switching from
+        initial parameters to those based on observed data. Default 10.
     eps
         Epsilon value to use when determining the initial parameters.
     """
@@ -38,7 +38,7 @@ class LogisticRegression:
         eps: float = 1e-3,
     ):
         self.container = container
-        self.obs_until_switch = obs_until_switch
+        self.switch_when = obs_until_switch
 
         self.data: list[tuple[int, bool]] = []
 
@@ -57,7 +57,10 @@ class LogisticRegression:
         logger.debug(f"{self.container.name}: observing ({x}, {y}).")
         self.data.append((x, y))
 
-        if len(self.data) >= self.obs_until_switch:
+        num_overflows = sum(overflow for _, overflow in self.data)
+        sufficient_data = len(self.data) >= 2 * self.switch_when
+
+        if sufficient_data and num_overflows >= self.switch_when:
             self.optimize()
 
     def optimize(self):
