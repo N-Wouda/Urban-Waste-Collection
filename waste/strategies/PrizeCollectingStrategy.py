@@ -80,6 +80,7 @@ class PrizeCollectingStrategy:
 
         model = make_model(
             self.sim,
+            event,
             np.arange(len(self.sim.containers)),
             prizes=[int(self.rho * prob) for prob in probs],
             required=[prob > self.threshold for prob in probs],

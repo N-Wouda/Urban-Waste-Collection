@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import math
 import sqlite3
-from datetime import datetime
+from datetime import datetime, time
 from functools import cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
@@ -87,37 +87,34 @@ class Database:
 
     @cache
     def containers(self) -> list[Container]:
-        sql = """-- sql
-            SELECT cr.container,
-                   c.capacity,
-                   cr.hour,
-                   cr.rate
-            FROM container_rates AS cr
-                    INNER JOIN containers AS c
-                                ON c.name = cr.container
-            ORDER BY c.id_location, cr.hour;  -- must order by ID, not name!
-        """
-        capacities: dict[str, float] = {}
-        rates: dict[str, np.ndarray] = {}
+        def rates(name: str) -> list[float]:
+            sql = """-- sql
+                SELECT hour, rate
+                FROM container_rates
+                WHERE container = ?
+                ORDER BY hour;  -- must order by ID, not name!
+            """
+            res = [0.0] * HOURS_IN_DAY
+            for hour, rate in self.read.execute(sql, [name]):
+                res[hour] = rate
+            return res
 
-        for name, capacity, hour, rate in self.read.execute(sql):
-            if name not in rates:
-                rates[name] = np.zeros(HOURS_IN_DAY)
-
-            capacities[name] = capacity
-            rates[name][hour] = rate
-
-        sql = """-- sql
-            SELECT c.name, l.latitude, l.longitude
+        sql = """--sql
+            SELECT c.name, c.tw_late, c.capacity, l.latitude, l.longitude
             FROM containers AS c
-                    INNER JOIN locations AS l
-                            ON l.id_location = c.id_location;
+                INNER JOIN locations AS l
+                    ON c.id_location = l.id_location;
         """
-        name2loc = {name: loc for name, *loc in self.read.execute(sql)}
-
+        # TODO this is an N + 1 query. Fix if it is too slow.
         return [
-            Container(name, rates[name], capacity, name2loc[name])
-            for name, capacity in capacities.items()
+            Container(
+                name,
+                rates(name),
+                capacity,
+                (lat, lon),
+                time.fromisoformat(tw_late),
+            )
+            for name, tw_late, capacity, lat, lon in self.read.execute(sql)
         ]
 
     @cache

@@ -1,16 +1,18 @@
 from collections import Counter
+from datetime import datetime
 from typing import Optional
 
 import numpy as np
 from pyvrp import Model
 
-from waste.classes import Simulator
+from waste.classes import ShiftPlanEvent, Simulator
 
 from .f2i import f2i
 
 
 def make_model(
     sim: Simulator,
+    event: ShiftPlanEvent,
     container_idcs: list[int],
     prizes: Optional[list[int]] = None,
     required: Optional[list[bool]] = None,
@@ -37,11 +39,15 @@ def make_model(
 
     for idx, container_idx in enumerate(container_idcs):
         container = sim.containers[container_idx]
+        tw_late = datetime.combine(event.time.date(), container.tw_late)
+        assert tw_late >= event.time
+
+        last_moment = min(tw_late - event.time, shift_duration)
         model.add_client(
             x=f2i(container.location[0]),
             y=f2i(container.location[1]),
             service_duration=int(time_per_container.total_seconds()),
-            tw_late=int(shift_duration.total_seconds()),
+            tw_late=int(last_moment.total_seconds()),
             prize=prizes[idx],
             required=required[idx],
         )
