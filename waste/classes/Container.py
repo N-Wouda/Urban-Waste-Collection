@@ -1,3 +1,5 @@
+from datetime import time
+
 from waste.constants import HOURS_IN_DAY
 
 
@@ -14,6 +16,7 @@ class Container:
         rates: list[float],
         capacity: float,
         location: tuple[float, float],
+        tw_late: time = time.max,
     ):
         assert len(rates) == HOURS_IN_DAY
 
@@ -21,6 +24,7 @@ class Container:
         self.rates = rates  # arrival rates, per clock hour ([0 - 23])
         self.capacity = capacity  # in volume, liters
         self.location = location  # (lat, lon) pair
+        self.tw_late = tw_late
 
         self.num_arrivals = 0  # number of arrivals since last service
         self.volume = 0.0  # current volume in container, in liters

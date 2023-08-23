@@ -1,9 +1,11 @@
+from datetime import datetime
+
 import numpy as np
 import pytest
 from numpy.random import default_rng
 from numpy.testing import assert_, assert_allclose
 
-from waste.classes import Database, Simulator
+from waste.classes import Database, ShiftPlanEvent, Simulator
 from waste.functions import make_model
 
 
@@ -22,7 +24,8 @@ def test_required_and_prize_defaults():
         db.vehicles(),
     )
 
-    model = make_model(sim, np.arange(len(sim.containers)))
+    event = ShiftPlanEvent(datetime(2023, 8, 23, 7, 0, 0))
+    model = make_model(sim, event, np.arange(len(sim.containers)))
     assert_(all(client.required) for client in model.locations)
     assert_allclose([client.prize for client in model.locations], 0)
 
@@ -39,5 +42,6 @@ def test_model_filters_by_given_container_indices(container_idcs: list[int]):
         db.vehicles(),
     )
 
-    model = make_model(sim, container_idcs)
+    event = ShiftPlanEvent(datetime(2023, 8, 23, 7, 0, 0))
+    model = make_model(sim, event, container_idcs)
     assert_(len(model.locations), len(container_idcs) + 1)  # + depot
