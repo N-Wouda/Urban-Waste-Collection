@@ -20,10 +20,10 @@ def make_model(
     data from the passed-in simulation environment.
     """
     if prizes is None:
-        prizes = np.zeros_like(container_idcs, dtype=int)
+        prizes = [0] * len(container_idcs)
 
     if required is None:
-        required = np.ones_like(container_idcs, dtype=bool)
+        required = [True] * len(container_idcs)
 
     time_per_container = sim.config.TIME_PER_CONTAINER
     shift_duration = sim.config.SHIFT_DURATION
