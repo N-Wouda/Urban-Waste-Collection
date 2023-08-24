@@ -2,9 +2,10 @@ from datetime import date
 
 import pytest
 from numpy.random import default_rng
-from numpy.testing import assert_allclose, assert_raises
+from numpy.testing import assert_allclose, assert_equal, assert_raises
 
 from waste.classes import Database, Depot, Simulator
+from waste.constants import HOURS_IN_DAY
 from waste.functions import generate_events
 from waste.measures import avg_route_stops
 from waste.strategies import PrizeCollectingStrategy
@@ -115,8 +116,14 @@ def test_threshold_works_with_predicted_full_containers(containers: list[int]):
         db.vehicles(),
     )
 
-    for container in containers:
-        sim.containers[container].num_arrivals = 150
+    for container in sim.containers:
+        # The probability estimates are forward looking, taking into account
+        # that the container might fill up before the next shift plan event.
+        # We want to avoid that by setting the rates to zero.
+        container.rates = [0] * HOURS_IN_DAY
+
+    for idx in containers:
+        sim.containers[idx].num_arrivals = 150
 
     strategy = PrizeCollectingStrategy(sim, 0, 0.95, 60, 0.1)
     sim(db.store, strategy, generate_events(sim, date.today(), date.today()))
@@ -130,8 +137,8 @@ def test_threshold_works_with_predicted_full_containers(containers: list[int]):
     ("rho", "expected"),
     [
         (0, 1),  # must visit at least the required container
-        (1_000, 2),  # this brings in another container that's quite full
-        (1_000_000, 5),  # this is large enough to bring in all containers
+        (1_000_000, 2),  # this brings in another container that's quite full
+        (10_000_000, 5),  # this is large enough to bring in all containers
     ],
 )
 def test_larger_prizes_result_in_more_visits(rho: float, expected: int):
@@ -145,6 +152,12 @@ def test_larger_prizes_result_in_more_visits(rho: float, expected: int):
         db.vehicles(),
     )
 
+    for container in sim.containers:
+        # The probability estimates are forward looking, taking into account
+        # that the container might fill up before the next shift plan event.
+        # We want to avoid that by setting the rates to zero.
+        container.rates = [0] * HOURS_IN_DAY
+
     # This and the threshold value ensure at least container 0 is going to be
     # visited: the solution must be non-empty. In that case it depends on the
     # scaling factor whether other locations are also visited.
@@ -156,4 +169,30 @@ def test_larger_prizes_result_in_more_visits(rho: float, expected: int):
 
     # All containers must be visited, and that takes only a single vehicle, so
     # the average number of stops is the total number visited.
+    assert_allclose(db.compute(avg_route_stops), expected)
+
+
+@pytest.mark.parametrize(
+    ("rho", "threshold", "expected"), [(0, 0.99, 4), (10_000, 0.99, 5)]
+)
+def test_forward_looking_behaviour(
+    rho: float, threshold: float, expected: int
+):
+    db = Database("tests/test.db", ":memory:")
+    sim = Simulator(
+        default_rng(seed=42),
+        db.depot(),
+        db.distances(),
+        db.durations(),
+        db.containers(),
+        db.vehicles(),
+    )
+
+    for container in sim.containers:
+        assert_equal(container.num_arrivals, 0)
+
+    # The containers have zero arrivals, so any prizes/required visits must be
+    # entirely based on some sort of forecast.
+    strategy = PrizeCollectingStrategy(sim, rho, threshold, 60, 0.1)
+    sim(db.store, strategy, generate_events(sim, date.today(), date.today()))
     assert_allclose(db.compute(avg_route_stops), expected)
