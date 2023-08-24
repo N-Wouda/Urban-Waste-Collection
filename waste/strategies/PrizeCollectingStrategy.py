@@ -74,8 +74,14 @@ class PrizeCollectingStrategy:
 
     def plan(self, event: ShiftPlanEvent) -> list[Route]:
         probs = [
-            self.models[id(container)].prob(container.num_arrivals)
-            for container in self.sim.containers
+            # Estimate the overflow probability *before* the next shift plan
+            # moment (that is, before the next time we'll get to do something
+            # about it). This is basically the number of arrivals that have
+            # already happened (certainty) plus the expected number of arrivals
+            # that'll happen over the next 24 hours. The latter we base on the
+            # average hourly arrival rate.
+            self.models[id(c)].prob(c.num_arrivals + sum(c.rates))
+            for c in self.sim.containers
         ]
 
         required = [prob > self.threshold for prob in probs]
