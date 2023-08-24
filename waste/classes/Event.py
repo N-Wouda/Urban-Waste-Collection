@@ -33,7 +33,7 @@ class Event(ABC):
 
     def __str__(self) -> str:
         class_name = self.__class__.__name__
-        return f"{class_name}(time={self.time:.2f}, status={self.status.name})"
+        return f"{class_name}(time={self.time}, status={self.status.name})"
 
 
 class ServiceEvent(Event):

@@ -78,13 +78,12 @@ class PrizeCollectingStrategy:
             for container in self.sim.containers
         ]
 
-        model = make_model(
-            self.sim,
-            event,
-            np.arange(len(self.sim.containers)),
-            prizes=[int(self.rho * prob) for prob in probs],
-            required=[prob > self.threshold for prob in probs],
-        )
+        required = [prob > self.threshold for prob in probs]
+        logger.debug(f"Planning {np.count_nonzero(required)} required visits.")
+
+        prizes = [int(self.rho * prob) for prob in probs]
+        indices = np.arange(len(self.sim.containers))
+        model = make_model(self.sim, event, indices, prizes, required)
 
         result = model.solve(stop=MaxRuntime(self.max_runtime))
         if not result.is_feasible():
