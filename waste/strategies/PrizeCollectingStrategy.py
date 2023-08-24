@@ -79,7 +79,7 @@ class PrizeCollectingStrategy:
         ]
 
         required = [prob > self.threshold for prob in probs]
-        logger.info(f"Planning {np.count_nonzero(required)} required visits.")
+        logger.debug(f"Planning {np.count_nonzero(required)} required visits.")
 
         prizes = [int(self.rho * prob) for prob in probs]
         indices = np.arange(len(self.sim.containers))
