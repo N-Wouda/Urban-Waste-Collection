@@ -8,6 +8,7 @@ from numpy.testing import assert_allclose
 from tests.helpers import NullStrategy
 from waste.classes import (
     ArrivalEvent,
+    Configuration,
     Database,
     Event,
     ServiceEvent,
@@ -39,6 +40,7 @@ def test_single_container(event_pattern: str, volume: float, expected: float):
         db.durations(),
         db.containers(),
         db.vehicles(),
+        Configuration(BREAKS=tuple()),
     )
 
     container = sim.containers[0]

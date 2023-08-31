@@ -53,20 +53,19 @@ def test_for_routes_without_breaks(visits: list[list[int]]):
 
 
 @pytest.mark.parametrize(
-    "break_time",
+    "break_dur",
     [
         timedelta(seconds=1),  # it's not about the duration: any break *must*
-        timedelta(minutes=5),  # be had, no matter how long.
+        timedelta(seconds=5),  # be had, no matter how long.
     ],
 )
-def test_with_breaks(break_time):
+def test_with_breaks(break_dur):
     """
     Tests that the average route distance also takes into account any breaks
     that were had during the route, which require travel back to the depot.
     """
     now = datetime(2023, 8, 20, 8, 0, 0)
-    hour = timedelta(hours=1)  # set up a break one hour into the shift
-    a_break = (now + hour).time(), (now + 2 * hour).time(), break_time
+    hour = timedelta(hours=1)
 
     db = Database("tests/test.db", ":memory:")
     sim = Simulator(
@@ -76,7 +75,8 @@ def test_with_breaks(break_time):
         db.durations(),
         db.containers(),
         db.vehicles(),
-        Configuration(BREAKS=(a_break,)),
+        # Set up a break one hour into the shift, lasting for the given time.
+        Configuration(BREAKS=(((now + hour).time(), break_dur),)),
     )
 
     # Single route plan visiting all five containers three times. That takes
@@ -92,9 +92,9 @@ def test_with_breaks(break_time):
     helper_dist = cum_value(db.distances(), routes)
     assert_(not np.isclose(measure_dist, helper_dist))
 
-    # Lets now compare numbers. The break is had after visiting container 1911
-    # (location ID 1), before visiting container 2488 (ID 2). So we should have
-    # additional distance of travelling 1 -> 0 -> 2, minus 1 -> 2.
+    # Lets now compare numbers. The break is had after visiting container 1116
+    # (location ID 4), before visiting container 1326 (ID 5). So we should have
+    # additional distance of travelling 4 -> 0 -> 5, minus 4 -> 5.
     mat = db.distances()
-    diff = mat[1, 0] + mat[0, 2] - mat[1, 2]
+    diff = mat[4, 0] + mat[0, 5] - mat[4, 5]
     assert_allclose(measure_dist, helper_dist + diff)

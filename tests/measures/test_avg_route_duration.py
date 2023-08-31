@@ -63,9 +63,9 @@ def test_for_routes_without_breaks(visits: list[list[int]]):
 @pytest.mark.parametrize(
     ("container_time", "break_time", "between"),
     [
-        (timedelta(minutes=10), timedelta(minutes=0), (1, 2)),
-        (timedelta(minutes=15), timedelta(minutes=10), (4, 5)),
-        (timedelta(minutes=25), timedelta(minutes=30), (3, 4)),
+        (timedelta(minutes=10), timedelta(minutes=0), (2, 3)),
+        (timedelta(minutes=15), timedelta(minutes=5), (1, 2)),
+        (timedelta(minutes=25), timedelta(minutes=30), (1, 2)),
     ],
 )
 def test_with_breaks(container_time, break_time, between):
@@ -74,8 +74,7 @@ def test_with_breaks(container_time, break_time, between):
     that were had during the route, which require travel back to the depot.
     """
     now = datetime(2023, 8, 20, 8, 0, 0)
-    hour = timedelta(hours=1)  # set up a break one hour into the shift
-    a_break = (now + hour).time(), (now + 2 * hour).time(), break_time
+    hour = timedelta(hours=1)
 
     db = Database("tests/test.db", ":memory:")
     sim = Simulator(
@@ -86,7 +85,8 @@ def test_with_breaks(container_time, break_time, between):
         db.containers(),
         db.vehicles(),
         Configuration(
-            BREAKS=(a_break,),
+            # Set up a break one hour into the shift, lasting break_time
+            BREAKS=(((now + hour).time(), break_time),),
             TIME_PER_CONTAINER=container_time,
         ),
     )
