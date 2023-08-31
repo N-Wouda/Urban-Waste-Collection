@@ -139,6 +139,10 @@ class PrizeCollectingStrategy:
             logger.error(msg)
             raise RuntimeError(msg)
 
+        # We split the vehicles around breaks in the above code, using multiple
+        # shifts. We kept the vehicle names the same, and will now use that
+        # together with the route start times to piece the different vehicle
+        # routes back together.
         name2routes = defaultdict(list)
         name2vehicle = {veh.name: veh for veh in self.sim.vehicles}
         for route in result.best.get_routes():
