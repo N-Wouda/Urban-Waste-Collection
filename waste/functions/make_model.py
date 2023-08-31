@@ -1,11 +1,10 @@
-from collections import Counter
 from datetime import datetime
 from typing import Optional
 
 import numpy as np
 from pyvrp import Model
 
-from waste.classes import ShiftPlanEvent, Simulator
+from waste.classes import ShiftPlanEvent, Simulator, Vehicle
 
 from .f2i import f2i
 
@@ -16,6 +15,7 @@ def make_model(
     container_idcs: list[int],
     prizes: Optional[list[int]] = None,
     required: Optional[list[bool]] = None,
+    vehicles: Optional[list[Vehicle]] = None,
 ) -> Model:
     """
     Creates a PyVRP model instance with the given containers as clients, using
@@ -52,9 +52,16 @@ def make_model(
             required=required[idx],
         )
 
-    vehicle_count = Counter(int(v.capacity) for v in sim.vehicles)
-    for capacity, num_available in vehicle_count.items():
-        model.add_vehicle_type(capacity, num_available)
+    for vehicle in vehicles if vehicles else sim.vehicles:
+        start_time = datetime.combine(event.time.date(), vehicle.shift_start)
+        end_time = datetime.combine(event.time.date(), vehicle.shift_end)
+
+        model.add_vehicle_type(
+            0,
+            vehicle.num_available,
+            tw_early=int(max((start_time - event.time).total_seconds(), 0)),
+            tw_late=int(max((end_time - event.time).total_seconds(), 0)),
+        )
 
     # These are the full distance and duration matrices, but we are only
     # interested in the subset we are actually visiting. That subset is
