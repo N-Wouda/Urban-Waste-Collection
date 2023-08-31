@@ -2186,24 +2186,24 @@ files = [
 
 [[package]]
 name = "pyvrp"
-version = "0.6.0"
+version = "0.6.1"
 description = "A state-of-the-art vehicle routing problem solver."
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "pyvrp-0.6.0-cp310-cp310-macosx_11_0_x86_64.whl", hash = "sha256:63d5dead75967696baf1b511a0de0ea975ad89af10c69829fc044bb9714609e8"},
-    {file = "pyvrp-0.6.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:13baf707221de795409d6465313f0ee2bb0ce846b4f056a3528c800b1910a797"},
-    {file = "pyvrp-0.6.0-cp310-cp310-win_amd64.whl", hash = "sha256:f880f100bd5fc2106861b9ea318d90769cb5e7dd9ddf6a4743aca6e853ef60ec"},
-    {file = "pyvrp-0.6.0-cp311-cp311-macosx_11_0_x86_64.whl", hash = "sha256:313ca97aaccff2ac3906654925f80ad6d74ed106ada5ef81270ed9e159a8d901"},
-    {file = "pyvrp-0.6.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5eecebcd2b4db6d609574227256152d2eb630236788e1d4504a012e70c2ff334"},
-    {file = "pyvrp-0.6.0-cp311-cp311-win_amd64.whl", hash = "sha256:663aaaa80e64e6479e66e5d5cfa45f5e5b1adde8f79a7d84107efa57782f7628"},
-    {file = "pyvrp-0.6.0-cp38-cp38-macosx_11_0_x86_64.whl", hash = "sha256:d5fd8eb698d0ce7af2431673d5e83a7aead7fde4b1cfc04089505eee055fe45e"},
-    {file = "pyvrp-0.6.0-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:7a3d306dee14023bc970b37f781978b17c4edd93f84fab7922b99cdde69ea3e3"},
-    {file = "pyvrp-0.6.0-cp38-cp38-win_amd64.whl", hash = "sha256:58307f821172baa169b3a4526c1db2c847dc1ec1888335470fcf3675be228e6f"},
-    {file = "pyvrp-0.6.0-cp39-cp39-macosx_11_0_x86_64.whl", hash = "sha256:13d3fa3c4c8b0ea3a51d752faa210f00f76f6aa7de4ddd9afc0224f895d933d5"},
-    {file = "pyvrp-0.6.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:7107c353ed28a2ace27442c34ce732c3e5c1a105b8e2607e59fb6c8b03bf09d8"},
-    {file = "pyvrp-0.6.0-cp39-cp39-win_amd64.whl", hash = "sha256:155ae68a3784d1b1cb04e353a2c82e597ca5df288a3771621c985b17d68a2b2c"},
-    {file = "pyvrp-0.6.0.tar.gz", hash = "sha256:1dd59ed6f3339af2acf97008fc0ed890e2fc2d015144da778014c295121455d4"},
+    {file = "pyvrp-0.6.1-cp310-cp310-macosx_11_0_x86_64.whl", hash = "sha256:b11db2e243fd77807382fcbadfb7bb65a249b5c2947adc62b8eb6c01c704f6e5"},
+    {file = "pyvrp-0.6.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:2a9b7d5d1b862e294090eaf3e7d2625d558f0cfd24e891c9374196fd9523234b"},
+    {file = "pyvrp-0.6.1-cp310-cp310-win_amd64.whl", hash = "sha256:e76520273bcf75a2ed51bb4e7cc0d0f1c50633ad4f84f5878a424d9e173c501a"},
+    {file = "pyvrp-0.6.1-cp311-cp311-macosx_11_0_x86_64.whl", hash = "sha256:c8a9158d25160545ea65a4c2aff2ec91ca3e568d65a128d6927d1aef56aa632e"},
+    {file = "pyvrp-0.6.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:274ac20982d87ae053abe434386bb74385acde01f4b1ae2abfc6c2a0a82e1460"},
+    {file = "pyvrp-0.6.1-cp311-cp311-win_amd64.whl", hash = "sha256:1cd5c51721962fe8983f3f703dfe5144af385045e50a38552e2be50a8446e4fe"},
+    {file = "pyvrp-0.6.1-cp38-cp38-macosx_11_0_x86_64.whl", hash = "sha256:5bb21b34ff21f974fa29162e76d0abf7d764ea016e3c5b57a90902ec6629bcad"},
+    {file = "pyvrp-0.6.1-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:3e308bbadbb9c23d462eb9b85a9c5e431d9e9e267777d567045d9623cf9c42f3"},
+    {file = "pyvrp-0.6.1-cp38-cp38-win_amd64.whl", hash = "sha256:cfa7d538e20b9c23c21b29f27e4dc3e626125d44fbc67784885dfc421e7616fb"},
+    {file = "pyvrp-0.6.1-cp39-cp39-macosx_11_0_x86_64.whl", hash = "sha256:8ab3ab37f088315211b2989a066e1621fed1785d206964e828706809846f2a7d"},
+    {file = "pyvrp-0.6.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ce4d75b903e4e94922dddc519f2df8d5c2abc55bb997c8bd3bcc19b60b4214f0"},
+    {file = "pyvrp-0.6.1-cp39-cp39-win_amd64.whl", hash = "sha256:010fcb48c41851ef953613e21adce3e787f29d1833a3d69331d03de6d4cd3db3"},
+    {file = "pyvrp-0.6.1.tar.gz", hash = "sha256:4c3475fc836dc88126265be02d11634fff5721c4816025fbba574f499231b648"},
 ]
 
 [package.dependencies]
@@ -2987,4 +2987,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10,<3.12"
-content-hash = "4d7cd3436f8204c74d46370b5d0a22e83ce6e496cc2d6f3f5d01bf9cccef6720"
+content-hash = "d637d398b09e19d3e47434c5e182d2ad297accc6fd08ba455f4fabd6af768500"

@@ -55,10 +55,11 @@ def make_model(
     for vehicle in vehicles if vehicles else sim.vehicles:
         start_time = datetime.combine(event.time.date(), vehicle.shift_start)
         end_time = datetime.combine(event.time.date(), vehicle.shift_end)
+        assert end_time >= start_time >= event.time
 
         model.add_vehicle_type(
-            0,
-            1,
+            capacity=0,
+            num_available=1,
             tw_early=int(max((start_time - event.time).total_seconds(), 0)),
             tw_late=int(max((end_time - event.time).total_seconds(), 0)),
         )
