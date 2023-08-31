@@ -105,8 +105,14 @@ class PrizeCollectingStrategy:
             for start, dur in self.sim.config.BREAKS
         ]
 
+        # Shift duration excludes breaks. We schedule those breaks as part of
+        # the VRP we solve, so we need to add the time to the overall shift
+        # duration to compensate.
         event_time = event.time.time()
-        shift_duration = self.sim.config.SHIFT_DURATION
+        shift_duration = sum(
+            (dur for _, dur in self.sim.config.BREAKS),
+            start=self.sim.config.SHIFT_DURATION,
+        )
 
         shifts.insert(0, (time.min, event_time))
         shifts.append(((event.time + shift_duration).time(), time.max))
@@ -124,6 +130,7 @@ class PrizeCollectingStrategy:
             prizes,
             required,
             vehicles,
+            shift_duration,
         )
 
         result = model.solve(stop=MaxRuntime(self.max_runtime))

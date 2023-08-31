@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 import numpy as np
@@ -16,6 +16,7 @@ def make_model(
     prizes: Optional[list[int]] = None,
     required: Optional[list[bool]] = None,
     vehicles: Optional[list[Vehicle]] = None,
+    shift_duration: Optional[timedelta] = None,
 ) -> Model:
     """
     Creates a PyVRP model instance with the given containers as clients, using
@@ -27,8 +28,10 @@ def make_model(
     if required is None:
         required = [True] * len(container_idcs)
 
+    if shift_duration is None:
+        shift_duration = sim.config.SHIFT_DURATION
+
     time_per_container = sim.config.TIME_PER_CONTAINER
-    shift_duration = sim.config.SHIFT_DURATION
 
     model = Model()
     model.add_depot(
@@ -55,7 +58,7 @@ def make_model(
     for vehicle in vehicles if vehicles else sim.vehicles:
         start_time = datetime.combine(event.time.date(), vehicle.shift_start)
         end_time = datetime.combine(event.time.date(), vehicle.shift_end)
-        assert end_time >= start_time >= event.time
+        assert end_time >= start_time
 
         model.add_vehicle_type(
             capacity=0,
