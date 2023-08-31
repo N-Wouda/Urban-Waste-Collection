@@ -1,5 +1,7 @@
 import logging
-from datetime import timedelta
+from collections import defaultdict
+from datetime import datetime, time, timedelta
+from itertools import pairwise
 
 import numpy as np
 from pyvrp.stop import MaxRuntime
@@ -11,6 +13,7 @@ from waste.classes import (
     ServiceEvent,
     ShiftPlanEvent,
     Simulator,
+    Vehicle,
 )
 from waste.functions import make_model
 
@@ -89,7 +92,39 @@ class PrizeCollectingStrategy:
 
         prizes = [int(self.rho * prob) for prob in probs]
         indices = np.arange(len(self.sim.containers))
-        model = make_model(self.sim, event, indices, prizes, required)
+
+        # We use the vehicle's shift durations to model the breaks. Each break
+        # starts and ends at a particular time. The shifts last from the start
+        # of the shift plan to the beginning of the first break, and then from
+        # the end of the first break to the beginning of the second, etc. until
+        # the last shift, which lasts from the end of the last break to the end
+        # of the shift plan duration.
+        event_date = event.time.date()
+        shifts: list[tuple[time, time]] = [
+            (start, (datetime.combine(event_date, start) + dur).time())
+            for start, dur in self.sim.config.BREAKS
+        ]
+
+        event_time = event.time.time()
+        shift_duration = self.sim.config.SHIFT_DURATION
+
+        shifts.insert(0, (time.min, event_time))
+        shifts.append(((event.time + shift_duration).time(), time.max))
+
+        vehicles = [
+            Vehicle(vehicle.name, vehicle.capacity, start, end)
+            for vehicle in self.sim.vehicles
+            for (_, start), (end, _) in pairwise(shifts)
+        ]
+
+        model = make_model(
+            self.sim,
+            event,
+            indices,
+            prizes,
+            required,
+            vehicles,
+        )
 
         result = model.solve(stop=MaxRuntime(self.max_runtime))
         if not result.is_feasible():
@@ -97,16 +132,25 @@ class PrizeCollectingStrategy:
             logger.error(msg)
             raise RuntimeError(msg)
 
+        name2routes = defaultdict(list)
+        name2vehicle = {veh.name: veh for veh in self.sim.vehicles}
+        for route in result.best.get_routes():
+            vehicle = vehicles[route.vehicle_type()]
+            name2routes[vehicle.name].append(route)
+
+        for name in name2routes:
+            name2routes[name].sort(key=lambda route: route.start_time())
+
         return [
             Route(
                 # PyVRP considers 0 the depot, and starts counting client
                 # (container) indices from 1. So we need to subtract 1 from
                 # the index returned by PyVRP.
-                plan=[idx - 1 for idx in route],
-                vehicle=self.sim.vehicles[route.vehicle_type()],
-                start_time=event.time + timedelta(seconds=route.start_time()),
+                [idx - 1 for route in routes for idx in route],
+                name2vehicle[name],
+                event.time + timedelta(seconds=routes[0].start_time()),
             )
-            for route in result.best.get_routes()
+            for name, routes in name2routes.items()
         ]
 
     def observe(self, event: Event):

@@ -10,7 +10,7 @@ class Configuration:
         (time(hour=10), timedelta(minutes=15)),
         (time(hour=12), timedelta(minutes=45)),
     )
-    SHIFT_DURATION: timedelta = timedelta(hours=7)  # excl. breaks
+    SHIFT_DURATION: timedelta = timedelta(hours=8)  # excl. breaks
     SHIFT_PLAN_TIME: time = time(hour=7)  # noqa: RUF009
     TIME_PER_CONTAINER: timedelta = timedelta(minutes=3, seconds=30)
     VOLUME_RANGE: tuple[float, float] = (30, 65)  # in liters

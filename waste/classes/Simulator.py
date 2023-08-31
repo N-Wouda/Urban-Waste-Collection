@@ -142,14 +142,23 @@ class Simulator:
 
     def _plan_route(self, route: Route, id_route: int) -> Iterator[Event]:
         now = route.start_time
-        break_idx = 0
         prev = 0  # start from depot
+
+        # We filter the breaks: only those breaks that are *after* the route's
+        # start time must be taken. If we start later than a break, we can
+        # freely skip that one.
+        break_idx = 0
+        breaks = [
+            (start, break_dur)
+            for start, break_dur in self.config.BREAKS
+            if datetime.combine(now.date(), start) >= route.start_time
+        ]
 
         for container_idx in route.plan:
             idx = container_idx + 1  # + 1 because 0 is depot
 
-            if break_idx < len(self.config.BREAKS):
-                start, break_dur = self.config.BREAKS[break_idx]
+            if break_idx < len(breaks):
+                start, break_dur = breaks[break_idx]
                 break_start = datetime.combine(now.date(), start)
 
                 # If servicing the current container makes us late for the
