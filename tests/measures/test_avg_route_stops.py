@@ -6,6 +6,7 @@ from numpy.testing import assert_allclose
 
 from tests.helpers import MockStrategy
 from waste.classes import (
+    Configuration,
     Database,
     Event,
     Route,
@@ -35,6 +36,7 @@ def test_for_several_routes(visits: list[list[int]], expected: float):
         db.durations(),
         db.containers(),
         db.vehicles(),
+        Configuration(BREAKS=tuple()),
     )
 
     now = datetime.now()

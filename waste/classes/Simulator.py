@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from heapq import heappop, heappush
 from itertools import count
 from typing import TYPE_CHECKING, Callable, Iterator, Optional
@@ -141,26 +142,40 @@ class Simulator:
 
     def _plan_route(self, route: Route, id_route: int) -> Iterator[Event]:
         now = route.start_time
-        break_idx = 0
         prev = 0  # start from depot
+
+        # We filter the breaks: only those breaks that are *after* the route's
+        # start time must be taken. If we start later than a break, we can
+        # freely skip that one.
+        break_idx = 0
+        breaks = [
+            (start, break_dur)
+            for start, break_dur in self.config.BREAKS
+            if datetime.combine(now.date(), start) >= route.start_time
+        ]
 
         for container_idx in route.plan:
             idx = container_idx + 1  # + 1 because 0 is depot
 
-            if break_idx < len(self.config.BREAKS):
-                _, late, break_dur = self.config.BREAKS[break_idx]
+            if break_idx < len(breaks):
+                start, break_dur = breaks[break_idx]
+                break_start = datetime.combine(now.date(), start)
 
                 # If servicing the current container makes us late for the
                 # break, we first plan the break. A break is had at the depot.
-                dep_travel = self.durations[prev, 0].item()
                 cont_travel = self.durations[prev, idx].item()
                 finish_at = now + cont_travel + self.config.TIME_PER_CONTAINER
 
-                if (finish_at + dep_travel).time() > late:
+                if finish_at + self.durations[idx, 0].item() > break_start:
                     # We're travelling back to the depot to take this break.
                     # Increases the break index, and yield a break event.
-                    now += dep_travel
                     break_idx += 1
+
+                    # We travel back to the depot, which takes less time than
+                    # the start of the break. So we have to wait a little bit,
+                    # and then have the break starting at the start_time.
+                    assert break_start >= now + self.durations[prev, 0].item()
+                    now = break_start
 
                     yield BreakEvent(now, break_dur, id_route, route.vehicle)
 

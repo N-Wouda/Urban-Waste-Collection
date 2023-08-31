@@ -7,6 +7,7 @@ from numpy.testing import assert_allclose
 from tests.helpers import NullStrategy
 from waste.classes import (
     ArrivalEvent,
+    Configuration,
     Database,
     Event,
     ServiceEvent,
@@ -37,6 +38,7 @@ def test_for_single_container(event_pattern: str, expected: float):
         db.durations(),
         db.containers(),
         db.vehicles(),
+        Configuration(BREAKS=tuple()),
     )
 
     now = datetime.now()

@@ -76,16 +76,15 @@ def test_stored_events_are_sorted_in_time():
 
 
 @pytest.mark.parametrize(
-    ("early", "late", "duration"),
+    ("start", "duration"),
     (
-        (time(hour=8), time(hour=9), timedelta(minutes=30)),
-        (time(hour=7), time(hour=8), timedelta(minutes=45)),
-        (time(hour=9), time(hour=10), timedelta(hours=1)),
+        (time(hour=8), timedelta(minutes=30)),
+        (time(hour=7), timedelta(hours=1)),
+        (time(hour=9), timedelta(minutes=15)),
     ),
 )
-def test_break_is_stored(early: time, late: time, duration: timedelta):
+def test_break_is_stored(start: time, duration: timedelta):
     db = Database("tests/test.db", ":memory:")
-    config = Configuration(BREAKS=((early, late, duration),))
     sim = Simulator(
         default_rng(0),
         db.depot(),
@@ -93,7 +92,7 @@ def test_break_is_stored(early: time, late: time, duration: timedelta):
         db.durations(),
         db.containers(),
         db.vehicles(),
-        config,
+        Configuration(BREAKS=((start, duration),)),
     )
 
     id_route = count(0)
@@ -117,8 +116,7 @@ def test_break_is_stored(early: time, late: time, duration: timedelta):
     stored_breaks = list(filter(lambda e: isinstance(e, BreakEvent), stored))
     assert_equal(len(stored_breaks), 1)
     assert_equal(stored_breaks[0].duration, duration)
-    assert_(stored_breaks[0].time >= datetime.combine(now.date(), early))
-    assert_(stored_breaks[0].time <= datetime.combine(now.date(), late))
+    assert_equal(stored_breaks[0].time, datetime.combine(now.date(), start))
 
 
 def test_observing_events():

@@ -6,6 +6,7 @@ from numpy.testing import assert_allclose
 
 from tests.helpers import MockStrategy
 from waste.classes import (
+    Configuration,
     Database,
     Event,
     Route,
@@ -33,6 +34,7 @@ def test_for_single_shift(visits: list[list[int]]):
         db.durations(),
         db.containers(),
         db.vehicles(),
+        Configuration(BREAKS=tuple()),
     )
 
     now = datetime.now()
