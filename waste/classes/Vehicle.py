@@ -6,9 +6,9 @@ class Vehicle:
         self,
         name: str,
         capacity: float,
+        num_available: int = 1,
         shift_start: time = time.min,
         shift_end: time = time.max,
-        num_available: int = 1,
     ):
         self.name = name
         self.capacity = capacity
@@ -18,5 +18,3 @@ class Vehicle:
 
     def __str__(self) -> str:
         return f"Vehicle(name={self.name}, capacity={self.capacity:.2f})"
-
-    # TODO
