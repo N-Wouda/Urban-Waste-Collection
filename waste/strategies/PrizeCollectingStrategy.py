@@ -8,7 +8,7 @@ from pyvrp.stop import MaxRuntime
 
 from waste.classes import (
     Event,
-    LogisticRegression,
+    OverflowModel,
     Route,
     ServiceEvent,
     ShiftPlanEvent,
@@ -70,8 +70,8 @@ class PrizeCollectingStrategy:
         self.threshold = threshold
         self.max_runtime = max_runtime
 
-        self.models: dict[int, LogisticRegression] = {
-            id(container): LogisticRegression(container, deposit_volume)
+        self.models: dict[int, OverflowModel] = {
+            id(container): OverflowModel(container, deposit_volume)
             for container in sim.containers
         }
 

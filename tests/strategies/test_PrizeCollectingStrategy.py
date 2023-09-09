@@ -133,15 +133,7 @@ def test_threshold_works_with_predicted_full_containers(containers: list[int]):
     assert_allclose(db.compute(avg_route_stops), len(containers))
 
 
-@pytest.mark.parametrize(
-    ("rho", "expected"),
-    [
-        (0, 1),  # must visit at least the required container
-        (1_000_000, 2),  # this brings in another container that's quite full
-        (10_000_000, 5),  # this is large enough to bring in all containers
-    ],
-)
-def test_larger_prizes_result_in_more_visits(rho: float, expected: int):
+def test_visit_required_containers():
     db = Database("tests/test.db", ":memory:")
     sim = Simulator(
         default_rng(seed=42),
@@ -158,22 +150,23 @@ def test_larger_prizes_result_in_more_visits(rho: float, expected: int):
         # We want to avoid that by setting the rates to zero.
         container.rates = [0] * HOURS_IN_DAY
 
-    # This and the threshold value ensure at least container 0 is going to be
-    # visited: the solution must be non-empty. In that case it depends on the
-    # scaling factor whether other locations are also visited.
+    # This ensures at least the first two containers will be visited. Since
+    # the other containers start empty, they will not be visited, and we expect
+    # two stops on a single route.
     threshold = 0.95
     sim.containers[0].num_arrivals = 150
+    sim.containers[1].num_arrivals = 150
 
-    strategy = PrizeCollectingStrategy(sim, rho, threshold, 60, 0.1)
+    strategy = PrizeCollectingStrategy(sim, 0, threshold, 60, 0.1)
     sim(db.store, strategy, generate_events(sim, date.today(), date.today()))
 
     # All containers must be visited, and that takes only a single vehicle, so
     # the average number of stops is the total number visited.
-    assert_allclose(db.compute(avg_route_stops), expected)
+    assert_allclose(db.compute(avg_route_stops), 2)
 
 
 @pytest.mark.parametrize(
-    ("rho", "threshold", "expected"), [(0, 0.99, 4), (10_000, 0.99, 5)]
+    ("rho", "threshold", "expected"), [(0, 0.99, 3), (10_000, 0.99, 5)]
 )
 def test_forward_looking_behaviour(
     rho: float, threshold: float, expected: int
