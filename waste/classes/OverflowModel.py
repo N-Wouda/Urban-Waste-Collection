@@ -58,7 +58,7 @@ class OverflowModel:
 
 
 # The Turnbull code below is adapted slightly from that of the SurPyval package
-# (commit hash 84bf5a1) released under the following MIT license.
+# (commit hash 84bf5a1), released under the following MIT license.
 #
 # Copyright (c) 2020 Derryn Knife
 #
@@ -144,6 +144,9 @@ def turnbull(x):
 
     np.seterr(**old_err_state)
 
+    # The survival function estimate is not unique: any estimate between the
+    # upper and lower bounds satisfies the optimal log-likelihood. We take the
+    # middle between these bounds, and return the CDF.
     upper = R[0:-2]
     lower = R[1:-1]
     return bounds[1:-1], 1 - np.mean([lower, upper], axis=0)
