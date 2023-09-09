@@ -46,7 +46,8 @@ def make_tables(con: sqlite3.Connection):
             container VARCHAR,
             id_location INT REFERENCES locations,
             tw_late TIME CHECK(tw_late IS strftime('%H:%M:%S', tw_late)),
-            capacity FLOAT
+            capacity FLOAT,
+            correction_factor FLOAT
         );
 
         CREATE TABLE vehicles (
@@ -107,6 +108,7 @@ def insert_containers(con: sqlite3.Connection, containers: pd.DataFrame):
             # little earlier is not a bad thing.
             "11:00:00" if "Binnenstad" in r.City else "23:59:59",
             1000 * float(r.PitCapacity),  # capacity in liters
+            r.VolumeCorrectionFactor,  # correction to capacity
         )
         for _, r in containers.iterrows()
     ]
@@ -118,6 +120,7 @@ def insert_containers(con: sqlite3.Connection, containers: pd.DataFrame):
         "id_location",
         "tw_late",
         "capacity",
+        "correction_factor",
     ]
     df = pd.DataFrame(columns=columns, data=values)
     df.to_sql("containers", con, index=False, if_exists="replace")

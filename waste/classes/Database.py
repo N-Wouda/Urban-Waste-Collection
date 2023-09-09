@@ -99,22 +99,30 @@ class Database:
                 res[hour] = rate
             return res
 
-        sql = """--sql
-            SELECT c.name, c.tw_late, c.capacity, l.latitude, l.longitude
+        sql = """-- sql
+            SELECT c.name,
+                   c.tw_late,
+                   c.capacity,
+                   c.correction_factor,
+                   l.latitude,
+                   l.longitude
             FROM containers AS c
                 INNER JOIN locations AS l
                     ON c.id_location = l.id_location;
         """
-        # TODO this is an N + 1 query. Fix if it is too slow.
+        rows = self.read.execute(sql)
+
         return [
             Container(
                 name,
+                # TODO here we do an N + 1 query. Fix if it is too slow.
                 rates(name),
                 capacity,
                 (lat, lon),
                 time.fromisoformat(tw_late),
+                corr_factor,
             )
-            for name, tw_late, capacity, lat, lon in self.read.execute(sql)
+            for name, tw_late, capacity, corr_factor, lat, lon in rows
         ]
 
     @cache

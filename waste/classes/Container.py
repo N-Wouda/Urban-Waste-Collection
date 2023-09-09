@@ -17,17 +17,27 @@ class Container:
         capacity: float,
         location: tuple[float, float],
         tw_late: time = time.max,
+        correction_factor: float = 1.0,
     ):
         assert len(rates) == HOURS_IN_DAY
 
         self.name = name
         self.rates = rates  # arrival rates, per clock hour ([0 - 23])
         self.capacity = capacity  # in volume, liters
+        self.correction_factor = correction_factor  # cap. correction factor
         self.location = location  # (lat, lon) pair
         self.tw_late = tw_late
 
         self.num_arrivals = 0  # number of arrivals since last service
         self.volume = 0.0  # current volume in container, in liters
+
+    @property
+    def corrected_capacity(self) -> float:
+        """
+        Capacity of this container with the municipality's correction factor
+        applied.
+        """
+        return self.correction_factor * self.capacity
 
     def arrive(self, volume: float):
         """
