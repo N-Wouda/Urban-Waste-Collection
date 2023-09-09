@@ -108,7 +108,7 @@ def insert_containers(con: sqlite3.Connection, containers: pd.DataFrame):
             # little earlier is not a bad thing.
             "11:00:00" if "Binnenstad" in r.City else "23:59:59",
             1000 * float(r.PitCapacity),  # capacity in liters
-            r.VolumeCorrectionFactor,  # correction to capacity
+            float(r.VolumeCorrectionFactor),  # correction to capacity
         )
         for _, r in containers.iterrows()
     ]
