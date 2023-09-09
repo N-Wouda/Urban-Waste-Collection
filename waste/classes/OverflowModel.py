@@ -10,17 +10,18 @@ logger = logging.getLogger(__name__)
 
 class OverflowModel:
     """
-    A class implementing a self-adjusting empirical CDF that can be queried
-    for quantile (probability) estimates. Uses linear interpolation between
+    A class implementing a self-adjusting CDF of the overflow probability.
+    Estimation is based on censored overflow data, with a CDF fitted using the
+    Turnbull procedure. Additionally, some linear interpolation is used between
     observations to ensure some smoothing.
 
     Parameters
     ----------
     container
-        Container whose arrival behaviour we're trying to model here.
+        Container whose arrival behaviour we are trying to model here.
     deposit_volume
         Estimated volume of a single deposit. Used to determine initial
-        parameters.
+        parameters when no data is yet available.
     """
 
     def __init__(self, container: Container, deposit_volume: float):
