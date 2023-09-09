@@ -74,7 +74,7 @@ def main():
 
     logger.info(f"Running simulation with arguments {vars(args)}.")
 
-    # Set up simulation environment and data
+    # Set up simulation environment and data.
     db = Database(args.src_db, args.res_db)
     sim = Simulator(
         np.random.default_rng(args.seed),
@@ -85,13 +85,12 @@ def main():
         db.vehicles(),
     )
 
+    # Generate initial events *before* calling the strategy. This ensures we
+    # have common random numbers for the arrivals, no matter what the strategy
+    # does with the RNG.
+    init_events = generate_events(sim, args.start, args.end)
     strategy = STRATEGIES[args.strategy](sim, **vars(args))
-
-    # Simulate and store results. First we create initial events: these are all
-    # arrival events, and shift planning times. The simulation starts with
-    # those events and processes them, which may add new ones as well.
-    events = generate_events(sim, args.start, args.end)
-    sim(db.store, strategy, events)
+    sim(db.store, strategy, init_events)
 
 
 if __name__ == "__main__":
