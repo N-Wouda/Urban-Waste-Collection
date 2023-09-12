@@ -86,7 +86,7 @@ class Simulator:
             for container in self.containers:
                 volumes = generator.uniform(
                     *config.VOLUME_RANGE,
-                    size=generator.integers(0, 100),
+                    size=generator.integers(1, 100),
                 )
 
                 for volume in volumes:

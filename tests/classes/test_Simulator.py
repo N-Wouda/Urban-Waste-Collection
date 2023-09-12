@@ -1,3 +1,4 @@
+import operator
 from datetime import date, datetime, time, timedelta
 from itertools import count
 
@@ -153,3 +154,26 @@ def test_observing_events():
     # Should have seen all initial events. Since the mock strategy above does
     # not generate new events, the length of seen should correspond with init.
     assert_equal(len(seen), len(init))
+
+
+@pytest.mark.parametrize(
+    ("randomize", "operator"), [(True, operator.ge), (False, operator.eq)]
+)
+def test_randomize(randomize: bool, operator):
+    """
+    Tests that ``randomize`` ensures the containers do not start empty, but
+    are instead given some initial arrivals.
+    """
+    db = Database("tests/test.db", ":memory:")
+    sim = Simulator(
+        default_rng(0),
+        db.depot(),
+        db.distances(),
+        db.durations(),
+        db.containers(),
+        db.vehicles(),
+        randomize=randomize,
+    )
+
+    for container in sim.containers:
+        assert_(operator(container.num_arrivals, 0))
