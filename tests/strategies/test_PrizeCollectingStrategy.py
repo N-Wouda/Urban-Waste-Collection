@@ -114,6 +114,7 @@ def test_threshold_works_with_predicted_full_containers(containers: list[int]):
         db.durations(),
         db.containers(),
         db.vehicles(),
+        randomize=False,
     )
 
     for container in sim.containers:
@@ -142,6 +143,7 @@ def test_visit_required_containers():
         db.durations(),
         db.containers(),
         db.vehicles(),
+        randomize=False,
     )
 
     for container in sim.containers:
@@ -179,6 +181,7 @@ def test_forward_looking_behaviour(
         db.durations(),
         db.containers(),
         db.vehicles(),
+        randomize=False,
     )
 
     for container in sim.containers:

@@ -39,6 +39,7 @@ def test_for_single_container(event_pattern: str, expected: float):
         db.containers(),
         db.vehicles(),
         Configuration(BREAKS=tuple()),
+        randomize=False,
     )
 
     now = datetime.now()

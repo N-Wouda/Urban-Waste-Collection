@@ -35,6 +35,7 @@ def test_for_several_routes(visits: list[list[int]], expected: float):
         db.containers(),
         db.vehicles(),
         Configuration(BREAKS=tuple()),
+        randomize=False,
     )
 
     now = datetime.now()

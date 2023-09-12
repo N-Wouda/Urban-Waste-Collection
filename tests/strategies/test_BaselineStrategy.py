@@ -144,6 +144,7 @@ def test_strategy_considers_container_arrival_rates():
             Container("2", [2.0] * HOURS_IN_DAY, 1.0, (0, 0)),
         ],
         [Vehicle("name", 1.0)],
+        randomize=False,
     )
 
     baseline = BaselineStrategy(

@@ -34,6 +34,7 @@ def test_containers(visits: list[int], expected: int):
         db.containers(),
         db.vehicles(),
         Configuration(BREAKS=tuple()),
+        randomize=False,
     )
 
     now = datetime.now()

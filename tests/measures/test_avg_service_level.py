@@ -40,6 +40,7 @@ def test_single_container(event_pattern: str, volume: float, expected: float):
         db.containers(),
         db.vehicles(),
         Configuration(BREAKS=tuple()),
+        randomize=False,
     )
 
     container = sim.containers[0]

@@ -39,6 +39,7 @@ def test_for_routes_without_breaks(visits: list[list[int]]):
         db.containers(),
         db.vehicles(),
         Configuration(BREAKS=tuple()),  # no breaks
+        randomize=False,
     )
 
     now = datetime.now()
@@ -77,6 +78,7 @@ def test_with_breaks(break_dur):
         db.vehicles(),
         # Set up a break one hour into the shift, lasting for the given time.
         Configuration(BREAKS=(((now + hour).time(), break_dur),)),
+        randomize=False,
     )
 
     # Single route plan visiting all five containers three times. That takes
