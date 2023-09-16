@@ -68,6 +68,7 @@ class PrizeCollectingStrategy:
         self.sim = sim
         self.rho = rho
         self.threshold = threshold
+        self.deposit_volume = deposit_volume
         self.max_runtime = max_runtime
 
         self.models: dict[int, OverflowModel] = {
@@ -76,23 +77,6 @@ class PrizeCollectingStrategy:
         }
 
     def plan(self, event: ShiftPlanEvent) -> list[Route]:
-        probs = [
-            # Estimate the overflow probability *before* the next shift plan
-            # moment (that is, before the next time we'll get to do something
-            # about it). This is basically the number of arrivals that have
-            # already happened (certainty) plus the expected number of arrivals
-            # that'll happen over the next 24 hours. The latter we base on the
-            # average hourly arrival rate.
-            self.models[id(c)].prob(c.num_arrivals + sum(c.rates))
-            for c in self.sim.containers
-        ]
-
-        required = [prob > self.threshold for prob in probs]
-        logger.debug(f"Planning {np.count_nonzero(required)} required visits.")
-
-        prizes = [int(self.rho * prob) for prob in probs]
-        indices = np.arange(len(self.sim.containers))
-
         # We use the vehicle's shift durations to model the breaks. Each break
         # starts and ends at a particular time. The shifts last from the start
         # of the shift plan to the beginning of the first break, and then from
@@ -123,14 +107,27 @@ class PrizeCollectingStrategy:
             for (_, start), (end, _) in pairwise(shifts)
         ]
 
+        probs = [
+            # Estimate the overflow probability *before* the next shift plan
+            # moment (that is, before the next time we'll get to do something
+            # about it). This is based on the number of arrivals that have
+            # already happened (certainty) plus the rate of arrivals that'll
+            # happen over the next 24 hours.
+            self.models[id(c)].prob(c.num_arrivals, sum(c.rates))
+            for c in self.sim.containers
+        ]
+
         model = make_model(
             self.sim,
             event,
-            indices,
-            prizes,
-            required,
-            vehicles,
-            shift_duration,
+            container_idcs=np.arange(len(self.sim.containers)),
+            prizes=[int(self.rho * prob) for prob in probs],
+            required=[
+                self.deposit_volume * c.num_arrivals > c.capacity
+                for c in self.sim.containers
+            ],
+            vehicles=vehicles,
+            shift_duration=shift_duration,
         )
 
         result = model.solve(stop=MaxRuntime(self.max_runtime))
