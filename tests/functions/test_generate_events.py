@@ -10,6 +10,7 @@ from waste.classes import (
     Depot,
     ShiftPlanEvent,
     Simulator,
+    Vehicle,
 )
 from waste.constants import HOURS_IN_DAY
 from waste.functions import generate_events
@@ -82,3 +83,23 @@ def test_generates_arrival_events_based_on_container_rates():
     # We should have approximately ten arrivals per hour, and we have #days
     # hours. 5% tolerance because our dataset is not that large.
     assert_allclose(bins[0] / (next_year - today).days, 10, rtol=0.05)
+
+
+def test_seed_events():
+    gen = np.random.default_rng(seed=42)
+
+    container = Container("test", [0] * HOURS_IN_DAY, 100, (0.0, 0.0))
+    depot = Depot("depot", (0, 0))
+    vehicle = Vehicle("test", 0)
+    sim = Simulator(gen, depot, [], [], [container], [vehicle])
+
+    no_seed = generate_events(sim, date.today(), date.today())
+    seed = generate_events(sim, date.today(), date.today(), seed_events=True)
+
+    # There should be more events when also seeding the strategy. More
+    # precisely, there should be exactly two, since we have only one container.
+    # The first is an event with just one arrival, and the second an event
+    # with 11 arrivals, which is way more than twice the number of arrivals
+    # needed to fill this container.
+    assert_(len(seed) > len(no_seed))
+    assert_equal(len(seed) - len(no_seed), 2)

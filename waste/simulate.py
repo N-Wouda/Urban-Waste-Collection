@@ -13,7 +13,7 @@ from datetime import date
 import numpy as np
 
 from waste.classes import Database, Simulator
-from waste.functions import generate_events, seed_strategy
+from waste.functions import generate_events
 from waste.strategies import STRATEGIES
 
 logger = logging.getLogger(__name__)
@@ -96,13 +96,8 @@ def main():
     # Generate initial events *before* calling the strategy. This ensures we
     # have common random numbers for the arrivals, no matter what the strategy
     # does with the RNG.
-    init_events = generate_events(sim, args.start, args.end)
+    init_events = generate_events(sim, args.start, args.end, seed_events=True)
     strategy = STRATEGIES[args.strategy](sim, **vars(args))
-
-    # Seed the strategy with some initial service events. These service events
-    # are not real, but do reflect the underlying dynamics and help cut down
-    # on the overall warm-up time.
-    seed_strategy(sim, strategy)
     sim(db.store, strategy, init_events)
 
 
