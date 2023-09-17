@@ -35,7 +35,6 @@ def test_for_single_shift(visits: list[list[int]]):
         db.containers(),
         db.vehicles(),
         Configuration(BREAKS=tuple()),
-        randomize=False,
     )
 
     now = datetime.now()

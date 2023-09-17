@@ -108,23 +108,31 @@ class PrizeCollectingStrategy:
             for c in self.sim.containers
         ]
 
-        model = make_model(
+        prizes = [int(self.rho * prob) for prob in probs]
+        required = [
+            # Rule of thumb: when the number of arrivals (each of the
+            # assumed deposit volume) exceeds the capacity we definitely
+            # have to visit the container.
+            self.deposit_volume * c.num_arrivals > c.capacity
+            for c in self.sim.containers
+        ]
+
+        logger.info(f"Planning {np.count_nonzero(required)} required visits.")
+        logger.info(f"Average prize: {np.mean(prizes):.1f}m.")
+
+        model = make_model(  # type: ignore
             self.sim,
             event,
             container_idcs=np.arange(len(self.sim.containers)),
-            prizes=[int(self.rho * prob) for prob in probs],
-            required=[
-                # Rule of thumb: when the number of arrivals (each of the
-                # assumed deposit volume) exceeds the capacity we definitely
-                # have to visit the container.
-                self.deposit_volume * c.num_arrivals > c.capacity
-                for c in self.sim.containers
-            ],
+            prizes=prizes,
+            required=required,
             vehicles=vehicles,
             shift_duration=shift_duration,
         )
 
         result = model.solve(stop=MaxRuntime(self.max_runtime))
+        logger.info(f"Visiting {result.best.num_clients()} containers.")
+
         if not result.is_feasible():
             msg = f"Shiftplan at time {event.time} is infeasible!"
             logger.error(msg)

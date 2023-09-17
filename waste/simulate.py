@@ -13,7 +13,7 @@ from datetime import date
 import numpy as np
 
 from waste.classes import Database, Simulator
-from waste.functions import generate_events
+from waste.functions import generate_events, seed_strategy
 from waste.strategies import STRATEGIES
 
 logger = logging.getLogger(__name__)
@@ -26,6 +26,11 @@ def parse_args():
     parser.add_argument("src_db", help="Location of the input database.")
     parser.add_argument("res_db", help="Location of the output database.")
     parser.add_argument("--seed", type=int, required=True)
+    parser.add_argument(
+        "--num_vehicles",
+        type=int,
+        help="Number of available vehicles. All if not defined.",
+    )
     parser.add_argument(
         "--start",
         required=True,
@@ -73,15 +78,19 @@ def main():
 
     logger.info(f"Running simulation with arguments {vars(args)}.")
 
-    # Set up simulation environment and data.
+    # Set up simulation environment and data. The number of actually available
+    # vehicles can be limited via a command-line argument - a bit of a hack
+    # that only works if all vehicles are identical (which is the case for our
+    # data, but need not be true generally).
     db = Database(args.src_db, args.res_db)
+    num_veh = args.num_vehicles if args.num_vehicles else len(db.vehicles())
     sim = Simulator(
         np.random.default_rng(args.seed),
         db.depot(),
         db.distances(),
         db.durations(),
         db.containers(),
-        db.vehicles(),
+        db.vehicles()[:num_veh],
     )
 
     # Generate initial events *before* calling the strategy. This ensures we
@@ -89,6 +98,11 @@ def main():
     # does with the RNG.
     init_events = generate_events(sim, args.start, args.end)
     strategy = STRATEGIES[args.strategy](sim, **vars(args))
+
+    # Seed the strategy with some initial service events. These service events
+    # are not real, but do reflect the underlying dynamics and help cut down
+    # on the overall warm-up time.
+    seed_strategy(sim, strategy)
     sim(db.store, strategy, init_events)
 
 

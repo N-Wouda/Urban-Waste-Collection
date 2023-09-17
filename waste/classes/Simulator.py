@@ -69,7 +69,6 @@ class Simulator:
         containers: list[Container],
         vehicles: list[Vehicle],
         config: Configuration = Configuration(),
-        randomize: float = True,
     ):
         self.generator = generator
         self.depot = depot
@@ -78,19 +77,6 @@ class Simulator:
         self.containers = containers
         self.vehicles = vehicles
         self.config = config
-
-        if randomize:
-            # Then we start the containers from a somewhat arbitrarily chosen
-            # set of volumes. This prevents weird 'grouping' of containers that
-            # all start from empty.
-            for container in self.containers:
-                volumes = generator.uniform(
-                    *config.VOLUME_RANGE,
-                    size=generator.integers(1, 100),
-                )
-
-                for volume in volumes:
-                    container.arrive(volume)
 
     def __call__(
         self,

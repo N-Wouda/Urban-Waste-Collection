@@ -25,15 +25,21 @@ class OverflowModel:
         parameters when no data is yet available.
     """
 
-    def __init__(self, container: Container, deposit_volume: float):
+    def __init__(
+        self,
+        container: Container,
+        deposit_volume: float,
+        bounds: tuple[tuple[float, float], ...] = ((1, 100), (1, 30)),
+    ):
         self.container = container
         self.deposit_volume = deposit_volume
+        self.bounds = bounds
 
         self.data = np.empty((0, 2))
-        self.x = [1, 1]
+        self.x = np.mean(self.bounds, axis=1)
 
     def prob(
-        self, num_arrivals: float, rate: float = 0.0, tol: float = 1e-2
+        self, num_arrivals: float, rate: float = 0.0, tol: float = 1e-3
     ) -> float:
         """
         Estimates the probability of overflow given a known number of arrivals
@@ -51,7 +57,7 @@ class OverflowModel:
         tol
             Used to cut-off the future arrivals. We evaluate arrivals in {0,
             ..., k}, where k is determined as ppf(1 - tol) of the appropriate
-            Poisson distribution. Default 0.01.
+            Poisson distribution. Default 0.001.
         """
         cap = self.container.capacity
         N = self.data[:, 0]
@@ -60,15 +66,16 @@ class OverflowModel:
         def p(n, mu, sigma):
             # Returns the probability that the container has *not* overflowed
             # after n arrivals, given mean mu and stddev sigma.
-            return norm.cdf((cap - n * mu) / (sigma * np.sqrt(n)))
+            return norm.cdf((cap - n * mu) / (sigma * np.sqrt(n) + tol))
 
         def loglik(x):
             # Evaluates -loglikelihood of parameters x given the data N and Y.
-            prob = p(N, *x)
+            # We impose some clipping on the probabilities to avoid numerical
+            # issues evaluating the logarithms.
+            prob = np.clip(p(N, *x), tol, 1 - tol)
             return -np.sum(Y * np.log(prob) + (1 - Y) * np.log(1 - prob))
 
-        # TODO make bounds an argument?
-        res = minimize(loglik, self.x, bounds=[(1, 100), (1, 30)])
+        res = minimize(loglik, self.x, bounds=self.bounds)
         self.x = res.x
 
         return sum(

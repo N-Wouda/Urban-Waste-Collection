@@ -64,7 +64,6 @@ def test_routes_containers_with_most_arrivals(num_containers: int):
         db.durations(),
         db.containers(),
         db.vehicles(),
-        randomize=False,
     )
 
     num_arrivals = sim.generator.integers(100, size=(len(sim.containers)))

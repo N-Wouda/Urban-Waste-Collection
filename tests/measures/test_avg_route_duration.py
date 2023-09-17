@@ -41,7 +41,6 @@ def test_for_routes_without_breaks(visits: list[list[int]]):
             BREAKS=tuple(),  # no breaks
             TIME_PER_CONTAINER=timedelta(minutes=2),
         ),
-        randomize=False,
     )
 
     now = datetime.now()
@@ -90,7 +89,6 @@ def test_with_breaks(container_time, break_time, between):
             BREAKS=(((now + hour).time(), break_time),),
             TIME_PER_CONTAINER=container_time,
         ),
-        randomize=False,
     )
 
     # Single route plan visiting all five containers three times. That takes
