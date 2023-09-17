@@ -50,7 +50,6 @@ def parse_args():
 
     prize = subparsers.add_parser("prize")
     prize.add_argument("--rho", type=float, required=True)
-    prize.add_argument("--threshold", type=float, required=True)
     prize.add_argument("--deposit_volume", type=float, required=True)
     prize.add_argument("--max_runtime", type=float, required=True)
 
