@@ -27,6 +27,11 @@ def parse_args():
     parser.add_argument("res_db", help="Location of the output database.")
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument(
+        "--num_vehicles",
+        type=int,
+        help="Number of available vehicles. All if not defined.",
+    )
+    parser.add_argument(
         "--start",
         required=True,
         type=date.fromisoformat,
@@ -50,7 +55,6 @@ def parse_args():
 
     prize = subparsers.add_parser("prize")
     prize.add_argument("--rho", type=float, required=True)
-    prize.add_argument("--threshold", type=float, required=True)
     prize.add_argument("--deposit_volume", type=float, required=True)
     prize.add_argument("--max_runtime", type=float, required=True)
 
@@ -74,21 +78,25 @@ def main():
 
     logger.info(f"Running simulation with arguments {vars(args)}.")
 
-    # Set up simulation environment and data.
+    # Set up simulation environment and data. The number of actually available
+    # vehicles can be limited via a command-line argument - a bit of a hack
+    # that only works if all vehicles are identical (which is the case for our
+    # data, but need not be true generally).
     db = Database(args.src_db, args.res_db)
+    num_veh = args.num_vehicles if args.num_vehicles else len(db.vehicles())
     sim = Simulator(
         np.random.default_rng(args.seed),
         db.depot(),
         db.distances(),
         db.durations(),
         db.containers(),
-        db.vehicles(),
+        db.vehicles()[:num_veh],
     )
 
     # Generate initial events *before* calling the strategy. This ensures we
     # have common random numbers for the arrivals, no matter what the strategy
     # does with the RNG.
-    init_events = generate_events(sim, args.start, args.end)
+    init_events = generate_events(sim, args.start, args.end, seed_events=True)
     strategy = STRATEGIES[args.strategy](sim, **vars(args))
     sim(db.store, strategy, init_events)
 

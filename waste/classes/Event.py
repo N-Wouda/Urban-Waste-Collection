@@ -76,8 +76,10 @@ class ServiceEvent(Event):
         return self.container.volume
 
     def seal(self):
-        super().seal()
+        if self.is_sealed():  # then this is a no-op
+            return
 
+        super().seal()
         self._num_arrivals = self.container.num_arrivals
         self._volume = self.container.volume
 

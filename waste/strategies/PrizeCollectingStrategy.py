@@ -33,10 +33,6 @@ class PrizeCollectingStrategy:
         multiplier balances the goal of minimising distance on the one hand
         with the desire not to have overflows: small values prioritise limiting
         driving distance, while large values prioritise limiting overflows.
-    threshold
-        From what overflow probability must a container be visited? This can
-        be helpful in making sure containers with e.g. a 95% chance of being
-        full are visited.
     max_runtime
         Maximum runtime (in seconds) to use for route optimisation.
     definitely_full_after
@@ -48,16 +44,12 @@ class PrizeCollectingStrategy:
         self,
         sim: Simulator,
         rho: float,
-        threshold: float,
         deposit_volume: float,
         max_runtime: float,
         **kwargs,
     ):
         if rho < 0:
             raise ValueError("Expected rho >= 0.")
-
-        if not (0 <= threshold <= 1):
-            raise ValueError("Expected threshold in [0, 1].")
 
         if deposit_volume <= 0.0:
             raise ValueError("Expected deposit_volume > 0.")
@@ -67,7 +59,7 @@ class PrizeCollectingStrategy:
 
         self.sim = sim
         self.rho = rho
-        self.threshold = threshold
+        self.deposit_volume = deposit_volume
         self.max_runtime = max_runtime
 
         self.models: dict[int, OverflowModel] = {
@@ -76,23 +68,6 @@ class PrizeCollectingStrategy:
         }
 
     def plan(self, event: ShiftPlanEvent) -> list[Route]:
-        probs = [
-            # Estimate the overflow probability *before* the next shift plan
-            # moment (that is, before the next time we'll get to do something
-            # about it). This is basically the number of arrivals that have
-            # already happened (certainty) plus the expected number of arrivals
-            # that'll happen over the next 24 hours. The latter we base on the
-            # average hourly arrival rate.
-            self.models[id(c)].prob(c.num_arrivals + sum(c.rates))
-            for c in self.sim.containers
-        ]
-
-        required = [prob > self.threshold for prob in probs]
-        logger.debug(f"Planning {np.count_nonzero(required)} required visits.")
-
-        prizes = [int(self.rho * prob) for prob in probs]
-        indices = np.arange(len(self.sim.containers))
-
         # We use the vehicle's shift durations to model the breaks. Each break
         # starts and ends at a particular time. The shifts last from the start
         # of the shift plan to the beginning of the first break, and then from
@@ -123,17 +98,41 @@ class PrizeCollectingStrategy:
             for (_, start), (end, _) in pairwise(shifts)
         ]
 
-        model = make_model(
+        probs = [
+            # Estimate the overflow probability *before* the next shift plan
+            # moment (that is, before the next time we'll get to do something
+            # about it). This is based on the number of arrivals that have
+            # already happened (certainty) plus the rate of arrivals that'll
+            # happen over the next 24 hours.
+            self.models[id(c)].prob(c.num_arrivals, sum(c.rates))
+            for c in self.sim.containers
+        ]
+
+        prizes = [int(self.rho * prob) for prob in probs]
+        required = [
+            # Rule of thumb: when the number of arrivals (each of the
+            # assumed deposit volume) exceeds the capacity we definitely
+            # have to visit the container.
+            self.deposit_volume * c.num_arrivals > c.capacity
+            for c in self.sim.containers
+        ]
+
+        logger.info(f"Planning {np.count_nonzero(required)} required visits.")
+        logger.info(f"Average prize: {np.mean(prizes):.1f}m.")
+
+        model = make_model(  # type: ignore
             self.sim,
             event,
-            indices,
-            prizes,
-            required,
-            vehicles,
-            shift_duration,
+            container_idcs=np.arange(len(self.sim.containers)),
+            prizes=prizes,
+            required=required,
+            vehicles=vehicles,
+            shift_duration=shift_duration,
         )
 
         result = model.solve(stop=MaxRuntime(self.max_runtime))
+        logger.info(f"Visiting {result.best.num_clients()} containers.")
+
         if not result.is_feasible():
             msg = f"Shiftplan at time {event.time} is infeasible!"
             logger.error(msg)
