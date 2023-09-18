@@ -80,9 +80,9 @@ class OverflowModel:
 
         # Expected overflow probability based on estimates (p) and the
         # arrival of additional deposits.
-        mu = (num_arrivals + rate) * self.x[0]
+        mean = (num_arrivals + rate) * self.x[0]
         var = (num_arrivals + rate) * self.x[1] ** 2 + rate * self.x[0] ** 2
-        return norm.sf(cap, loc=mu, scale=np.sqrt(var + tol))
+        return norm.sf(cap, loc=mean, scale=np.sqrt(var + tol))
 
     def observe(self, x: int, y: bool):
         logger.debug(f"{self.container.name}: observing ({x}, {y}).")
