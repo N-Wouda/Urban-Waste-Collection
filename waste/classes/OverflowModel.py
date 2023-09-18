@@ -29,7 +29,7 @@ class OverflowModel:
         self,
         container: Container,
         deposit_volume: float,
-        bounds: tuple[tuple[float, float], ...] = ((1, 100), (1, 50)),
+        bounds: tuple[tuple[float, float], ...] = ((1, 100), (1, 30)),
     ):
         self.container = container
         self.deposit_volume = deposit_volume
