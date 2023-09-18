@@ -1,4 +1,5 @@
-from numpy.testing import assert_allclose
+import numpy as np
+from numpy.testing import assert_, assert_allclose
 
 from waste.classes import Container, OverflowModel
 from waste.constants import HOURS_IN_DAY
@@ -7,7 +8,7 @@ from waste.constants import HOURS_IN_DAY
 def test_zero():
     container = Container("test", [0] * HOURS_IN_DAY, 1, (0, 0))
     model = OverflowModel(container, 1)
-    assert_allclose(model.prob(0), 0)
+    assert_(np.isclose(model.prob(0), 0))
 
 
 def test_rates():
@@ -20,12 +21,11 @@ def test_rates():
     model.observe(3, True)
 
     assert_allclose(model.prob(1, rate=0), 0.42, rtol=1e-2)
-    assert_allclose(model.prob(1, rate=2), 0.53, rtol=1e-2)
 
-    assert_allclose(model.prob(2, rate=1), 0.54, rtol=1e-2)
-    assert_allclose(model.prob(2, rate=1), 0.54, rtol=1e-2)
-
+    assert_allclose(model.prob(1, rate=2), 0.55, rtol=1e-2)
+    assert_allclose(model.prob(2, rate=1), 0.55, rtol=1e-2)
     assert_allclose(model.prob(3, rate=0), 0.55, rtol=1e-2)
+
     assert_allclose(model.prob(3, rate=100), 0.98, rtol=1e-2)
 
 

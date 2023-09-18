@@ -2,7 +2,7 @@ import logging
 
 import numpy as np
 from scipy.optimize import minimize
-from scipy.stats import norm, poisson
+from scipy.stats import norm
 
 from .Container import Container
 
@@ -29,7 +29,7 @@ class OverflowModel:
         self,
         container: Container,
         deposit_volume: float,
-        bounds: tuple[tuple[float, float], ...] = ((1, 100), (1, 30)),
+        bounds: tuple[tuple[float, float], ...] = ((1, 100), (1, 50)),
     ):
         self.container = container
         self.deposit_volume = deposit_volume
@@ -55,9 +55,9 @@ class OverflowModel:
             probability of overflow at the current number of known arrivals is
             evaluated.
         tol
-            Used to cut-off the future arrivals. We evaluate arrivals in {0,
-            ..., k}, where k is determined as ppf(1 - tol) of the appropriate
-            Poisson distribution. Default 0.001.
+            Used to clip probabilities to (tol, 1 - tol). This is needed to
+            avoid numerical issues when evaluating the log-likelihood. Default
+            0.001.
         """
         cap = self.container.capacity
         N = self.data[:, 0]
@@ -78,12 +78,12 @@ class OverflowModel:
         res = minimize(loglik, self.x, bounds=self.bounds)
         self.x = res.x
 
-        return sum(
-            # Expected overflow probability based on estimates (p) and the
-            # arrival of additional deposits.
-            (1 - p(num_arrivals + cnt, *self.x)) * poisson.pmf(cnt, mu=rate)
-            for cnt in range(int(poisson.ppf(1 - tol, mu=rate) + 1))
-        )
+        # Expected overflow probability based on estimates (p) and the
+        # arrival of additional deposits.
+        mu, sigma = self.x
+        num = cap - (num_arrivals + rate) * mu
+        denom = (num_arrivals + rate) * sigma**2 + rate * mu**2 + tol
+        return norm.sf(num / np.sqrt(denom))
 
     def observe(self, x: int, y: bool):
         logger.debug(f"{self.container.name}: observing ({x}, {y}).")
