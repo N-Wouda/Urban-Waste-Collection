@@ -5,7 +5,7 @@ from waste.classes import Database
 
 def avg_service_level(db: Database, after: datetime) -> float:
     """
-    This measure computes the service level of serviced containers.
+    This measure computes the average service level of serviced containers.
     """
     sql = """-- sql
         SELECT AVG(se.volume <= c.capacity)
