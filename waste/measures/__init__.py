@@ -11,6 +11,7 @@ from .avg_num_arrivals_between_service import (
 from .avg_num_routes_per_day import (
     avg_num_routes_per_day as avg_num_routes_per_day,
 )
+from .avg_num_services import avg_num_services as avg_num_services
 from .avg_route_clusters import avg_route_clusters
 from .avg_route_distance import avg_route_distance as avg_route_distance
 from .avg_route_duration import avg_route_duration as avg_route_duration
@@ -31,6 +32,7 @@ MEASURES: list[Measure] = [
     avg_fill_factor,
     avg_num_arrivals_between_service,
     avg_num_routes_per_day,
+    avg_num_services,
     avg_route_clusters,
     avg_route_distance,
     avg_route_duration,
