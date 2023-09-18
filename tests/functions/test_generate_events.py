@@ -96,10 +96,6 @@ def test_seed_events():
     no_seed = generate_events(sim, date.today(), date.today())
     seed = generate_events(sim, date.today(), date.today(), seed_events=True)
 
-    # There should be more events when also seeding the strategy. More
-    # precisely, there should be exactly two, since we have only one container.
-    # The first is an event with just one arrival, and the second an event
-    # with 11 arrivals, which is way more than twice the number of arrivals
-    # needed to fill this container.
+    # There should be more events when also seeding the strategy.
     assert_(len(seed) > len(no_seed))
-    assert_equal(len(seed) - len(no_seed), 2)
+    assert_equal(len(seed) - len(no_seed), 5)

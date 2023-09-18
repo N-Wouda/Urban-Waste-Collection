@@ -57,10 +57,9 @@ def generate_events(
             # events are not real, but do reflect the underlying dynamics and
             # help cut down on the overall warm-up time.
             avg_volume = np.mean(sim.config.VOLUME_RANGE)
-            stop = 2 * int(container.capacity / avg_volume + 1) + 10
-            volumes = gen.uniform(*sim.config.VOLUME_RANGE, stop)
+            stop = 2 * int(container.capacity / avg_volume + 1)
 
-            for num_arrivals in np.arange(start=1, stop=stop, step=10):
+            for num_arrivals in np.arange(start=1, stop=stop):
                 event = ServiceEvent(
                     time=datetime.min,
                     duration=timedelta(hours=0),
@@ -77,7 +76,9 @@ def generate_events(
                 # not a problem, but we do need to explicitly define these
                 # values.
                 event.seal()
+
                 event._num_arrivals = num_arrivals  # noqa: SLF001
+                volumes = gen.uniform(*sim.config.VOLUME_RANGE, num_arrivals)
                 event._volume = sum(volumes[:num_arrivals])  # noqa: SLF001
 
     return events

@@ -20,13 +20,13 @@ def test_rates():
     model.observe(2, True)
     model.observe(3, True)
 
-    assert_allclose(model.prob(1, rate=0), 0.42, rtol=1e-2)
+    assert_allclose(model.prob(1, rate=0), 0.44, rtol=1e-2)
 
-    assert_allclose(model.prob(1, rate=2), 0.55, rtol=1e-2)
-    assert_allclose(model.prob(2, rate=1), 0.55, rtol=1e-2)
-    assert_allclose(model.prob(3, rate=0), 0.55, rtol=1e-2)
+    assert_allclose(model.prob(1, rate=2), 0.87, rtol=1e-2)
+    assert_allclose(model.prob(2, rate=1), 0.92, rtol=1e-2)
+    assert_allclose(model.prob(3, rate=0), 0.98, rtol=1e-2)
 
-    assert_allclose(model.prob(3, rate=100), 0.98, rtol=1e-2)
+    assert_allclose(model.prob(3, rate=100), 1, rtol=1e-2)
 
 
 def test_predict_boundary_cases():

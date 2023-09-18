@@ -29,8 +29,7 @@ class OverflowModel:
         self,
         container: Container,
         deposit_volume: float,
-        # TODO should sigma bound be larger? E.g. (1, 50)?
-        bounds: tuple[tuple[float, float], ...] = ((1, 100), (1, 30)),
+        bounds: tuple[tuple[float, float], ...] = ((1, 100), (1, 50)),
     ):
         self.container = container
         self.deposit_volume = deposit_volume
@@ -65,9 +64,9 @@ class OverflowModel:
         Y = self.data[:, 1]
 
         def p(n, mu, sigma):
-            # Returns the probability that the container has *not* overflowed
-            # after n arrivals, given mean mu and stddev sigma.
-            return norm.cdf((cap - n * mu) / (sigma * np.sqrt(n) + tol))
+            # Returns the probability that the container has overflowed after
+            # n arrivals, given mean mu and stddev sigma.
+            return norm.sf((cap - n * mu) / (sigma * np.sqrt(n) + tol))
 
         def loglik(x):
             # Evaluates -loglikelihood of parameters x given the data N and Y.
@@ -76,7 +75,6 @@ class OverflowModel:
             prob = np.clip(p(N, *x), tol, 1 - tol)
             return -np.sum(Y * np.log(prob) + (1 - Y) * np.log(1 - prob))
 
-        # TODO is this concave/smooth/nice enough for minimize?
         res = minimize(loglik, self.x, bounds=self.bounds)
         self.x = res.x
 
