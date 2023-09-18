@@ -29,6 +29,7 @@ class OverflowModel:
         self,
         container: Container,
         deposit_volume: float,
+        # TODO should sigma bound be larger? E.g. (1, 50)?
         bounds: tuple[tuple[float, float], ...] = ((1, 100), (1, 30)),
     ):
         self.container = container
@@ -75,6 +76,7 @@ class OverflowModel:
             prob = np.clip(p(N, *x), tol, 1 - tol)
             return -np.sum(Y * np.log(prob) + (1 - Y) * np.log(1 - prob))
 
+        # TODO is this concave/smooth/nice enough for minimize?
         res = minimize(loglik, self.x, bounds=self.bounds)
         self.x = res.x
 
