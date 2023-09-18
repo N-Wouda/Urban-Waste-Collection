@@ -12,9 +12,9 @@ logger = logging.getLogger(__name__)
 class OverflowModel:
     """
     A class implementing a self-adjusting CDF of the overflow probability.
-    Estimation is based on censored overflow data, with a CDF fitted using the
-    Turnbull procedure. Additionally, some linear interpolation is used between
-    observations to ensure some smoothing.
+    Estimation is based on (# arrivals, overflow yes/no) data points. We
+    fit a function to this data, which in turn is used to estimate the
+    overflow probability.
 
     Parameters
     ----------
