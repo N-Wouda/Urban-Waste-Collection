@@ -16,6 +16,7 @@ from .avg_route_distance import avg_route_distance as avg_route_distance
 from .avg_route_duration import avg_route_duration as avg_route_duration
 from .avg_route_stops import avg_route_stops as avg_route_stops
 from .avg_service_level import avg_service_level as avg_service_level
+from .min_service_level import min_service_level as min_service_level
 from .num_arrivals import num_arrivals as num_arrivals
 from .num_arrivals_per_hour import (
     num_arrivals_per_hour as num_arrivals_per_hour,
@@ -35,6 +36,7 @@ MEASURES: list[Measure] = [
     avg_route_duration,
     avg_route_stops,
     avg_service_level,
+    min_service_level,
     num_arrivals_per_hour,
     num_arrivals,
     num_services,
