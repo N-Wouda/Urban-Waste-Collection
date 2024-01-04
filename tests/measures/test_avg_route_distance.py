@@ -76,7 +76,11 @@ def test_with_breaks(break_dur):
         db.containers(),
         db.vehicles(),
         # Set up a break one hour into the shift, lasting for the given time.
-        Configuration(BREAKS=(((now + hour).time(), break_dur),)),
+        Configuration(
+            BREAKS=(((now + hour).time(), break_dur),),
+            SHIFT_DURATION=timedelta(hours=8),
+            TIME_PER_CONTAINER=timedelta(minutes=3),
+        ),
     )
 
     # Single route plan visiting all five containers three times. That takes
