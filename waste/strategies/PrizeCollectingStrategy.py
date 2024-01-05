@@ -237,6 +237,14 @@ def _solve(
     pop_params = PopulationParams()
     pop = Population(bpd, pop_params)
 
+    # The initial solutions typically came from different data instances, and
+    # might not be feasible for this one. They are just good initial solutions.
+    # To ensure they are correctly marked as infeasible, we reconstruct them
+    # with the correct ProblemData instance.
+    init = [Solution(data, sol.get_routes()) for sol in init]
+
+    # Add an appropriate amount of random solutions to the initial solution
+    # pool. These random solutions add a bit of diversity.
     num_random = max(pop_params.min_pop_size - len(init), 0)
     init += [Solution.make_random(data, rng) for _ in range(num_random)]
 
