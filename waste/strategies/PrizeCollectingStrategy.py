@@ -50,6 +50,12 @@ class PrizeCollectingStrategy:
         multiplier balances the goal of minimising distance on the one hand
         with the desire not to have overflows: small values prioritise limiting
         driving distance, while large values prioritise limiting overflows.
+    deposit_volume
+        Used in a rule-of-thumb to mark containers as required. This numbe is
+        multiplied by the number of arrivals at each container to obtain a
+        total volume in liters. If that total volume exceeds the capacity of
+        the container, the container is marked as a required visit (rather than
+        optional based on the prize values).
     max_runtime
         Maximum runtime (in seconds) to use for route optimisation.
     max_reused_solutions
@@ -231,8 +237,8 @@ def _solve(
     pop_params = PopulationParams()
     pop = Population(bpd, pop_params)
 
-    size = pop_params.min_pop_size - len(init)
-    init += [Solution.make_random(data, rng) for _ in range(size)]
+    num_random = max(pop_params.min_pop_size - len(init), 0)
+    init += [Solution.make_random(data, rng) for _ in range(num_random)]
 
     gen_args = (data, pm, rng, pop, ls, srex, init)
     algo = GeneticAlgorithm(*gen_args)  # type: ignore

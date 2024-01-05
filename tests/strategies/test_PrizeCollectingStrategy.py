@@ -12,23 +12,33 @@ from waste.strategies import PrizeCollectingStrategy
 
 
 @pytest.mark.parametrize(
-    ("rho", "deposit_volume", "max_runtime"),
+    ("rho", "deposit_volume", "max_runtime", "max_reused_solutions"),
     [
-        (-100, 1, 0),
-        (0, 1, -100),
-        (-1, 1, 0),
-        (0, -1, 0),  # deposit_volume < 0
-        (0, 1, -1),
-        (0, 0, 0),  # deposit_volume = 0
+        (-100, 1, 0, 0),
+        (0, 1, -100, 0),
+        (-1, 1, 0, 0),
+        (0, -1, 0, 0),  # deposit_volume < 0
+        (0, 1, -1, 0),
+        (0, 0, 0, 0),  # deposit_volume = 0
+        (0, 1, 1, -1),  # max_reused_solutions < 0
     ],
 )
 def test_init_raises_given_invalid_arguments(
-    rho: float, deposit_volume: float, max_runtime: float
+    rho: float,
+    deposit_volume: float,
+    max_runtime: float,
+    max_reused_solutions: int,
 ):
     sim = Simulator(default_rng(0), Depot("", (0, 0)), [], [], [], [])
 
     with assert_raises(ValueError):
-        PrizeCollectingStrategy(sim, rho, deposit_volume, max_runtime)
+        PrizeCollectingStrategy(
+            sim,
+            rho,
+            deposit_volume,
+            max_runtime,
+            max_reused_solutions,
+        )
 
 
 @pytest.mark.filterwarnings("ignore::pyvrp.exceptions.EmptySolutionWarning")
