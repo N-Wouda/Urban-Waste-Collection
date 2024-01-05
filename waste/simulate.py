@@ -57,6 +57,7 @@ def parse_args():
     prize.add_argument("--rho", type=float, required=True)
     prize.add_argument("--deposit_volume", type=float, required=True)
     prize.add_argument("--max_runtime", type=float, required=True)
+    prize.add_argument("--max_reused_solutions", type=int, default=0)
 
     random = subparsers.add_parser("random")
     random.add_argument("--containers_per_route", type=int, required=True)
