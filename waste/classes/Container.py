@@ -61,5 +61,3 @@ class Container:
             f"capacity={self.capacity}"
             ")"
         )
-
-    # TODO
