@@ -58,7 +58,7 @@ class BaselineStrategy(GreedyStrategy):
 
         # Divide max_extra / avg_rates, with some special precautions in case
         # avg_rates is zero somewhere (we set num_hours to +inf in that case).
-        num_hours = np.full_like(arrivals, fill_value=np.infty, dtype=float)
+        num_hours = np.full_like(arrivals, fill_value=np.inf, dtype=float)
         num_hours = np.divide(
             max_extra,
             avg_rates,
