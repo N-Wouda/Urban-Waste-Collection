@@ -72,6 +72,7 @@ class PrizeCollectingStrategy:
         deposit_volume: float,
         max_runtime: float,
         max_reused_solutions: int = 0,
+        perfect_information: bool = False,
         **kwargs,
     ):
         if rho < 0:
@@ -90,12 +91,13 @@ class PrizeCollectingStrategy:
         self.rho = rho
         self.deposit_volume = deposit_volume
         self.max_runtime = max_runtime
+        self.perfect_information = perfect_information
 
         self.max_reused_solutions = max_reused_solutions
         self.solution_pool: list[tuple[np.ndarray, Solution]] = []
 
         self.models: dict[int, OverflowModel] = {
-            id(container): OverflowModel(container, deposit_volume)
+            id(container): OverflowModel(container)
             for container in sim.containers
         }
 
@@ -136,7 +138,12 @@ class PrizeCollectingStrategy:
             # about it). This is based on the number of arrivals that have
             # already happened (certainty) plus the rate of arrivals that'll
             # happen over the next 24 hours.
-            self.models[id(c)].prob(c.num_arrivals, sum(c.rates))
+            self.models[id(c)].prob(c.num_arrivals, 0.0, sum(c.rates))
+            if not self.perfect_information
+            else
+            # But, when perfect information may be used, we base everything on
+            # the actual container volume, rather than the number of arrivals.
+            self.models[id(c)].prob(0, c.volume, sum(c.rates))
             for c in self.sim.containers
         ]
 

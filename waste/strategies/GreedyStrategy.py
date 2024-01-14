@@ -23,10 +23,18 @@ class GreedyStrategy:
         Number of containers to schedule.
     max_runtime
         Maximum runtime (in seconds) to use for route optimisation.
+    perfect_information
+        Whether to use perfect information of the current container's volumes
+        when deciding which containers to visit. Default False.
     """
 
     def __init__(
-        self, sim: Simulator, num_containers: int, max_runtime: float, **kwargs
+        self,
+        sim: Simulator,
+        num_containers: int,
+        max_runtime: float,
+        perfect_information: bool = False,
+        **kwargs,
     ):
         if num_containers < 0:
             raise ValueError("Expected num_containers >= 0.")
@@ -37,6 +45,7 @@ class GreedyStrategy:
         self.sim = sim
         self.num_containers = num_containers
         self.max_runtime = max_runtime
+        self.perfect_information = perfect_information
 
     def plan(self, event: ShiftPlanEvent) -> list[Route]:
         container_idcs = self._get_container_idcs()
@@ -68,9 +77,16 @@ class GreedyStrategy:
         if self.num_containers >= len(self.sim.containers):
             return np.arange(0, len(self.sim.containers))
 
-        # Returns indices of the containers with the highest number of arrivals
+        # Return indices of the containers with the highest number of arrivals
         # over container size. This measure is a proxy for the container fill
-        # rate at shift plan time.
-        measure = [c.num_arrivals / c.capacity for c in self.sim.containers]
+        # rate at shift plan time. When perfect information is used, the actual
+        # fill rate is used instead.
+        containers = self.sim.containers
+
+        if self.perfect_information:
+            measure = [c.volume / c.capacity for c in containers]
+        else:
+            measure = [c.num_arrivals / c.capacity for c in containers]
+
         top_k = np.argpartition(measure, -self.num_containers)
         return top_k[-self.num_containers :]

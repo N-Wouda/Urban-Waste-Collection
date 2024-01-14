@@ -22,6 +22,8 @@ class BaselineStrategy(GreedyStrategy):
         See greedy.
     max_runtime
         See greedy.
+    perfect_information
+        See greedy.
     """
 
     def __init__(
@@ -30,9 +32,12 @@ class BaselineStrategy(GreedyStrategy):
         deposit_volume: float,
         num_containers: int,
         max_runtime: float,
-        **kwargs
+        perfect_information: bool = False,
+        **kwargs,
     ):
-        super().__init__(sim, num_containers, max_runtime, **kwargs)
+        super().__init__(
+            sim, num_containers, max_runtime, perfect_information, **kwargs
+        )
 
         if deposit_volume <= 0.0:
             raise ValueError("Expected deposit_volume > 0.")
@@ -46,9 +51,13 @@ class BaselineStrategy(GreedyStrategy):
             return np.arange(0, len(containers))
 
         # Step 1. Determine current volume in each container based on the
-        # current number of arrivals.
-        arrivals = np.array([c.num_arrivals for c in containers])
-        curr_vols = self.deposit_volume * arrivals
+        # current number of arrivals. Or, when perfect information is used,
+        # just get the actual current volume.
+        if self.perfect_information:
+            curr_vols = np.array([c.volume for c in containers])
+        else:
+            arrivals = np.array([c.num_arrivals for c in containers])
+            curr_vols = self.deposit_volume * arrivals
 
         # Step 2. Determine the amount of time it'll take for each container to
         # fill up, given the current volume and the average arrival rate.
@@ -58,7 +67,7 @@ class BaselineStrategy(GreedyStrategy):
 
         # Divide max_extra / avg_rates, with some special precautions in case
         # avg_rates is zero somewhere (we set num_hours to +inf in that case).
-        num_hours = np.full_like(arrivals, fill_value=np.inf, dtype=float)
+        num_hours = np.full_like(curr_vols, fill_value=np.inf, dtype=float)
         num_hours = np.divide(
             max_extra,
             avg_rates,

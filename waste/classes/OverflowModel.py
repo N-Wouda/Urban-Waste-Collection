@@ -20,26 +20,27 @@ class OverflowModel:
     ----------
     container
         Container whose arrival behaviour we are trying to model here.
-    deposit_volume
-        Estimated volume of a single deposit. Used to determine initial
-        parameters when no data is yet available.
+    bounds
+        Bounds on the mean and standard deviation.
     """
 
     def __init__(
         self,
         container: Container,
-        deposit_volume: float,
         bounds: tuple[tuple[float, float], ...] = ((1, 100), (1, 50)),
     ):
         self.container = container
-        self.deposit_volume = deposit_volume
         self.bounds = bounds
 
         self.data = np.empty((0, 2))
         self.x = np.mean(self.bounds, axis=1)
 
     def prob(
-        self, num_arrivals: float, rate: float = 0.0, tol: float = 1e-3
+        self,
+        num_arrivals: float,
+        known_volume: float = 0.0,
+        rate: float = 0.0,
+        tol: float = 1e-3,
     ) -> float:
         """
         Estimates the probability of overflow given a known number of arrivals
@@ -49,6 +50,8 @@ class OverflowModel:
         ----------
         num_arrivals
             Known number of arrivals since last service.
+        known_volume
+            Known volume in the container.
         rate
             Poisson arrival rate of future arrivals. Defaults to zero, in which
             case there is no evaluation of future arrivals, and only the
@@ -60,6 +63,12 @@ class OverflowModel:
             0.001.
         """
         cap = self.container.capacity
+
+        if cap <= known_volume:
+            # Then the container is guaranteed to be full, and will overflow
+            # with any additional arrival. Such a container must be visited.
+            return 1.0
+
         N = self.data[:, 0]
         Y = self.data[:, 1]
 
@@ -82,7 +91,7 @@ class OverflowModel:
         # arrival of additional deposits.
         mean = (num_arrivals + rate) * self.x[0]
         var = (num_arrivals + rate) * self.x[1] ** 2 + rate * self.x[0] ** 2
-        return norm.sf(cap, loc=mean, scale=np.sqrt(var + tol))
+        return norm.sf(cap - known_volume, loc=mean, scale=np.sqrt(var + tol))
 
     def observe(self, x: int, y: bool):
         logger.debug(f"{self.container.name}: observing ({x}, {y}).")

@@ -32,6 +32,11 @@ def parse_args():
         help="Number of available vehicles. All if not defined.",
     )
     parser.add_argument(
+        "--perfect_information",
+        action="store_true",
+        help="Whether the exact fill-rate of the containers is known or not.",
+    )
+    parser.add_argument(
         "--start",
         required=True,
         type=date.fromisoformat,
