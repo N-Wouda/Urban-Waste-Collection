@@ -115,3 +115,46 @@ def test_greedy_better_than_random():
     dist_mat = db.distances()
     assert_(cum_value(dist_mat, greedy_res) < cum_value(dist_mat, random_res))
     assert_(greedy_res != random_res)
+
+
+@pytest.mark.parametrize("num_containers", [1, 2, 5])
+def test_greedy_with_perfect_information_visits_fullest_containers_first(
+    num_containers: int,
+):
+    db = Database("tests/test.db", ":memory:")
+    sim = Simulator(
+        default_rng(seed=42),
+        db.depot(),
+        db.distances(),
+        db.durations(),
+        db.containers(),
+        db.vehicles(),
+    )
+
+    # Volume should be leading here, since we use perfect information. Note
+    # that number of arrivals and volume have a very weak correlation, since
+    # we multiple number of arrivals by some number from U[0, 1] to get the
+    # actual volume.
+    num_arrivals = sim.generator.integers(100, size=(len(sim.containers)))
+    volume = num_arrivals * sim.generator.uniform(0, 1, size=len(num_arrivals))
+    for c, arrival, vol in zip(sim.containers, num_arrivals, volume):
+        c.num_arrivals = arrival
+        c.volume = vol
+
+    greedy = GreedyStrategy(
+        sim,
+        num_containers,
+        max_runtime=0.1,
+        perfect_information=True,
+    )
+
+    routes = greedy.plan(ShiftPlanEvent(datetime.now()))
+    actually_visited = {c for route in routes for c in route.plan}
+
+    # The visited containers should be the ones with the greatest fill rate
+    # (volume / capacity). The other containers should not be visited.
+    capacities = np.array([c.capacity for c in sim.containers])
+    sorted = np.argsort(-volume / capacities)
+    selected, not_selected = sorted[:num_containers], sorted[num_containers:]
+    assert_(all(c in actually_visited for c in selected))
+    assert_(all(c not in actually_visited for c in not_selected))
