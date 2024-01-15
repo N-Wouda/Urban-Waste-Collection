@@ -25,6 +25,8 @@ def generate_events(
     events are fake, but are based on the same distributional assumptions as
     the arrivals.
     """
+    volume_range = sim.config.VOLUME_RANGE
+
     earliest = datetime.combine(start, time.min)
     latest = datetime.combine(end, time.max)
 
@@ -41,7 +43,7 @@ def generate_events(
             # the rates list for this container.
             num_deposits = gen.poisson(container.rates[now.hour])
             time_offsets = gen.uniform(size=num_deposits)
-            volumes = gen.uniform(*sim.config.VOLUME_RANGE, size=num_deposits)
+            volumes = gen.triangular(*volume_range, num_deposits)
 
             for offset, volume in zip(time_offsets, volumes):
                 events.append(
@@ -78,7 +80,7 @@ def generate_events(
                 event.seal()
 
                 event._num_arrivals = num_arrivals  # noqa: SLF001
-                volumes = gen.uniform(*sim.config.VOLUME_RANGE, num_arrivals)
+                volumes = gen.triangular(*volume_range, num_arrivals)
                 event._volume = sum(volumes[:num_arrivals])  # noqa: SLF001
 
     return events

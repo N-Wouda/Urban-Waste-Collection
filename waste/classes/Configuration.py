@@ -12,7 +12,7 @@ class Configuration:
     )
     SHIFT_DURATION: timedelta = timedelta(hours=6)  # excl. breaks
     SHIFT_PLAN_TIME: time = time(hour=7)  # noqa: RUF009
-    VOLUME_RANGE: tuple[float, float] = (10, 60)  # in liters
+    VOLUME_RANGE: tuple[float, float, float] = (10, 30, 60)  # in liters
 
     # Time per cluster is the basic set-up and teardown needed at each cluster.
     # This is irrespective of the number of containers in a cluster. Then, the

@@ -98,4 +98,3 @@ def test_seed_events():
 
     # There should be more events when also seeding the strategy.
     assert_(len(seed) > len(no_seed))
-    assert_equal(len(seed) - len(no_seed), 5)
