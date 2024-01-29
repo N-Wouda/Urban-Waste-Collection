@@ -48,6 +48,7 @@ def test_raises_when_route_plan_is_infeasible():
     # get to location 1. There is no feasible route plan, and that should raise
     # an error.
     sim.durations[:, 1] = 36_000
+    sim.durations[1, 1] = 0  # to avoid a non-zero self loop
     greedy = GreedyStrategy(sim, num_containers=5, max_runtime=0.1)
 
     with assert_raises(RuntimeError):

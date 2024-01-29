@@ -62,8 +62,8 @@ def test_strategy_with_a_lot_of_arrivals():
     sim = Simulator(
         default_rng(0),
         Depot("depot", (0, 0)),
-        np.ones((4, 4)),
-        np.ones((4, 4)).astype(np.timedelta64(1, "s")),
+        np.where(np.eye(4), 0, 1),
+        np.where(np.eye(4), 0, 1).astype(np.timedelta64(1, "s")),
         [
             Container("1", [0.0] * HOURS_IN_DAY, 1.0, (0, 0)),
             Container("2", [0.0] * HOURS_IN_DAY, 1.0, (0, 0)),
@@ -101,8 +101,8 @@ def test_strategy_considers_container_capacities():
     sim = Simulator(
         default_rng(0),
         Depot("depot", (0, 0)),
-        np.ones((4, 4)),
-        np.ones((4, 4)).astype(np.timedelta64(1, "s")),
+        np.where(np.eye(4), 0, 1),
+        np.where(np.eye(4), 0, 1).astype(np.timedelta64(1, "s")),
         [
             Container("1", [0.0] * HOURS_IN_DAY, 1.0, (0, 0)),
             Container("2", [0.0] * HOURS_IN_DAY, 2.0, (0, 0)),
@@ -137,8 +137,8 @@ def test_strategy_considers_container_arrival_rates():
     sim = Simulator(
         default_rng(0),
         Depot("depot", (0, 0)),
-        np.ones((4, 4)),
-        np.ones((4, 4)).astype(np.timedelta64(1, "s")),
+        np.where(np.eye(4), 0, 1),
+        np.where(np.eye(4), 0, 1).astype(np.timedelta64(1, "s")),
         [
             Container("1", [1.0] * HOURS_IN_DAY, 1.0, (0, 0)),
             Container("2", [2.0] * HOURS_IN_DAY, 1.0, (0, 0)),

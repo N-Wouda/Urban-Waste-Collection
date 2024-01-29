@@ -61,8 +61,6 @@ def make_model(
         assert end_time >= start_time
 
         model.add_vehicle_type(
-            capacity=0,
-            num_available=1,
             tw_early=int(max((start_time - event.time).total_seconds(), 0)),
             tw_late=int(max((end_time - event.time).total_seconds(), 0)),
         )
