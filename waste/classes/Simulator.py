@@ -156,6 +156,12 @@ class Simulator:
 
         for container_idx in route.plan:
             idx = container_idx + 1  # + 1 because 0 is depot
+            container = self.containers[container_idx]
+
+            service_duration = (
+                self.config.TIME_PER_CLUSTER
+                + container.num_containers * self.config.TIME_PER_CONTAINER
+            )
 
             if break_idx < len(breaks):
                 start, break_dur = breaks[break_idx]
@@ -164,7 +170,7 @@ class Simulator:
                 # If servicing the current container makes us late for the
                 # break, we first plan the break. A break is had at the depot.
                 cont_travel = self.durations[prev, idx].item()
-                finish_at = now + cont_travel + self.config.TIME_PER_CONTAINER
+                finish_at = now + cont_travel + service_duration
 
                 if finish_at + self.durations[idx, 0].item() > break_start:
                     # We're travelling back to the depot to take this break.
@@ -185,13 +191,14 @@ class Simulator:
             # Add travel duration from prev to current container, and start
             # service at the current container.
             now += self.durations[prev, idx].item()
+
             yield ServiceEvent(
                 now,
-                self.config.TIME_PER_CONTAINER,
+                service_duration,
                 id_route=id_route,
-                container=self.containers[container_idx],
+                container=container,
                 vehicle=route.vehicle,
             )
 
-            now += self.config.TIME_PER_CONTAINER
+            now += service_duration
             prev = idx

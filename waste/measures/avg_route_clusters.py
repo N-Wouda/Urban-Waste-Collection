@@ -14,12 +14,10 @@ def avg_route_clusters(db: Database, after: datetime) -> float:
     sql = """-- sql
         SELECT AVG(num_clusters)
         FROM (
-            SELECT routes.id_route, COUNT(DISTINCT c.cluster) AS num_clusters
+            SELECT routes.id_route, COUNT(se.id_route) AS num_clusters
             FROM routes
                 LEFT JOIN service_events se 
                     ON se.id_route = routes.id_route
-                LEFT JOIN containers c
-                    ON c.name = se.container
             WHERE routes.start_time > ?
             GROUP BY routes.id_route
         );

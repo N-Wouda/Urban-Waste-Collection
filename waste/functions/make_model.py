@@ -31,8 +31,6 @@ def make_model(
     if shift_duration is None:
         shift_duration = sim.config.SHIFT_DURATION
 
-    time_per_container = sim.config.TIME_PER_CONTAINER
-
     model = Model()
     model.add_depot(
         x=f2i(sim.depot.location[0]),
@@ -45,11 +43,16 @@ def make_model(
         tw_late = datetime.combine(event.time.date(), container.tw_late)
         assert tw_late >= event.time
 
+        service_duration = (
+            sim.config.TIME_PER_CLUSTER
+            + container.num_containers * sim.config.TIME_PER_CONTAINER
+        )
+
         last_moment = min(tw_late - event.time, shift_duration)
         model.add_client(
             x=f2i(container.location[0]),
             y=f2i(container.location[1]),
-            service_duration=int(time_per_container.total_seconds()),
+            service_duration=int(service_duration.total_seconds()),
             tw_late=int(last_moment.total_seconds()),
             prize=prizes[idx],
             required=required[idx],

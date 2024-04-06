@@ -101,6 +101,8 @@ class Database:
 
         sql = """-- sql
             SELECT c.name,
+                   c.id_location,
+                   c.num_containers,
                    c.tw_late,
                    c.capacity,
                    c.correction_factor,
@@ -115,14 +117,25 @@ class Database:
         return [
             Container(
                 name,
+                id_location,
                 # TODO here we do an N + 1 query. Fix if it is too slow.
                 rates(name),
                 capacity,
                 (lat, lon),
                 time.fromisoformat(tw_late),
+                num_containers,
                 corr_factor,
             )
-            for name, tw_late, capacity, corr_factor, lat, lon in rows
+            for (
+                name,
+                id_location,
+                num_containers,
+                tw_late,
+                capacity,
+                corr_factor,
+                lat,
+                lon,
+            ) in rows
         ]
 
     @cache
@@ -145,8 +158,7 @@ class Database:
         size = math.isqrt(len(data))
         distances = np.array(data).reshape((size, size))
 
-        id_containers = _containers2loc(self.read, self.containers())
-        id_locations = [0, *id_containers]
+        id_locations = [0] + [c.id_location for c in self.containers()]
         return distances[np.ix_(id_locations, id_locations)]
 
     @cache
@@ -161,8 +173,7 @@ class Database:
         size = math.isqrt(len(data))
         durations = np.array(data).reshape((size, size))
 
-        id_containers = _containers2loc(self.read, self.containers())
-        id_locations = [0, *id_containers]
+        id_locations = [0] + [c.id_location for c in self.containers()]
         mat = durations[np.ix_(id_locations, id_locations)]
         return mat.astype(np.timedelta64(1, "s"))
 
@@ -275,14 +286,3 @@ class Database:
 
         self.read.close()
         self.write.close()
-
-
-def _containers2loc(con: sqlite3.Connection, containers: list[Container]):
-    names = ", ".join(f"'{c.name}'" for c in containers)
-    sql = f"""-- sql
-        SELECT id_location
-        FROM containers
-        WHERE name in ({names})
-        ORDER BY id_location;
-    """
-    return [id_location for id_location, in con.execute(sql)]
