@@ -33,39 +33,40 @@ class PrizeCollectingStrategy:
         multiplier balances the goal of minimising distance on the one hand
         with the desire not to have overflows: small values prioritise limiting
         driving distance, while large values prioritise limiting overflows.
-    deposit_volume
-        Used in a rule-of-thumb to mark containers as required. This numbe is
-        multiplied by the number of arrivals at each container to obtain a
-        total volume in liters. If that total volume exceeds the capacity of
-        the container, the container is marked as a required visit (rather than
-        optional based on the prize values).
     max_runtime
         Maximum runtime (in seconds) to use for route optimisation.
+    perfect_information
+        Whether we can assume perfect information about the current container
+        volumes (e.g., because we assume there are installed sensors). Default
+        False.
+    required_threshold
+        Threshold on the predicted overflow probability that turns an optional
+        visit into a required visit. Default 99%.
     """
 
     def __init__(
         self,
         sim: Simulator,
         rho: float,
-        deposit_volume: float,
         max_runtime: float,
         perfect_information: bool = False,
+        required_threshold: float = 0.99,
         **kwargs,
     ):
         if rho < 0:
             raise ValueError("Expected rho >= 0.")
 
-        if deposit_volume <= 0.0:
-            raise ValueError("Expected deposit_volume > 0.")
-
         if max_runtime < 0:
             raise ValueError("Expected max_runtime >= 0.")
 
+        if not (0 <= required_threshold <= 1):
+            raise ValueError("Expected required_threshold in [0, 1].")
+
         self.sim = sim
         self.rho = rho
-        self.deposit_volume = deposit_volume
         self.max_runtime = max_runtime
         self.perfect_information = perfect_information
+        self.required_threshold = required_threshold
 
         self.models: dict[int, OverflowModel] = {
             id(container): OverflowModel(container)
@@ -121,13 +122,7 @@ class PrizeCollectingStrategy:
             ]
 
         prizes = [int(self.rho * prob) for prob in probs]
-        required = [
-            # Rule of thumb: when the number of arrivals (each of the
-            # assumed deposit volume) exceeds the capacity we definitely
-            # have to visit the container.
-            self.deposit_volume * c.num_arrivals > c.capacity
-            for c in self.sim.containers
-        ]
+        required = [prob > self.required_threshold for prob in probs]
 
         logger.info(f"Planning {np.count_nonzero(required)} required visits.")
         logger.info(f"Average prize: {np.mean(prizes):.1f}m.")
