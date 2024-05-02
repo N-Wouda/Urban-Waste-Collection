@@ -1,14 +1,18 @@
+import logging
+from datetime import timedelta
+
 import numpy as np
+from pyvrp.stop import MaxRuntime
 
-from waste.classes import Simulator
+from waste.classes import Event, Route, ShiftPlanEvent, Simulator
+from waste.functions import make_model
 
-from .GreedyStrategy import GreedyStrategy
+logger = logging.getLogger(__name__)
 
 
-class BaselineStrategy(GreedyStrategy):
+class BaselineStrategy:
     """
-    A fairly faithful implementation of what the municipality is currently
-    doing.
+    A faithful implementation of what the municipality is currently doing.
 
     Parameters
     ----------
@@ -19,11 +23,12 @@ class BaselineStrategy(GreedyStrategy):
         translate the number of arrivals into a total volume, and thus
         determine (as a rule-of-thumb) when a container will be full.
     num_containers
-        See greedy.
+        Number of containers to schedule.
     max_runtime
-        See greedy.
+        Maximum runtime (in seconds) to use for route optimisation.
     perfect_information
-        See greedy.
+        Whether to use perfect information of the current container's volumes
+        when deciding which containers to visit. Default False.
     """
 
     def __init__(
@@ -35,14 +40,50 @@ class BaselineStrategy(GreedyStrategy):
         perfect_information: bool = False,
         **kwargs,
     ):
-        super().__init__(
-            sim, num_containers, max_runtime, perfect_information, **kwargs
-        )
-
         if deposit_volume <= 0.0:
             raise ValueError("Expected deposit_volume > 0.")
 
+        if num_containers < 0:
+            raise ValueError("Expected num_containers >= 0.")
+
+        if max_runtime < 0:
+            raise ValueError("Expected max_runtime >= 0.")
+
+        self.sim = sim
         self.deposit_volume = deposit_volume
+        self.num_containers = num_containers
+        self.max_runtime = max_runtime
+        self.perfect_information = perfect_information
+
+    def plan(self, event: ShiftPlanEvent) -> list[Route]:
+        container_idcs = self._get_container_idcs()
+        model = make_model(self.sim, event, container_idcs)  # type: ignore
+
+        result = model.solve(
+            stop=MaxRuntime(self.max_runtime),
+            seed=self.sim.generator.integers(100),
+        )
+
+        if not result.is_feasible():
+            msg = f"Shiftplan at time {event.time} is infeasible!"
+            logger.error(msg)
+            raise RuntimeError(msg)
+
+        return [
+            Route(
+                # PyVRP considers 0 the depot, and starts counting client
+                # (container) indices from 1. So we need to subtract 1 from
+                # the index returned by PyVRP before we map back to the
+                # container indices.
+                plan=[container_idcs[idx - 1] for idx in route],
+                vehicle=self.sim.vehicles[route.vehicle_type()],
+                start_time=event.time + timedelta(seconds=route.start_time()),
+            )
+            for route in result.best.get_routes()
+        ]
+
+    def observe(self, event: Event):
+        pass  # unused by this strategy
 
     def _get_container_idcs(self) -> np.ndarray[int]:
         containers = self.sim.containers

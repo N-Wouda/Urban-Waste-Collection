@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol
 
 from .BaselineStrategy import BaselineStrategy as BaselineStrategy
-from .GreedyStrategy import GreedyStrategy as GreedyStrategy
 from .PrizeCollectingStrategy import (
     PrizeCollectingStrategy as PrizeCollectingStrategy,
 )
@@ -30,7 +29,6 @@ class Strategy(Protocol):
 
 STRATEGIES: dict[str, type[Strategy]] = {
     "baseline": BaselineStrategy,  # type: ignore
-    "greedy": GreedyStrategy,  # type: ignore
     "prize": PrizeCollectingStrategy,  # type: ignore
     "random": RandomStrategy,  # type: ignore
 }
