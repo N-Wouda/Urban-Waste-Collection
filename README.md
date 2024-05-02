@@ -2,7 +2,9 @@
 
 [![CI](https://github.com/N-Wouda/Groningen-Waste-Collection/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/N-Wouda/Groningen-Waste-Collection/actions/workflows/CI.yml)
 
-This repository hosts code we use to improve waste collection in/by the Municipality of Groningen from underground containers.
+TODO
+
+This repository hosts code we use to improve waste collection in the Municipality of Groningen from underground containers.
 The code includes:
 
 - Scripts for ingesting raw data files into an SQL database;
@@ -33,7 +35,7 @@ poetry run ingest
 ```
 
 Note that some programs depend on data available in the `data/` directory.
-This directory is not on GitHub.
+This directory is not available on GitHub, since that data is (a) large and (b) somewhat sensitive.
 
 ## How to cite
 
