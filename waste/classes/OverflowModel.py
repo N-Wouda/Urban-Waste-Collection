@@ -72,19 +72,19 @@ class OverflowModel:
         N = self.data[:, 0]
         Y = self.data[:, 1]
 
-        def p(n, mu, sigma):
+        def overflow_prob(n, mu, sigma):
             # Returns the probability that the container has overflowed after
             # n arrivals, given mean mu and stddev sigma.
             return norm.sf((cap - n * mu) / (sigma * np.sqrt(n) + tol))
 
-        def loglik(x):
+        def loss(x):
             # Evaluates -loglikelihood of parameters x given the data N and Y.
             # We impose some clipping on the probabilities to avoid numerical
             # issues evaluating the logarithms.
-            prob = np.clip(p(N, *x), tol, 1 - tol)
+            prob = np.clip(overflow_prob(N, *x), tol, 1 - tol)
             return -np.sum(Y * np.log(prob) + (1 - Y) * np.log(1 - prob))
 
-        res = minimize(loglik, self.x, bounds=self.bounds)
+        res = minimize(loss, self.x, bounds=self.bounds)
         self.x = res.x
 
         # Expected overflow probability based on estimates (p) and the
