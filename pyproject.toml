@@ -20,6 +20,7 @@ pyvrp = "^0.7.0"
 folium = "^0.14.0"
 jupyter = "^1.0.0"
 scipy = "^1.11.2"
+pickleshare = "^0.7.5"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
