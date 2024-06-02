@@ -108,7 +108,7 @@ class PrizeCollectingStrategy:
             probs = [
                 # When perfect information may be used, we base everything
                 # on the actual container volume.
-                self.models[id(c)].prob(0, c.volume, sum(c.rates))
+                self.models[id(c)].prob_volume(c.volume, sum(c.rates))
                 for c in self.sim.containers
             ]
         else:
@@ -117,7 +117,7 @@ class PrizeCollectingStrategy:
                 # moment. This is based on the number of arrivals that have
                 # already happened (certainty) plus the rate of arrivals that
                 # will likely happen over the next 24 hours.
-                self.models[id(c)].prob(c.num_arrivals, 0.0, sum(c.rates))
+                self.models[id(c)].prob_arrivals(c.num_arrivals, sum(c.rates))
                 for c in self.sim.containers
             ]
 

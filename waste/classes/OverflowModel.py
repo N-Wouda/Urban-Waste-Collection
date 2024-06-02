@@ -35,10 +35,9 @@ class OverflowModel:
         self.data = np.empty((0, 2))
         self.x = np.mean(self.bounds, axis=1)
 
-    def prob(
+    def prob_arrivals(
         self,
         num_arrivals: float,
-        known_volume: float = 0.0,
         rate: float = 0.0,
         tol: float = 1e-3,
     ) -> float:
@@ -50,6 +49,40 @@ class OverflowModel:
         ----------
         num_arrivals
             Known number of arrivals since last service.
+        rate
+            Poisson arrival rate of future arrivals. Defaults to zero, in which
+            case there is no evaluation of future arrivals, and only the
+            probability of overflow at the current number of known arrivals is
+            evaluated.
+        tol
+            Used to clip probabilities to (tol, 1 - tol). This is needed to
+            avoid numerical issues when evaluating the log-likelihood. Default
+            0.001.
+        """
+        self._update_estimates(tol)  # update x
+
+        # Expected overflow probability based on estimates (p) and the arrival
+        # of additional deposits.
+        mean = (num_arrivals + rate) * self.x[0]
+        var = (num_arrivals + rate) * self.x[1] ** 2 + rate * self.x[0] ** 2
+        return norm.sf(
+            self.container.capacity,
+            loc=mean,
+            scale=np.sqrt(var + tol),
+        )
+
+    def prob_volume(
+        self,
+        known_volume: float = 0.0,
+        rate: float = 0.0,
+        tol: float = 1e-3,
+    ) -> float:
+        """
+        Estimates the probability of overflow given a known volume and an
+        arrival rate for future arrivals.
+
+        Parameters
+        ----------
         known_volume
             Known volume in the container.
         rate
@@ -62,20 +95,41 @@ class OverflowModel:
             avoid numerical issues when evaluating the log-likelihood. Default
             0.001.
         """
-        cap = self.container.capacity
-
-        if cap <= known_volume:
+        if self.container.capacity <= known_volume:
             # Then the container is guaranteed to be full, and will overflow
             # with any additional arrival. Such a container must be visited.
             return 1.0
 
+        self._update_estimates(tol)  # update x
+
+        # When we have a known volume that is non-zero, there is no uncertainty
+        # due to the known number of arrivals any more. Hence, we only need to
+        # know the probability that the cluster will overflow due to the
+        # arrival of additional deposits.
+        mean = rate * self.x[0]
+        var = rate * self.x[1] ** 2 + rate * self.x[0] ** 2
+        return norm.sf(
+            self.container.capacity - known_volume,
+            loc=mean,
+            scale=np.sqrt(var + tol),
+        )
+
+    def observe(self, x: int, y: bool):
+        logger.debug(f"{self.container.name}: observing ({x}, {y}).")
+        self.data = np.vstack([self.data, [x, y]])
+
+    def _update_estimates(self, tol: float):
         N = self.data[:, 0]
         Y = self.data[:, 1]
 
         def overflow_prob(n, mu, sigma):
             # Returns the probability that the container has overflowed after
             # n arrivals, given mean mu and stddev sigma.
-            return norm.sf((cap - n * mu) / (sigma * np.sqrt(n) + tol))
+            return norm.sf(
+                self.container.capacity,
+                loc=n * mu,
+                scale=sigma * np.sqrt(n) + tol,
+            )
 
         def loss(x):
             # Evaluates -loglikelihood of parameters x given the data N and Y.
@@ -86,13 +140,3 @@ class OverflowModel:
 
         res = minimize(loss, self.x, bounds=self.bounds)
         self.x = res.x
-
-        # Expected overflow probability based on estimates (p) and the
-        # arrival of additional deposits.
-        mean = (num_arrivals + rate) * self.x[0]
-        var = (num_arrivals + rate) * self.x[1] ** 2 + rate * self.x[0] ** 2
-        return norm.sf(cap - known_volume, loc=mean, scale=np.sqrt(var + tol))
-
-    def observe(self, x: int, y: bool):
-        logger.debug(f"{self.container.name}: observing ({x}, {y}).")
-        self.data = np.vstack([self.data, [x, y]])
