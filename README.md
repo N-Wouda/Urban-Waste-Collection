@@ -4,7 +4,7 @@
 
 TODO
 
-This repository hosts code we use to improve waste collection in the Municipality of Groningen from underground containers.
+This repository hosts code we use to improve waste collection in the Municipality of Groningen from underground container clusters.
 The code includes:
 
 - Scripts for ingesting raw data files into an SQL database;
@@ -20,10 +20,10 @@ Update or get `poetry`, and then simply use `poetry install` from the repository
 
 The following programs are currently available:
 
-- `distance`, the distance and duration matrix calculation script.
-  This relies on OSRM; see the `osrm/` directory for details.
 - `ingest`, the ingestion script.
   This script ingests raw data files into an SQL database.
+- `matrix`, the distance and duration matrix calculation script.
+  This relies on OSRM; see the `osrm/` directory for details.
 - `simulate`, the simulation runscript.
   This script runs a single simulation using a given collection strategy.
 - `analyze`, the analysis script.

@@ -4,7 +4,7 @@ import numpy as np
 from scipy.optimize import minimize
 from scipy.stats import norm
 
-from .Container import Container
+from .Cluster import Cluster
 
 logger = logging.getLogger(__name__)
 
@@ -18,18 +18,18 @@ class OverflowModel:
 
     Parameters
     ----------
-    container
-        Container whose arrival behaviour we are trying to model here.
+    cluster
+        Cluster whose arrival behaviour we are trying to model here.
     bounds
         Bounds on the mean and standard deviation.
     """
 
     def __init__(
         self,
-        container: Container,
+        cluster: Cluster,
         bounds: tuple[tuple[float, float], ...] = ((1, 100), (1, 50)),
     ):
-        self.container = container
+        self.cluster = cluster
         self.bounds = bounds
 
         self.data = np.empty((0, 2))
@@ -66,7 +66,7 @@ class OverflowModel:
         mean = (num_arrivals + rate) * self.x[0]
         var = (num_arrivals + rate) * self.x[1] ** 2 + rate * self.x[0] ** 2
         return norm.sf(
-            self.container.capacity,
+            self.cluster.capacity,
             loc=mean,
             scale=np.sqrt(var + tol),
         )
@@ -84,7 +84,7 @@ class OverflowModel:
         Parameters
         ----------
         known_volume
-            Known volume in the container.
+            Known volume in the cluster.
         rate
             Poisson arrival rate of future arrivals. Defaults to zero, in which
             case there is no evaluation of future arrivals, and only the
@@ -95,9 +95,8 @@ class OverflowModel:
             avoid numerical issues when evaluating the log-likelihood. Default
             0.001.
         """
-        if self.container.capacity <= known_volume:
-            # Then the container is guaranteed to be full, and will overflow
-            # with any additional arrival. Such a container must be visited.
+        if self.cluster.capacity <= known_volume:
+            # Then the cluster is guaranteed to be full and should be serviced.
             return 1.0
 
         self._update_estimates(tol)  # update x
@@ -109,13 +108,13 @@ class OverflowModel:
         mean = rate * self.x[0]
         var = rate * self.x[1] ** 2 + rate * self.x[0] ** 2
         return norm.sf(
-            self.container.capacity - known_volume,
+            self.cluster.capacity - known_volume,
             loc=mean,
             scale=np.sqrt(var + tol),
         )
 
     def observe(self, x: int, y: bool):
-        logger.debug(f"{self.container.name}: observing ({x}, {y}).")
+        logger.debug(f"{self.cluster.name}: observing ({x}, {y}).")
         self.data = np.vstack([self.data, [x, y]])
 
     def _update_estimates(self, tol: float):
@@ -123,10 +122,10 @@ class OverflowModel:
         Y = self.data[:, 1]
 
         def overflow_prob(n, mu, sigma):
-            # Returns the probability that the container has overflowed after
-            # n arrivals, given mean mu and stddev sigma.
+            # Returns the probability that the cluster has overflowed after n
+            # arrivals, given mean mu and stddev sigma.
             return norm.sf(
-                self.container.capacity,
+                self.cluster.capacity,
                 loc=n * mu,
                 scale=sigma * np.sqrt(n) + tol,
             )

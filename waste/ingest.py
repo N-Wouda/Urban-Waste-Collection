@@ -40,7 +40,7 @@ def make_tables(con: sqlite3.Connection):
             type INT  -- see LocationType enum
         );
 
-        CREATE TABLE containers (
+        CREATE TABLE clusters (
             name VARCHAR UNIQUE,
             id_location INT REFERENCES locations,
             tw_late TIME CHECK(tw_late IS strftime('%H:%M:%S', tw_late)),
@@ -55,19 +55,19 @@ def make_tables(con: sqlite3.Connection):
         );
 
         CREATE TABLE arrivals (
-            container VARCHAR REFERENCES containers(name),
+            cluster VARCHAR REFERENCES clusters(name),
             date DATE,
             successful BOOLEAN
         );
 
-        CREATE TABLE container_rates (
-            container VARCHAR REFERENCES containers(name),
+        CREATE TABLE cluster_rates (
+            cluster VARCHAR REFERENCES clusters(name),
             hour INT,
             rate FLOAT
         );
 
         CREATE TABLE services (
-            container VARCHAR REFERENCES containers(name),
+            cluster VARCHAR REFERENCES clusters(name),
             date DATE
         );
     """
@@ -85,7 +85,7 @@ def insert_locations(con: sqlite3.Connection, containers: pd.DataFrame):
             r.ClusterOmschrijving,
             float(r.Latitude),
             float(r.Longitude),
-            LocationType.CONTAINER,
+            LocationType.CLUSTER,
         )
         for _, r in clusters.iterrows()
     ]
@@ -95,7 +95,9 @@ def insert_locations(con: sqlite3.Connection, containers: pd.DataFrame):
     df.to_sql("locations", con, index_label="id_location", if_exists="replace")
 
 
-def insert_containers(con: sqlite3.Connection, containers: pd.DataFrame):
+def insert_container_clusters(
+    con: sqlite3.Connection, containers: pd.DataFrame
+):
     sql = "SELECT name, id_location FROM locations;"
     name2loc = {name: id_location for name, id_location in con.execute(sql)}
 
@@ -152,7 +154,7 @@ def insert_containers(con: sqlite3.Connection, containers: pd.DataFrame):
         "correction_factor",
     ]
     df = pd.DataFrame(columns=columns, data=values)
-    df.to_sql("containers", con, index=False, if_exists="replace")
+    df.to_sql("clusters", con, index=False, if_exists="replace")
 
 
 def insert_vehicles(con: sqlite3.Connection, vehicles: pd.DataFrame):
@@ -185,7 +187,7 @@ def insert_arrivals(
         for _, r in arrivals[~pd.isna(arrivals.DumpLocationNr)].iterrows()
     ]
 
-    df = pd.DataFrame(columns=["container", "date", "successful"], data=values)
+    df = pd.DataFrame(columns=["cluster", "date", "successful"], data=values)
     df.to_sql("arrivals", con, index=False, if_exists="append")
 
 
@@ -194,15 +196,15 @@ def insert_arrival_rates(con: sqlite3.Connection):
     horizon = con.execute(sql).fetchone()
 
     sql = """-- sql
-        INSERT INTO container_rates
+        INSERT INTO cluster_rates
         SELECT *
         FROM (
-            SELECT container,
+            SELECT cluster,
                    STRFTIME('%H', date) AS hour,
                    COUNT(date) / ? AS rate
             FROM arrivals
-            WHERE container NOTNULL
-            GROUP BY container, hour
+            WHERE cluster NOTNULL
+            GROUP BY cluster, hour
         );
     """
     con.execute(sql, horizon)
@@ -231,7 +233,7 @@ def insert_services(
         for _, r in services.iterrows()
     ]
 
-    df = pd.DataFrame(columns=["container", "date"], data=values)
+    df = pd.DataFrame(columns=["cluster", "date"], data=values)
     df.to_sql("services", con, index=False, if_exists="append")
 
 
@@ -248,12 +250,12 @@ def main():
     logger.info("Creating tables.")
     make_tables(con)
 
-    # Depot and container data. Here we apply some trickery: there's a public
+    # Depot and cluster data. Here we apply some trickery: there's a public
     # list of containers that we want, and an internal list Stadsbeheer has
-    # provided for us. The latter contains a lot more places and data. The
-    # places we do not need (those are not part of the collection process), but
+    # provided for us. The latter contains a lot more places and data. We do
+    # not need the places (those are not part of the collection process), but
     # the additional data is very useful.
-    logger.info("Inserting depot and containers.")
+    logger.info("Inserting depot and container clusters.")
 
     public = pd.read_csv("data/Containerlocaties.csv", dtype="str")
     internal = pd.read_excel("data/Containergegevens.xlsx", dtype="str")
@@ -262,7 +264,7 @@ def main():
     containers = public.merge(internal, on="code")
 
     insert_locations(con, containers)
-    insert_containers(con, containers)
+    insert_container_clusters(con, containers)
 
     # Vehicle data.
     logger.info("Inserting vehicles.")

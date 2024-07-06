@@ -5,16 +5,16 @@ from waste.classes import Database
 
 def min_service_level(db: Database, after: datetime) -> float:
     """
-    This measure computes the service level of worst container, that is,
-    the minimum average service level over all serviced containers.
+    This measure computes the service level of worst cluster, that is,
+    the minimum average service level over all serviced clusters.
     """
     sql = """-- sql
         SELECT MIN(service_level)
         FROM (
             SELECT AVG(se.volume <= c.capacity) AS service_level
             FROM service_events AS se
-                INNER JOIN source.containers AS c
-                    ON se.container = c.name
+                INNER JOIN source.clusters AS c
+                    ON se.cluster = c.name
             WHERE se.time > ?
             GROUP BY c.name
         );

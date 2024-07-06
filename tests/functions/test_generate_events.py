@@ -6,7 +6,7 @@ from numpy.testing import assert_, assert_allclose, assert_equal
 
 from waste.classes import (
     ArrivalEvent,
-    Container,
+    Cluster,
     Depot,
     ShiftPlanEvent,
     Simulator,
@@ -25,7 +25,7 @@ def test_generates_shift_plan_events():
     sim = Simulator(gen, depot, [], [], [], [])
 
     # If the start and end date are the same, there is only a single shift plan
-    # event. Additionally, because there are no containers in the simulator,
+    # event. Additionally, because there are no clusters in the simulator,
     # there also cannot be any arrival events.
     events = generate_events(sim, today, today)
     assert_equal(len(events), 1)
@@ -42,13 +42,13 @@ def test_generates_shift_plan_events():
     )
 
 
-def test_does_not_generate_arrivals_when_container_rates_are_zero():
+def test_does_not_generate_arrivals_when_cluster_rates_are_zero():
     gen = np.random.default_rng(seed=42)
-    container = Container("test", [0] * HOURS_IN_DAY, 0, (0.0, 0.0))
+    cluster = Cluster("test", 1, [0] * HOURS_IN_DAY, 0, (0.0, 0.0))
     depot = Depot("depot", (0, 0))
-    sim = Simulator(gen, depot, [], [], [container], [])
+    sim = Simulator(gen, depot, [], [], [cluster], [])
 
-    # Since the container's arrival rate is uniformly zero, no arrival events
+    # Since the cluster's arrival rate is uniformly zero, no arrival events
     # should be generated. The only generated event from the call below is a
     # shift plan event.
     events = generate_events(sim, date.today(), date.today())
@@ -56,7 +56,7 @@ def test_does_not_generate_arrivals_when_container_rates_are_zero():
     assert_(isinstance(events[0], ShiftPlanEvent))
 
 
-def test_generates_arrival_events_based_on_container_rates():
+def test_generates_arrival_events_based_on_cluster_rates():
     gen = np.random.default_rng(seed=42)
 
     # No arrivals in all hours, except in the first: there we have on average
@@ -64,9 +64,9 @@ def test_generates_arrival_events_based_on_container_rates():
     rates = [0] * HOURS_IN_DAY
     rates[0] = 10
 
-    container = Container("test", rates, 0, (0.0, 0.0))
+    cluster = Cluster("test", 1, rates, 0, (0.0, 0.0))
     depot = Depot("depot", (0, 0))
-    sim = Simulator(gen, depot, [], [], [container], [])
+    sim = Simulator(gen, depot, [], [], [cluster], [])
 
     today = date.today()
     next_year = today.replace(year=today.year + 1)
@@ -88,10 +88,10 @@ def test_generates_arrival_events_based_on_container_rates():
 def test_seed_events():
     gen = np.random.default_rng(seed=42)
 
-    container = Container("test", [0] * HOURS_IN_DAY, 100, (0.0, 0.0))
+    cluster = Cluster("test", 1, [0] * HOURS_IN_DAY, 100, (0.0, 0.0))
     depot = Depot("depot", (0, 0))
     vehicle = Vehicle("test", 0)
-    sim = Simulator(gen, depot, [], [], [container], [vehicle])
+    sim = Simulator(gen, depot, [], [], [cluster], [vehicle])
 
     no_seed = generate_events(sim, date.today(), date.today())
     seed = generate_events(sim, date.today(), date.today(), seed_events=True)

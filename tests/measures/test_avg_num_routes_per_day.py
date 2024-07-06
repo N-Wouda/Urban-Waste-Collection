@@ -7,7 +7,6 @@ from numpy.testing import assert_allclose
 from tests.helpers import MockStrategy
 from waste.classes import (
     Configuration,
-    Database,
     Event,
     Route,
     ShiftPlanEvent,
@@ -25,15 +24,14 @@ from waste.measures import avg_num_routes_per_day
         [[0], [1], [2]],  # 3 routes
     ],
 )
-def test_for_single_shift(visits: list[list[int]]):
-    db = Database("tests/test.db", ":memory:")
+def test_for_single_shift(test_db, visits: list[list[int]]):
     sim = Simulator(
         default_rng(0),
-        db.depot(),
-        db.distances(),
-        db.durations(),
-        db.containers(),
-        db.vehicles(),
+        test_db.depot(),
+        test_db.distances(),
+        test_db.durations(),
+        test_db.clusters(),
+        test_db.vehicles(),
         Configuration(BREAKS=tuple()),
     )
 
@@ -42,6 +40,6 @@ def test_for_single_shift(visits: list[list[int]]):
     strategy = MockStrategy(sim, routes)
 
     events: list[Event] = [ShiftPlanEvent(time=now)]
-    sim(db.store, strategy, events)
+    sim(test_db.store, strategy, events)
 
-    assert_allclose(db.compute(avg_num_routes_per_day), len(routes))
+    assert_allclose(test_db.compute(avg_num_routes_per_day), len(routes))

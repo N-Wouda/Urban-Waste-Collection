@@ -11,9 +11,9 @@ from waste.classes import Database
 def avg_route_duration(db: Database, after: datetime) -> timedelta:
     """
     Computes the average duration travelled along routes, including taking
-    breaks, service time at containers, and the arcs to and from the depot.
+    breaks, service time at clusters, and the arcs to and from the depot.
     """
-    loc2idx = {c.name: idx for idx, c in enumerate(db.containers(), 1)}
+    loc2idx = {c.name: idx for idx, c in enumerate(db.clusters(), 1)}
     loc2idx["Depot"] = 0
 
     mat = db.durations()
@@ -50,8 +50,8 @@ def _routes_with_stops(
     sql = """--sql
         SELECT se.id_route, c.name, se.duration, se.time
         FROM service_events AS se
-            INNER JOIN containers AS c
-                ON se.container = c.name
+            INNER JOIN clusters AS c
+                ON se.cluster = c.name
         WHERE time > ?
         UNION
         SELECT id_route, 'Depot', duration, time

@@ -1,19 +1,19 @@
 import numpy as np
 from numpy.testing import assert_, assert_allclose
 
-from waste.classes import Container, OverflowModel
+from waste.classes import Cluster, OverflowModel
 from waste.constants import HOURS_IN_DAY
 
 
 def test_zero():
-    container = Container("test", 0, [0] * HOURS_IN_DAY, 1, (0, 0))
-    model = OverflowModel(container)
+    cluster = Cluster("test", 0, [0] * HOURS_IN_DAY, 1, (0, 0))
+    model = OverflowModel(cluster)
     assert_(np.isclose(model.prob_arrivals(0), 0))
 
 
 def test_rates():
-    container = Container("test", 0, [1] * HOURS_IN_DAY, 2, (0, 0))
-    model = OverflowModel(container, bounds=((1, 2), (1, 5)))
+    cluster = Cluster("test", 0, [1] * HOURS_IN_DAY, 2, (0, 0))
+    model = OverflowModel(cluster, bounds=((1, 2), (1, 5)))
 
     model.observe(1, False)
     model.observe(2, True)
@@ -28,8 +28,8 @@ def test_rates():
 
 
 def test_volume():
-    container = Container("test", 0, [1] * HOURS_IN_DAY, 2, (0, 0))
-    model = OverflowModel(container, bounds=((1, 2), (1, 5)))
+    cluster = Cluster("test", 0, [1] * HOURS_IN_DAY, 2, (0, 0))
+    model = OverflowModel(cluster, bounds=((1, 2), (1, 5)))
 
     # Known full at these volumes, and thus overflow probability should be 1
     # (since any additional stuff would cause an overflow).
@@ -38,8 +38,8 @@ def test_volume():
 
 
 def test_predict_boundary_cases():
-    container = Container("test", 0, [0] * HOURS_IN_DAY, 5_000, (0, 0))
-    model = OverflowModel(container)
+    cluster = Cluster("test", 0, [0] * HOURS_IN_DAY, 5_000, (0, 0))
+    model = OverflowModel(cluster)
 
     # There's no data, so the model assumes sensible defaults based on the
     # default bounds. This ensures p(0) == 0 and p(LARGE) = 1.

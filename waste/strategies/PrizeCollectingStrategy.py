@@ -36,7 +36,7 @@ class PrizeCollectingStrategy:
     max_runtime
         Maximum runtime (in seconds) to use for route optimisation.
     perfect_information
-        Whether we can assume perfect information about the current container
+        Whether we can assume perfect information about the current cluster
         volumes (e.g., because we assume there are installed sensors). Default
         False.
     required_threshold
@@ -69,8 +69,7 @@ class PrizeCollectingStrategy:
         self.required_threshold = required_threshold
 
         self.models: dict[int, OverflowModel] = {
-            id(container): OverflowModel(container)
-            for container in sim.containers
+            id(cluster): OverflowModel(cluster) for cluster in sim.clusters
         }
 
     def plan(self, event: ShiftPlanEvent) -> list[Route]:
@@ -107,9 +106,9 @@ class PrizeCollectingStrategy:
         if self.perfect_information:
             probs = [
                 # When perfect information may be used, we base everything
-                # on the actual container volume.
+                # on the actual cluster volume.
                 self.models[id(c)].prob_volume(c.volume, sum(c.rates))
-                for c in self.sim.containers
+                for c in self.sim.clusters
             ]
         else:
             probs = [
@@ -118,7 +117,7 @@ class PrizeCollectingStrategy:
                 # already happened (certainty) plus the rate of arrivals that
                 # will likely happen over the next 24 hours.
                 self.models[id(c)].prob_arrivals(c.num_arrivals, sum(c.rates))
-                for c in self.sim.containers
+                for c in self.sim.clusters
             ]
 
         prizes = [int(self.rho * prob) for prob in probs]
@@ -130,7 +129,7 @@ class PrizeCollectingStrategy:
         model = make_model(  # type: ignore
             self.sim,
             event,
-            container_idcs=np.arange(len(self.sim.containers)),
+            cluster_idcs=np.arange(len(self.sim.clusters)),
             prizes=prizes,
             required=required,
             vehicles=vehicles,
@@ -166,7 +165,7 @@ class PrizeCollectingStrategy:
         return [
             Route(
                 # PyVRP considers 0 the depot, and starts counting client
-                # (container) indices from 1. So we need to subtract 1 from
+                # (cluster) indices from 1. So we need to subtract 1 from
                 # the index returned by PyVRP.
                 [idx - 1 for route in routes for idx in route],
                 name2vehicle[name],
@@ -177,9 +176,9 @@ class PrizeCollectingStrategy:
 
     def observe(self, event: Event):
         if isinstance(event, ServiceEvent):
-            container = event.container
+            cluster = event.cluster
             num_arrivals = event.num_arrivals
-            has_overflow = event.volume > container.capacity
+            has_overflow = event.volume > cluster.capacity
 
-            model = self.models[id(container)]
+            model = self.models[id(cluster)]
             model.observe(num_arrivals, has_overflow)

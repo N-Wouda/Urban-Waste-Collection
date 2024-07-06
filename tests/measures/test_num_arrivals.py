@@ -3,24 +3,23 @@ from datetime import datetime, timedelta
 import pytest
 from numpy.testing import assert_equal
 
-from waste.classes import ArrivalEvent, Database
+from waste.classes import ArrivalEvent
 from waste.measures import num_arrivals
 
 
 @pytest.mark.parametrize("num_events", [0, 1, 139])
-def test_single_container(num_events: int):
-    db = Database("tests/test.db", ":memory:")
-    containers = db.containers()
+def test_single_cluster(test_db, num_events: int):
+    clusters = test_db.clusters()
 
     now = datetime.now()
     for hours in range(num_events):
         event = ArrivalEvent(
             now + timedelta(hours=hours),
-            containers[0],
+            clusters[0],
             volume=0.0,
         )
 
         event.seal()
-        db.store(event)
+        test_db.store(event)
 
-    assert_equal(db.compute(num_arrivals), num_events)
+    assert_equal(test_db.compute(num_arrivals), num_events)

@@ -12,21 +12,21 @@ from .f2i import f2i
 def make_model(
     sim: Simulator,
     event: ShiftPlanEvent,
-    container_idcs: list[int],
+    cluster_idcs: list[int],
     prizes: Optional[list[int]] = None,
     required: Optional[list[bool]] = None,
     vehicles: Optional[list[Vehicle]] = None,
     shift_duration: Optional[timedelta] = None,
 ) -> Model:
     """
-    Creates a PyVRP model instance with the given containers as clients, using
+    Creates a PyVRP model instance with the given clusters as clients, using
     data from the passed-in simulation environment.
     """
     if prizes is None:
-        prizes = [0] * len(container_idcs)
+        prizes = [0] * len(cluster_idcs)
 
     if required is None:
-        required = [True] * len(container_idcs)
+        required = [True] * len(cluster_idcs)
 
     if shift_duration is None:
         shift_duration = sim.config.SHIFT_DURATION
@@ -38,20 +38,20 @@ def make_model(
         tw_late=int(shift_duration.total_seconds()),
     )
 
-    for idx, container_idx in enumerate(container_idcs):
-        container = sim.containers[container_idx]
-        tw_late = datetime.combine(event.time.date(), container.tw_late)
+    for idx, cluster_idx in enumerate(cluster_idcs):
+        cluster = sim.clusters[cluster_idx]
+        tw_late = datetime.combine(event.time.date(), cluster.tw_late)
         assert tw_late >= event.time
 
         service_duration = (
             sim.config.TIME_PER_CLUSTER
-            + container.num_containers * sim.config.TIME_PER_CONTAINER
+            + cluster.num_containers * sim.config.TIME_PER_CONTAINER
         )
 
         last_moment = min(tw_late - event.time, shift_duration)
         model.add_client(
-            x=f2i(container.location[0]),
-            y=f2i(container.location[1]),
+            x=f2i(cluster.location[0]),
+            y=f2i(cluster.location[1]),
             service_duration=int(service_duration.total_seconds()),
             tw_late=int(last_moment.total_seconds()),
             prize=prizes[idx],
@@ -73,7 +73,7 @@ def make_model(
     # given by the indices below.
     distances = sim.distances
     durations = sim.durations / np.timedelta64(1, "s")
-    indices = [0] + [idx + 1 for idx in container_idcs]
+    indices = [0] + [idx + 1 for idx in cluster_idcs]
 
     for frm_idx, frm in zip(indices, model.locations):
         for to_idx, to in zip(indices, model.locations):

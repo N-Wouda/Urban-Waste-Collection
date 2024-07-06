@@ -8,7 +8,6 @@ from tests.helpers import NullStrategy
 from waste.classes import (
     ArrivalEvent,
     Configuration,
-    Database,
     Event,
     ServiceEvent,
     Simulator,
@@ -30,30 +29,34 @@ from waste.measures import avg_excess_volume
         ("", 0, 0.0),  # nothing happened
     ],
 )
-def test_single_container(event_pattern: str, volume: float, expected: float):
-    db = Database("tests/test.db", ":memory:")
+def test_single_cluster(
+    test_db,
+    event_pattern: str,
+    volume: float,
+    expected: float,
+):
     sim = Simulator(
         default_rng(0),
-        db.depot(),
-        db.distances(),
-        db.durations(),
-        db.containers(),
-        db.vehicles(),
+        test_db.depot(),
+        test_db.distances(),
+        test_db.durations(),
+        test_db.clusters(),
+        test_db.vehicles(),
         Configuration(BREAKS=tuple()),
     )
 
-    container = sim.containers[0]
-    assert_allclose(container.capacity, 4_000)
+    cluster = sim.clusters[0]
+    assert_allclose(cluster.capacity, 4_000)
 
     now = datetime.now()
     events: list[Event] = []
     for hours, event_type in enumerate(event_pattern):
         # The pattern provides a sequence of service (S) and arrival (A) events
-        # at the same container. We separate each event by an hour.
+        # at the same cluster. We separate each event by an hour.
         time = now + timedelta(hours=hours)
 
         if event_type == "A":
-            events.append(ArrivalEvent(time, sim.containers[0], volume=volume))
+            events.append(ArrivalEvent(time, sim.clusters[0], volume=volume))
         else:
             # This slightly abuses the id_route because no route with ID 0
             # exists in the routes table, but that should be OK since we're
@@ -63,10 +66,10 @@ def test_single_container(event_pattern: str, volume: float, expected: float):
                     time,
                     timedelta(minutes=2),
                     0,
-                    sim.containers[0],
+                    sim.clusters[0],
                     sim.vehicles[0],
                 )
             )
 
-    sim(db.store, NullStrategy(sim), events)
-    assert_allclose(db.compute(avg_excess_volume), expected)
+    sim(test_db.store, NullStrategy(sim), events)
+    assert_allclose(test_db.compute(avg_excess_volume), expected)

@@ -6,8 +6,8 @@ from waste.constants import HOURS_IN_DAY
 
 def num_arrivals_per_hour(db: Database, after: datetime) -> list[int]:
     """
-    Number of arrivals at each hour of the day, over all containers.
-    This is helpful to quickly check that our arrival process is OK.
+    Number of arrivals at each hour of the day, over all clusters. This is
+    helpful to quickly check that our arrival process is OK.
     """
     sql = """-- sql
         SELECT CAST(strftime('%H', time) AS INT) AS hour,

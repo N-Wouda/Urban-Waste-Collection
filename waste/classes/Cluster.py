@@ -3,7 +3,7 @@ from datetime import time
 from waste.constants import HOURS_IN_DAY
 
 
-class Container:
+class Cluster:
     """
     Models a cluster of underground containers. This cluster registers arrivals
     and services, and tracks the currently used volume and number of arrivals
@@ -33,33 +33,33 @@ class Container:
         self.num_containers = num_containers  # number of containers in cluster
 
         self.num_arrivals = 0  # number of arrivals since last service
-        self.volume = 0.0  # current volume in container, in liters
+        self.volume = 0.0  # current volume in cluster, in liters
 
     @property
     def corrected_capacity(self) -> float:
         """
-        Capacity of this container with the municipality's correction factor
+        Capacity of this cluster with the municipality's correction factor
         applied.
         """
         return self.correction_factor * self.capacity
 
     def arrive(self, volume: float):
         """
-        Registers an arrival at this container.
+        Registers an arrival at this cluster.
         """
         self.num_arrivals += 1
         self.volume += volume
 
     def service(self):
         """
-        Services this container.
+        Services this cluster.
         """
         self.num_arrivals = 0
         self.volume = 0.0
 
     def __str__(self) -> str:
         return (
-            "Container("
+            "Cluster("
             f"name={self.name}, "
             f"num_arrivals={self.num_arrivals}, "
             f"capacity={self.capacity}"

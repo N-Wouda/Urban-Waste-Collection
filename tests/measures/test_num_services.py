@@ -3,15 +3,14 @@ from datetime import datetime, timedelta
 import pytest
 from numpy.testing import assert_equal
 
-from waste.classes import Database, ServiceEvent
+from waste.classes import ServiceEvent
 from waste.measures import num_services
 
 
 @pytest.mark.parametrize("num_events", [0, 1, 97])
-def test_single_container(num_events: int):
-    db = Database("tests/test.db", ":memory:")
-    containers = db.containers()
-    vehicles = db.vehicles()
+def test_single_cluster(test_db, num_events: int):
+    clusters = test_db.clusters()
+    vehicles = test_db.vehicles()
 
     now = datetime.now()
     for hours in range(num_events):
@@ -19,11 +18,11 @@ def test_single_container(num_events: int):
             now + timedelta(hours=hours),
             timedelta(minutes=2),
             0,  # slight abuse of id_route, but should be OK
-            containers[0],
+            clusters[0],
             vehicles[0],
         )
 
         event.seal()
-        db.store(event)
+        test_db.store(event)
 
-    assert_equal(db.compute(num_services), num_events)
+    assert_equal(test_db.compute(num_services), num_events)

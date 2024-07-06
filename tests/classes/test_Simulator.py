@@ -9,9 +9,8 @@ from tests.helpers import MockStrategy, NullStrategy
 from waste.classes import (
     ArrivalEvent,
     BreakEvent,
+    Cluster,
     Configuration,
-    Container,
-    Database,
     Depot,
     Route,
     ServiceEvent,
@@ -23,20 +22,20 @@ from waste.functions import generate_events
 
 
 def test_events_are_sealed_and_stored_property():
-    container = Container("test", [1] * HOURS_IN_DAY, 1.0, (0.0, 0.0))
+    cluster = Cluster("test", 1, [1] * HOURS_IN_DAY, 1.0, (0.0, 0.0))
     depot = Depot("depot", (0, 0))
-    sim = Simulator(default_rng(0), depot, [], [], [container], [])
+    sim = Simulator(default_rng(0), depot, [], [], [cluster], [])
 
     now = datetime(2023, 8, 9, 10, 0, 0)
 
     # Create some initial events for the simulator.
     init = [
-        ArrivalEvent(time=now, container=container, volume=0),
+        ArrivalEvent(time=now, cluster=cluster, volume=0),
         ServiceEvent(
             time=now + timedelta(hours=1),
             duration=timedelta(seconds=0),
             id_route=1,
-            container=container,
+            cluster=cluster,
             vehicle=1,
         ),
         ShiftPlanEvent(time=now + timedelta(hours=2)),
@@ -83,15 +82,14 @@ def test_stored_events_are_sorted_in_time():
         (time(hour=9), timedelta(minutes=15)),
     ),
 )
-def test_break_is_stored(start: time, duration: timedelta):
-    db = Database("tests/test.db", ":memory:")
+def test_break_is_stored(test_db, start: time, duration: timedelta):
     sim = Simulator(
         default_rng(0),
-        db.depot(),
-        db.distances(),
-        db.durations(),
-        db.containers(),
-        db.vehicles(),
+        test_db.depot(),
+        test_db.distances(),
+        test_db.durations(),
+        test_db.clusters(),
+        test_db.vehicles(),
         Configuration(BREAKS=((start, duration),)),
     )
 
@@ -105,8 +103,8 @@ def test_break_is_stored(start: time, duration: timedelta):
         stored.append(event)
         return None
 
-    # This strategy returns a single route with about 20 containers (visiting
-    # the same four containers five times in a row). That takes about four
+    # This strategy returns a single route with about 20 clusters (visiting
+    # the same four clusters five times in a row). That takes about four
     # hours, so the break should be scheduled during that time.
     now = datetime(2023, 8, 18, 7, 0, 0)
     routes = [Route([1, 2, 3, 4] * 5, sim.vehicles[0], now)]
@@ -119,18 +117,17 @@ def test_break_is_stored(start: time, duration: timedelta):
     assert_equal(stored_breaks[0].time, datetime.combine(now.date(), start))
 
 
-def test_observing_events():
+def test_observing_events(test_db):
     """
     Smoke test that checks the strategy gets to see all generated events.
     """
-    db = Database("tests/test.db", ":memory:")
     sim = Simulator(
         default_rng(0),
-        db.depot(),
-        db.distances(),
-        db.durations(),
-        db.containers(),
-        db.vehicles(),
+        test_db.depot(),
+        test_db.distances(),
+        test_db.durations(),
+        test_db.clusters(),
+        test_db.vehicles(),
     )
 
     class Mock:
@@ -148,7 +145,7 @@ def test_observing_events():
 
     seen = []
     init = generate_events(sim, date.today(), date.today() + timedelta(days=4))
-    sim(lambda event: None, Mock(sim), init)
+    sim(lambda _: None, Mock(sim), init)
 
     # Should have seen all initial events. Since the mock strategy above does
     # not generate new events, the length of seen should correspond with init.

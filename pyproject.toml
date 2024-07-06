@@ -28,7 +28,7 @@ pre-commit = "^3.2.2"
 pytest = "^7.4.0"
 
 [tool.poetry.scripts]
-distance = "waste.distance:main"
+matrix = "waste.matrix:main"
 ingest = "waste.ingest:main"
 simulate = "waste.simulate:main"
 analyze = "waste.analyze:main"
