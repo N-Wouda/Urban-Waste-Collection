@@ -128,7 +128,6 @@ dmypy.json
 .vscode/
 
 # Data and output files
-data/
 out/
 *.html
 slurm/

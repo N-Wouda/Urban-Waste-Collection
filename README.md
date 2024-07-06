@@ -10,6 +10,9 @@ The code includes:
 - Forecasting and vehicle routing techniques to plan waste collection;
 - Analysis tools for evaluating different planning techniques.
 
+Additionally, the notebooks in `notebooks/` reproduce the results from our paper.
+This includes the results from the case study (in `case_study.ipynb`), and an exploratory analysis of the case study setting and sensor data (in `exploration.ipynb` and `sensors.ipynb`, respectively).
+
 ## Installation
 
 Update or get `poetry`, and then simply use `poetry install` from the repository root.
@@ -24,7 +27,9 @@ The following programs are currently available:
   This relies on OSRM; see the `osrm/` directory for details.
 - `simulate`, the simulation runscript.
   This script runs a single simulation using a given collection strategy.
+  It assumes the data has been set up correctly using the `ingest` and `matrix` scripts.
 - `analyze`, the analysis script.
+  This script analyses the output of the `simulate` script.
 - `plot`, which can plot a set of simulated routes on top of OSM.
 
 These programs can be ran as `poetry run <script name>`, for example:
@@ -32,16 +37,17 @@ These programs can be ran as `poetry run <script name>`, for example:
 poetry run ingest
 ```
 
-Note that some programs depend on data available in the `data/` directory.
-This directory is not available on GitHub, since that data is large and somewhat sensitive.
+You may pass the `--help` option to learn more about program usage.
+Some programs depend on data available in a `data/` directory.
+This data is not made available via the GitHub repository.
 
 ## How to cite
 
-TODO
+TODO pre-print details
 
 ## License
 
-Copyright (C) 2023, Niels Wouda and Nicky van Foreest
+Copyright (C) since 2023, Niels Wouda and Nicky van Foreest
 
 Unless expressly noted otherwise, the code in this repository is free software:
 you can redistribute it and/or modify it under the terms of the GNU Affero
