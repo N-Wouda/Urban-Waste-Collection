@@ -5,57 +5,54 @@ import pytest
 from numpy.random import default_rng
 from numpy.testing import assert_, assert_allclose, assert_equal
 
-from waste.classes import Database, ShiftPlanEvent, Simulator
+from waste.classes import ShiftPlanEvent, Simulator
 from waste.functions import make_model
 
 
-def test_required_and_prize_defaults():
+def test_required_and_prize_defaults(test_db):
     """
     Not passing prize or required fields should result in zero prizes, and all
-    required containers.
+    required clusters.
     """
-    db = Database("tests/test.db", ":memory:")
     sim = Simulator(
         default_rng(seed=0),
-        db.depot(),
-        db.distances(),
-        db.durations(),
-        db.containers(),
-        db.vehicles(),
+        test_db.depot(),
+        test_db.distances(),
+        test_db.durations(),
+        test_db.clusters(),
+        test_db.vehicles(),
     )
 
     event = ShiftPlanEvent(datetime(2023, 8, 23, 7, 0, 0))
-    model = make_model(sim, event, np.arange(len(sim.containers)))
+    model = make_model(sim, event, np.arange(len(sim.clusters)))
     assert_(all(client.required) for client in model.locations)
     assert_allclose([client.prize for client in model.locations], 0)
 
 
-@pytest.mark.parametrize("container_idcs", [[], [0, 1], [1], [1, 2, 3]])
-def test_model_filters_by_given_container_indices(container_idcs: list[int]):
-    db = Database("tests/test.db", ":memory:")
+@pytest.mark.parametrize("cluster_idcs", [[], [0, 1], [1], [1, 2, 3]])
+def test_model_filters_by_given_clusters(test_db, cluster_idcs: list[int]):
     sim = Simulator(
         default_rng(seed=0),
-        db.depot(),
-        db.distances(),
-        db.durations(),
-        db.containers(),
-        db.vehicles(),
+        test_db.depot(),
+        test_db.distances(),
+        test_db.durations(),
+        test_db.clusters(),
+        test_db.vehicles(),
     )
 
     event = ShiftPlanEvent(datetime(2023, 8, 23, 7, 0, 0))
-    model = make_model(sim, event, container_idcs)
-    assert_(len(model.locations), len(container_idcs) + 1)  # + depot
+    model = make_model(sim, event, cluster_idcs)
+    assert_(len(model.locations), len(cluster_idcs) + 1)  # + depot
 
 
-def test_creating_model_with_specified_vehicles():
-    db = Database("tests/test.db", ":memory:")
+def test_creating_model_with_specified_vehicles(test_db):
     sim = Simulator(
         default_rng(seed=0),
-        db.depot(),
-        db.distances(),
-        db.durations(),
-        db.containers(),
-        db.vehicles(),
+        test_db.depot(),
+        test_db.distances(),
+        test_db.durations(),
+        test_db.clusters(),
+        test_db.vehicles(),
     )
 
     event = ShiftPlanEvent(datetime(2023, 8, 23, 7, 0, 0))

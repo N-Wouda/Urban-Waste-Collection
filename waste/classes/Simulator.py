@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
     from waste.strategies import Strategy
 
-    from .Container import Container
+    from .Cluster import Cluster
     from .Depot import Depot
     from .Route import Route
     from .Vehicle import Vehicle
@@ -66,7 +66,7 @@ class Simulator:
         depot: Depot,
         distances: np.array,
         durations: np.array,
-        containers: list[Container],
+        clusters: list[Cluster],
         vehicles: list[Vehicle],
         config: Configuration = Configuration(),
     ):
@@ -74,7 +74,7 @@ class Simulator:
         self.depot = depot
         self.distances = distances
         self.durations = durations
-        self.containers = containers
+        self.clusters = clusters
         self.vehicles = vehicles
         self.config = config
 
@@ -119,10 +119,10 @@ class Simulator:
             strategy.observe(event)
 
             match event:
-                case ArrivalEvent(time=time, container=c, volume=vol):
+                case ArrivalEvent(time=time, cluster=c, volume=vol):
                     logger.debug(f"Arrival at {c.name} at t = {time}.")
                     c.arrive(vol)
-                case ServiceEvent(time=time, container=c):
+                case ServiceEvent(time=time, cluster=c):
                     logger.debug(f"Service at {c.name} at t = {time}.")
                     c.service()
                 case BreakEvent(time=time, vehicle=v):
@@ -154,17 +154,23 @@ class Simulator:
             if datetime.combine(now.date(), start) >= route.start_time
         ]
 
-        for container_idx in route.plan:
-            idx = container_idx + 1  # + 1 because 0 is depot
+        for cluster_idx in route.plan:
+            idx = cluster_idx + 1  # + 1 because 0 is depot
+            cluster = self.clusters[cluster_idx]
+
+            service_duration = (
+                self.config.TIME_PER_CLUSTER
+                + cluster.num_containers * self.config.TIME_PER_CONTAINER
+            )
 
             if break_idx < len(breaks):
                 start, break_dur = breaks[break_idx]
                 break_start = datetime.combine(now.date(), start)
 
-                # If servicing the current container makes us late for the
-                # break, we first plan the break. A break is had at the depot.
-                cont_travel = self.durations[prev, idx].item()
-                finish_at = now + cont_travel + self.config.TIME_PER_CONTAINER
+                # If servicing the current cluster makes us late for the break,
+                # we first plan the break. A break is had at the depot.
+                travel = self.durations[prev, idx].item()
+                finish_at = now + travel + service_duration
 
                 if finish_at + self.durations[idx, 0].item() > break_start:
                     # We're travelling back to the depot to take this break.
@@ -182,16 +188,16 @@ class Simulator:
                     now += break_dur
                     prev = 0
 
-            # Add travel duration from prev to current container, and start
-            # service at the current container.
+            # Travel from prev to current cluster, and start service there.
             now += self.durations[prev, idx].item()
+
             yield ServiceEvent(
                 now,
-                self.config.TIME_PER_CONTAINER,
+                service_duration,
                 id_route=id_route,
-                container=self.containers[container_idx],
+                cluster=cluster,
                 vehicle=route.vehicle,
             )
 
-            now += self.config.TIME_PER_CONTAINER
+            now += service_duration
             prev = idx

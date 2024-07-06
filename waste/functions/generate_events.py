@@ -25,6 +25,8 @@ def generate_events(
     events are fake, but are based on the same distributional assumptions as
     the arrivals.
     """
+    volume_range = sim.config.VOLUME_RANGE
+
     earliest = datetime.combine(start, time.min)
     latest = datetime.combine(end, time.max)
 
@@ -35,19 +37,19 @@ def generate_events(
     for now in pd.date_range(first_shift, latest, freq="D").to_pydatetime():
         events.append(ShiftPlanEvent(now))
 
-    for container in sim.containers:
+    for cluster in sim.clusters:
         for now in pd.date_range(earliest, latest, freq="H").to_pydatetime():
             # Non-homogeneous Poisson arrivals, with hourly rates as given by
-            # the rates list for this container.
-            num_deposits = gen.poisson(container.rates[now.hour])
+            # the rates list for this cluster.
+            num_deposits = gen.poisson(cluster.rates[now.hour])
             time_offsets = gen.uniform(size=num_deposits)
-            volumes = gen.uniform(*sim.config.VOLUME_RANGE, size=num_deposits)
+            volumes = gen.triangular(*volume_range, num_deposits)
 
             for offset, volume in zip(time_offsets, volumes):
                 events.append(
                     ArrivalEvent(
                         now + timedelta(hours=offset),
-                        container=container,
+                        cluster=cluster,
                         volume=volume,
                     )
                 )
@@ -57,14 +59,14 @@ def generate_events(
             # events are not real, but do reflect the underlying dynamics and
             # help cut down on the overall warm-up time.
             avg_volume = np.mean(sim.config.VOLUME_RANGE)
-            stop = 2 * int(container.capacity / avg_volume + 1)
+            stop = 2 * int(cluster.capacity / avg_volume + 1)
 
             for num_arrivals in np.arange(start=1, stop=stop):
                 event = ServiceEvent(
                     time=datetime.min,
                     duration=timedelta(hours=0),
                     id_route=0,
-                    container=container,
+                    cluster=cluster,
                     vehicle=sim.vehicles[0],
                 )
 
@@ -78,7 +80,7 @@ def generate_events(
                 event.seal()
 
                 event._num_arrivals = num_arrivals  # noqa: SLF001
-                volumes = gen.uniform(*sim.config.VOLUME_RANGE, num_arrivals)
+                volumes = gen.triangular(*volume_range, num_arrivals)
                 event._volume = sum(volumes[:num_arrivals])  # noqa: SLF001
 
     return events

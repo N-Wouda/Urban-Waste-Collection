@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(prog="distance")
+    parser = argparse.ArgumentParser(prog="matrix")
 
     parser.add_argument("database")
     parser.add_argument("--api_url", default="http://localhost:5000")
@@ -42,18 +42,13 @@ def query(base_url: str, points: str, **query) -> tuple[list[int], list[int]]:
     return distances, durations
 
 
-def make_tables(con: sqlite3.Connection):
+def make_table(con: sqlite3.Connection):
     sql = """-- sql
-        CREATE TABLE distances (
+        CREATE TABLE matrix (
             from_location INTEGER REFERENCES locations,
             to_location INTEGER REFERENCES locations,
-            distance INT -- in meters
-        );
-
-        CREATE TABLE durations (
-            from_location INTEGER REFERENCES locations,
-            to_location INTEGER REFERENCES locations,
-            duration INT -- in seconds
+            distance INTEGER, -- in meters
+            duration INTEGER  -- in seconds
         );
     """
     con.executescript(sql)
@@ -63,8 +58,8 @@ def main():
     args = parse_args()
     con = sqlite3.connect(args.database)
 
-    logger.info("Creating tables.")
-    make_tables(con)
+    logger.info("Creating table.")
+    make_table(con)
 
     sql = """-- sql
         SELECT id_location, name, longitude, latitude
@@ -87,12 +82,11 @@ def main():
 
         con.execute("BEGIN TRANSACTION;")
         con.executemany(
-            "INSERT INTO distances VALUES (?, ?, ?)",
-            [(id_location, other, dist) for other, dist in zip(ids, dists)],
-        )
-        con.executemany(
-            "INSERT INTO durations VALUES (?, ?, ?)",
-            [(id_location, other, dur) for other, dur in zip(ids, durs)],
+            "INSERT INTO matrix VALUES (?, ?, ?, ?)",
+            [
+                (id_location, other, dist, dur)
+                for other, dist, dur in zip(ids, dists, durs)
+            ],
         )
         con.commit()
 

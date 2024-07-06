@@ -7,7 +7,6 @@ from numpy.testing import assert_allclose
 from tests.helpers import MockStrategy
 from waste.classes import (
     Configuration,
-    Database,
     Event,
     Route,
     ShiftPlanEvent,
@@ -27,15 +26,14 @@ from waste.measures import avg_route_stops
         ([[], [1, 2]], 1.0),  # 2 stops, 2 routes (one empty): 1.0 average.
     ],
 )
-def test_for_several_routes(visits: list[list[int]], expected: float):
-    db = Database("tests/test.db", ":memory:")
+def test_for_several_routes(test_db, visits: list[list[int]], expected: float):
     sim = Simulator(
         default_rng(0),
-        db.depot(),
-        db.distances(),
-        db.durations(),
-        db.containers(),
-        db.vehicles(),
+        test_db.depot(),
+        test_db.distances(),
+        test_db.durations(),
+        test_db.clusters(),
+        test_db.vehicles(),
         Configuration(BREAKS=tuple()),
     )
 
@@ -44,8 +42,8 @@ def test_for_several_routes(visits: list[list[int]], expected: float):
     strategy = MockStrategy(sim, routes)
 
     events: list[Event] = [ShiftPlanEvent(time=now)]
-    sim(db.store, strategy, events)
+    sim(test_db.store, strategy, events)
 
     # We're given a set of routes and the expected number of stops on those
     # routes. Now let's check the measure computes the same thing.
-    assert_allclose(db.compute(avg_route_stops), expected)
+    assert_allclose(test_db.compute(avg_route_stops), expected)

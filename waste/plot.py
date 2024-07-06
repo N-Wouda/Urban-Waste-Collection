@@ -65,8 +65,8 @@ def service_event_locations(
     sql = """--sql
         SELECT se.*, l.latitude, l.longitude
         FROM service_events se
-        JOIN containers c
-            ON c.name = se.container
+        JOIN clusters c
+            ON c.name = se.cluster
         JOIN locations l
             ON c.id_location = l.id_location
         WHERE se.time >= ? AND se.time <= ?
@@ -110,7 +110,7 @@ def main():
             folium.CircleMarker(
                 location=(service["latitude"], service["longitude"]),
                 tooltip=(
-                    f"Container ID: {service['container']}<br>"
+                    f"Cluster ID: {service['cluster']}<br>"
                     f"Time: {service['time']}"
                 ),
                 radius=8,

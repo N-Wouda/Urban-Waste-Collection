@@ -1,5 +1,5 @@
+from .Cluster import Cluster as Cluster
 from .Configuration import Configuration as Configuration
-from .Container import Container as Container
 from .Database import Database as Database
 from .Depot import Depot as Depot
 from .Event import ArrivalEvent as ArrivalEvent

@@ -32,6 +32,11 @@ def parse_args():
         help="Number of available vehicles. All if not defined.",
     )
     parser.add_argument(
+        "--perfect_information",
+        action="store_true",
+        help="Whether the exact fill-rate of the clusters is known or not.",
+    )
+    parser.add_argument(
         "--start",
         required=True,
         type=date.fromisoformat,
@@ -46,21 +51,16 @@ def parse_args():
 
     baseline = subparsers.add_parser("baseline")
     baseline.add_argument("--deposit_volume", type=float, required=True)
-    baseline.add_argument("--num_containers", type=int, required=True)
+    baseline.add_argument("--num_clusters", type=int, required=True)
     baseline.add_argument("--max_runtime", type=float, required=True)
-
-    greedy = subparsers.add_parser("greedy")
-    greedy.add_argument("--num_containers", type=int, required=True)
-    greedy.add_argument("--max_runtime", type=float, required=True)
 
     prize = subparsers.add_parser("prize")
     prize.add_argument("--rho", type=float, required=True)
-    prize.add_argument("--deposit_volume", type=float, required=True)
     prize.add_argument("--max_runtime", type=float, required=True)
-    prize.add_argument("--max_reused_solutions", type=int, default=0)
+    prize.add_argument("--required_threshold", type=float, required=True)
 
     random = subparsers.add_parser("random")
-    random.add_argument("--containers_per_route", type=int, required=True)
+    random.add_argument("--clusters_per_route", type=int, required=True)
 
     return parser.parse_args()
 
@@ -90,7 +90,7 @@ def main():
         db.depot(),
         db.distances(),
         db.durations(),
-        db.containers(),
+        db.clusters(),
         db.vehicles()[:num_veh],
     )
 

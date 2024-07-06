@@ -135,3 +135,6 @@ slurm/
 
 # test files and dumping ground
 sandbox/
+
+# feedback notes
+feedback/

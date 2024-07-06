@@ -8,7 +8,7 @@ from waste.enums import EventStatus
 if TYPE_CHECKING:
     from datetime import datetime, timedelta
 
-    from .Container import Container
+    from .Cluster import Cluster
     from .Vehicle import Vehicle
 
 
@@ -38,7 +38,7 @@ class Event(ABC):
 
 class ServiceEvent(Event):
     """
-    Service event. This event models a container being serviced by a vehicle.
+    Service event. This event models a cluster being serviced by a vehicle.
     """
 
     def __init__(
@@ -46,14 +46,14 @@ class ServiceEvent(Event):
         time: datetime,
         duration: timedelta,
         id_route: int,
-        container: Container,
+        cluster: Cluster,
         vehicle: Vehicle,
     ):
         super().__init__(time)
 
         self.duration = duration
         self.id_route = id_route
-        self.container = container
+        self.cluster = cluster
         self.vehicle = vehicle
 
         self._num_arrivals: Optional[int] = None
@@ -65,7 +65,7 @@ class ServiceEvent(Event):
             assert self._num_arrivals is not None
             return self._num_arrivals
 
-        return self.container.num_arrivals
+        return self.cluster.num_arrivals
 
     @property
     def volume(self) -> float:
@@ -73,25 +73,25 @@ class ServiceEvent(Event):
             assert self._volume is not None
             return self._volume
 
-        return self.container.volume
+        return self.cluster.volume
 
     def seal(self):
         if self.is_sealed():  # then this is a no-op
             return
 
         super().seal()
-        self._num_arrivals = self.container.num_arrivals
-        self._volume = self.container.volume
+        self._num_arrivals = self.cluster.num_arrivals
+        self._volume = self.cluster.volume
 
 
 class ArrivalEvent(Event):
     """
-    Arrival event. This event models a deposit at a container.
+    Arrival event. This event models a deposit at a cluster.
     """
 
-    def __init__(self, time: datetime, container: Container, volume: float):
+    def __init__(self, time: datetime, cluster: Cluster, volume: float):
         super().__init__(time)
-        self.container = container
+        self.cluster = cluster
         self.volume = volume
 
 

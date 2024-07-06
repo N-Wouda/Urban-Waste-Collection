@@ -13,7 +13,7 @@ import numpy as np
 from waste.constants import BUFFER_SIZE, HOURS_IN_DAY
 from waste.enums import LocationType
 
-from .Container import Container
+from .Cluster import Cluster
 from .Depot import Depot
 from .Event import (
     ArrivalEvent,
@@ -64,7 +64,7 @@ class Database:
 
                     CREATE TABLE arrival_events (
                         time DATETIME,
-                        container VARCHAR,
+                        cluster VARCHAR,
                         volume FLOAT
                     );
 
@@ -77,7 +77,7 @@ class Database:
                     CREATE TABLE service_events (
                         time DATETIME,
                         duration FLOAT,
-                        container VARCHAR,
+                        cluster VARCHAR,
                         id_route INTEGER references routes,
                         num_arrivals INT,
                         volume FLOAT
@@ -86,12 +86,12 @@ class Database:
             )
 
     @cache
-    def containers(self) -> list[Container]:
+    def clusters(self) -> list[Cluster]:
         def rates(name: str) -> list[float]:
             sql = """-- sql
                 SELECT hour, rate
-                FROM container_rates
-                WHERE container = ?
+                FROM cluster_rates
+                WHERE cluster = ?
                 ORDER BY hour;  -- must order by ID, not name!
             """
             res = [0.0] * HOURS_IN_DAY
@@ -101,28 +101,40 @@ class Database:
 
         sql = """-- sql
             SELECT c.name,
+                   c.id_location,
+                   c.num_containers,
                    c.tw_late,
                    c.capacity,
                    c.correction_factor,
                    l.latitude,
                    l.longitude
-            FROM containers AS c
+            FROM clusters AS c
                 INNER JOIN locations AS l
                     ON c.id_location = l.id_location;
         """
         rows = self.read.execute(sql)
 
         return [
-            Container(
+            Cluster(
                 name,
-                # TODO here we do an N + 1 query. Fix if it is too slow.
+                id_location,
                 rates(name),
                 capacity,
                 (lat, lon),
                 time.fromisoformat(tw_late),
+                num_containers,
                 corr_factor,
             )
-            for name, tw_late, capacity, corr_factor, lat, lon in rows
+            for (
+                name,
+                id_location,
+                num_containers,
+                tw_late,
+                capacity,
+                corr_factor,
+                lat,
+                lon,
+            ) in rows
         ]
 
     @cache
@@ -137,32 +149,30 @@ class Database:
     def distances(self) -> np.array:
         """
         Returns the matrix of travel distances (in meters) for the depot (at
-        index 0) and all containers returned by ``containers()``, in order.
+        index 0) and all clusters returned by ``clusters()``, in order.
         The distance matrix is *not* symmetric.
         """
-        cursor = self.read.execute("SELECT distance FROM distances;")
+        cursor = self.read.execute("SELECT distance FROM matrix;")
         data = np.array([distance for distance in cursor])
         size = math.isqrt(len(data))
         distances = np.array(data).reshape((size, size))
 
-        id_containers = _containers2loc(self.read, self.containers())
-        id_locations = [0, *id_containers]
+        id_locations = [0] + [c.id_location for c in self.clusters()]
         return distances[np.ix_(id_locations, id_locations)]
 
     @cache
     def durations(self) -> np.array:
         """
         Returns the matrix of travel durations (in seconds) for the depot (at
-        index 0) and all containers returned by ``containers()``, in order.
+        index 0) and all clusters returned by ``clusters()``, in order.
         The duration matrix is *not* symmetric.
         """
-        cursor = self.read.execute("SELECT duration FROM durations;")
+        cursor = self.read.execute("SELECT duration FROM matrix;")
         data = np.array([duration for duration in cursor])
         size = math.isqrt(len(data))
         durations = np.array(data).reshape((size, size))
 
-        id_containers = _containers2loc(self.read, self.containers())
-        id_locations = [0, *id_containers]
+        id_locations = [0] + [c.id_location for c in self.clusters()]
         mat = durations[np.ix_(id_locations, id_locations)]
         return mat.astype(np.timedelta64(1, "s"))
 
@@ -217,11 +227,11 @@ class Database:
                         """--sql
                             INSERT INTO arrival_events (
                                 time,
-                                container,
+                                cluster,
                                 volume
                             ) VALUES (?, ?, ?);
                         """,
-                        (e.time, e.container.name, e.volume),
+                        (e.time, e.cluster.name, e.volume),
                     )
                 case ServiceEvent() as e:
                     self.write.execute(
@@ -229,7 +239,7 @@ class Database:
                             INSERT INTO service_events (
                                 time,
                                 duration,
-                                container,
+                                cluster,
                                 id_route,
                                 num_arrivals,
                                 volume
@@ -238,7 +248,7 @@ class Database:
                         (
                             e.time,
                             e.duration.total_seconds(),
-                            e.container.name,
+                            e.cluster.name,
                             e.id_route,
                             e.num_arrivals,
                             e.volume,
@@ -275,14 +285,3 @@ class Database:
 
         self.read.close()
         self.write.close()
-
-
-def _containers2loc(con: sqlite3.Connection, containers: list[Container]):
-    names = ", ".join(f"'{c.name}'" for c in containers)
-    sql = f"""-- sql
-        SELECT id_location
-        FROM containers
-        WHERE name in ({names})
-        ORDER BY id_location;
-    """
-    return [id_location for id_location, in con.execute(sql)]
