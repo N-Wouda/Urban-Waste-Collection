@@ -19,7 +19,7 @@ from waste.measures import num_unserved_containers
     [
         ([], 5),  # none visited
         ([1], 4),  # one visited
-        ([1, 1, 1], 4),  # some clusters visited multiple times
+        ([1, 1, 1], 4),  # some cluster visited multiple times
         ([0, 1, 2, 3, 4], 0),  # all visited
     ],
 )

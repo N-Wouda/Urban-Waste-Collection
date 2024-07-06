@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(prog="matrices")
+    parser = argparse.ArgumentParser(prog="matrix")
 
     parser.add_argument("database")
     parser.add_argument("--api_url", default="http://localhost:5000")

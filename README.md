@@ -2,13 +2,11 @@
 
 [![CI](https://github.com/N-Wouda/Groningen-Waste-Collection/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/N-Wouda/Groningen-Waste-Collection/actions/workflows/CI.yml)
 
-TODO
-
-This repository hosts code we use to improve waste collection in the Municipality of Groningen from underground container clusters.
+This repository hosts code investigating how to improve waste collection in the Municipality of Groningen.
 The code includes:
 
 - Scripts for ingesting raw data files into an SQL database;
-- A simulation environment simulating waste arrivals;
+- A simulation environment simulating waste arrivals at underground container clusters;
 - Forecasting and vehicle routing techniques to plan waste collection;
 - Analysis tools for evaluating different planning techniques.
 
@@ -35,7 +33,7 @@ poetry run ingest
 ```
 
 Note that some programs depend on data available in the `data/` directory.
-This directory is not available on GitHub, since that data is (a) large and (b) somewhat sensitive.
+This directory is not available on GitHub, since that data is large and somewhat sensitive.
 
 ## How to cite
 
