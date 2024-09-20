@@ -43,7 +43,7 @@ This data is not made available via the GitHub repository.
 
 ## How to cite
 
-TODO pre-print details
+TODO
 
 ## License
 
