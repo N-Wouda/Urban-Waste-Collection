@@ -1,8 +1,9 @@
-# Groningen waste collection
+# Urban waste collection
 
-[![CI](https://github.com/N-Wouda/Groningen-Waste-Collection/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/N-Wouda/Groningen-Waste-Collection/actions/workflows/CI.yml)
+[![CI](https://github.com/N-Wouda/Urban-Waste-Collection/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/N-Wouda/Urban-Waste-Collection/actions/workflows/CI.yml)
 
-This repository hosts code investigating how to improve waste collection in the Municipality of Groningen.
+This repository hosts code investigating how to improve urban waste collection with better container selection and routing policies.
+The implementation is tested on a case study arising in the Municipality of Groningen (The Netherlands).
 The code includes:
 
 - Scripts for ingesting raw data files into an SQL database;
@@ -39,7 +40,7 @@ poetry run ingest
 
 You may pass the `--help` option to learn more about program usage.
 Some programs depend on data available in a `data/` directory.
-This data is not made available via the GitHub repository.
+This data is not made available via the GitHub repository, since we do not own it.
 
 ## How to cite
 
