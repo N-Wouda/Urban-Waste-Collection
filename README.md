@@ -44,7 +44,23 @@ This data is not made available via the GitHub repository, since we do not own i
 
 ## How to cite
 
-TODO
+If this repository has been useful in your research, please consider citing the following paper:
+
+> Wouda, N.A., M. Aerts-Veenstra, and N. van Foreest (2024).
+> An integrated selection and routing policy for urban waste collection.
+> https://arxiv.org/abs/2409.13386.
+
+Or, using the following BibTeX entry:
+
+```bibtex
+@article{Wouda_waste_2024,
+  doi = {10.48550/arXiv.2409.13386},
+  url = {https://arxiv.org/abs/2409.13386},
+  year = {2024},
+  author = {Niels A. Wouda and Marjolein Aerts-Veenstra and Nicky {van Foreest}},
+  title = {An integrated selection and routing policy for urban waste collection},
+}
+```
 
 ## License
 
