@@ -9,5 +9,6 @@ from .Event import ServiceEvent as ServiceEvent
 from .Event import ShiftPlanEvent as ShiftPlanEvent
 from .OverflowModel import OverflowModel as OverflowModel
 from .Route import Route as Route
+from .RoutingLab import RoutingLab as RoutingLab
 from .Simulator import Simulator as Simulator
 from .Vehicle import Vehicle as Vehicle
