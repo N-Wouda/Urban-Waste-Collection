@@ -7,6 +7,7 @@ from .Event import BreakEvent as BreakEvent
 from .Event import Event as Event
 from .Event import ServiceEvent as ServiceEvent
 from .Event import ShiftPlanEvent as ShiftPlanEvent
+from .EventQueue import EventQueue as EventQueue
 from .OverflowModel import OverflowModel as OverflowModel
 from .Route import Route as Route
 from .Simulator import Simulator as Simulator

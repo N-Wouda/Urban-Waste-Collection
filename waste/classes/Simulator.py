@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from heapq import heappop, heappush
-from itertools import count
 from typing import TYPE_CHECKING, Callable, Iterator, Optional
 
 from .Configuration import Configuration
@@ -14,6 +12,7 @@ from .Event import (
     ServiceEvent,
     ShiftPlanEvent,
 )
+from .EventQueue import EventQueue
 
 if TYPE_CHECKING:
     import numpy as np
@@ -27,30 +26,6 @@ if TYPE_CHECKING:
     from .Vehicle import Vehicle
 
 logger = logging.getLogger(__name__)
-
-
-class _EventQueue:
-    """
-    Simple internal event queue that efficiently manages events in order of
-    time.
-    """
-
-    def __init__(self):
-        self._events = []
-        self._counter = count(0)
-
-    def __len__(self) -> int:
-        return len(self._events)
-
-    def push(self, event: Event):
-        logger.debug(f"Adding event {event} to the queue at t = {event.time}.")
-
-        tiebreaker = next(self._counter)
-        heappush(self._events, (event.time, tiebreaker, event))
-
-    def pop(self) -> Event:
-        *_, event = heappop(self._events)
-        return event
 
 
 class Simulator:
@@ -69,6 +44,7 @@ class Simulator:
         clusters: list[Cluster],
         vehicles: list[Vehicle],
         config: Configuration = Configuration(),
+        events: EventQueue = EventQueue(),
     ):
         self.generator = generator
         self.depot = depot
@@ -77,6 +53,7 @@ class Simulator:
         self.clusters = clusters
         self.vehicles = vehicles
         self.config = config
+        self.events = events
 
     def __call__(
         self,
@@ -99,13 +76,12 @@ class Simulator:
         initial_events
             Initial list of events to seed the simulation with.
         """
-        events = _EventQueue()
 
         for event in initial_events:
-            events.push(event)
+            self.events.push(event)
 
-        while events:
-            event = events.pop()
+        while self.events:
+            event = self.events.pop()
 
             # First seal the event. This ensures all data that was previously
             # linked to changing objects is made static at their current
@@ -134,7 +110,7 @@ class Simulator:
                         assert id_route is not None
 
                         for event in self._plan_route(route, id_route):
-                            events.push(event)
+                            self.events.push(event)
                 case _:
                     msg = f"Unhandled event of type {type(event)}."
                     logger.error(msg)
