@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from heapq import heappop, heappush
 from itertools import count
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterator
 
 if TYPE_CHECKING:
     from .Event import Event
@@ -30,3 +30,6 @@ class EventQueue:
     def pop(self) -> Event:
         *_, event = heappop(self._events)
         return event
+
+    def __iter__(self) -> Iterator[Event]:
+        return iter(self._events)
