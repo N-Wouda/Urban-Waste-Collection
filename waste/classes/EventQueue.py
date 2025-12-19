@@ -32,4 +32,5 @@ class EventQueue:
         return event
 
     def __iter__(self) -> Iterator[Event]:
-        return (event for *_, event in self._events)
+        for *_, event in self._events:
+            yield event
