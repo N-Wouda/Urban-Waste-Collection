@@ -8,7 +8,7 @@ with open("logging.toml", "rb") as file:
 
 import argparse
 import logging
-from datetime import date
+from datetime import date, timedelta
 
 import numpy as np
 
@@ -53,6 +53,15 @@ def parse_args():
     baseline.add_argument("--deposit_volume", type=float, required=True)
     baseline.add_argument("--num_clusters", type=int, required=True)
     baseline.add_argument("--max_runtime", type=float, required=True)
+
+    lookahead = subparsers.add_parser("lookahead")
+    lookahead.add_argument(
+        "--horizon",
+        required=True,
+        type=lambda val: timedelta(hours=float(val)),
+        help="Lookahead horizon in hours.",
+    )
+    lookahead.add_argument("--max_runtime", type=float, required=True)
 
     prize = subparsers.add_parser("prize")
     prize.add_argument("--rho", type=float, required=True)
