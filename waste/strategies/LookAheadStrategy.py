@@ -10,7 +10,6 @@ from waste.classes import (
     ArrivalEvent,
     Event,
     Route,
-    ServiceEvent,
     ShiftPlanEvent,
     Simulator,
     Vehicle,
