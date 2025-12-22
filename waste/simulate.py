@@ -57,9 +57,9 @@ def parse_args():
     lookahead = subparsers.add_parser("lookahead")
     lookahead.add_argument(
         "--horizon",
+        required=True,
         type=lambda val: timedelta(hours=float(val)),
-        default=timedelta(hours=36),
-        help="Lookahead horizon, in hours (default: 36 hours)",
+        help="Lookahead horizon in hours.",
     )
     lookahead.add_argument("--max_runtime", type=float, required=True)
 

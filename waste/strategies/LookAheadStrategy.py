@@ -41,11 +41,11 @@ class LookAheadStrategy:
         max_runtime: float,
         **kwargs,
     ):
-        if max_runtime < 0:
-            raise ValueError("Expected max_runtime >= 0.")
-
         if horizon.total_seconds() < 0:
             raise ValueError("Expected horizon >= 0 hours.")
+
+        if max_runtime < 0:
+            raise ValueError("Expected max_runtime >= 0.")
 
         self.sim = sim
         self.horizon = horizon
@@ -76,6 +76,8 @@ class LookAheadStrategy:
         ]
 
         cluster_idcs = self._get_cluster_idcs(now=event.time)
+        logger.info(f"Planning {len(cluster_idcs)} container clusters.")
+
         model = make_model(  # type: ignore
             self.sim,
             event,
@@ -105,7 +107,7 @@ class LookAheadStrategy:
 
         return [
             Route(
-                [idx - 1 for route in routes for idx in route],
+                [cluster_idcs[idx - 1] for route in routes for idx in route],
                 name2vehicle[name],
                 event.time + timedelta(seconds=routes[0].start_time()),
             )
