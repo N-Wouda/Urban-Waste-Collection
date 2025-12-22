@@ -54,6 +54,15 @@ def parse_args():
     baseline.add_argument("--num_clusters", type=int, required=True)
     baseline.add_argument("--max_runtime", type=float, required=True)
 
+    lookahead = subparsers.add_parser("lookahead")
+    lookahead.add_argument(
+        "--horizon",
+        type=float,
+        default=36.0,
+        help="Lookahead horizon (default: 36.0)",
+    )
+    lookahead.add_argument("--max_runtime", type=float, required=True)
+
     prize = subparsers.add_parser("prize")
     prize.add_argument("--rho", type=float, required=True)
     prize.add_argument("--max_runtime", type=float, required=True)
