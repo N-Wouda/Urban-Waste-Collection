@@ -21,7 +21,8 @@ logger = logging.getLogger(__name__)
 class LookAheadStrategy:
     """
     This strategy uses a lookahead horizon on all container deposit events to
-    plan the exact number of containers requiring emptying per day.
+    plan exactly the containers that need to emptied before the end of the
+    horizon, and nothing more.
 
     Parameters
     ----------
