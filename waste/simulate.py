@@ -8,7 +8,7 @@ with open("logging.toml", "rb") as file:
 
 import argparse
 import logging
-from datetime import date
+from datetime import date, timedelta
 
 import numpy as np
 
@@ -57,9 +57,9 @@ def parse_args():
     lookahead = subparsers.add_parser("lookahead")
     lookahead.add_argument(
         "--horizon",
-        type=float,
-        default=36.0,
-        help="Lookahead horizon (default: 36.0)",
+        type=lambda val: timedelta(hours=float(val)),
+        default=timedelta(hours=36),
+        help="Lookahead horizon, in hours (default: 36 hours)",
     )
     lookahead.add_argument("--max_runtime", type=float, required=True)
 

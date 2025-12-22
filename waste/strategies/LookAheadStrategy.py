@@ -3,7 +3,6 @@ from collections import defaultdict
 from datetime import datetime, time, timedelta
 from itertools import pairwise
 
-import numpy as np
 from pyvrp.stop import MaxRuntime
 
 from waste.classes import (
@@ -21,13 +20,15 @@ logger = logging.getLogger(__name__)
 
 class LookAheadStrategy:
     """
-    This strategy uses a one-day lookahead on all container deposit events to
-    plan the exact number of containers requiring emptying per day
+    This strategy uses a lookahead horizon on all container deposit events to
+    plan the exact number of containers requiring emptying per day.
 
     Parameters
     ----------
     sim
         The simulation environment.
+    horizon
+        Lookahead horizon.
     max_runtime
         Maximum runtime (in seconds) to use for route optimisation.
     """
@@ -35,12 +36,15 @@ class LookAheadStrategy:
     def __init__(
         self,
         sim: Simulator,
-        horizon: float,
+        horizon: timedelta,
         max_runtime: float,
         **kwargs,
     ):
         if max_runtime < 0:
             raise ValueError("Expected max_runtime >= 0.")
+
+        if horizon.total_seconds() < 0:
+            raise ValueError("Expected horizon >= 0 hours.")
 
         self.sim = sim
         self.horizon = horizon
@@ -71,7 +75,6 @@ class LookAheadStrategy:
         ]
 
         cluster_idcs = self._get_cluster_idcs(now=event.time)
-
         model = make_model(  # type: ignore
             self.sim,
             event,
@@ -109,24 +112,24 @@ class LookAheadStrategy:
         ]
 
     def observe(self, event: Event):
-        pass
+        pass  # unused by this strategy
 
-    def _get_cluster_idcs(self, now: datetime) -> np.ndarray[int]:
-        latest = now + timedelta(hours=36)
+    def _get_cluster_idcs(self, now: datetime) -> list[int]:
+        latest = now + self.horizon
         clusters = self.sim.clusters
         cluster2idx = {c: i for i, c in enumerate(clusters)}
 
         # Look ahead strategies use perfect information about the current and
         # future fill levels of containers.
-        volumes = np.array([c.volume for c in clusters])
+        volumes = [c.volume for c in clusters]
+        for event in self.sim.events:
+            if now <= event.time <= latest and isinstance(event, ArrivalEvent):
+                volumes[cluster2idx[event.cluster]] += event.volume
 
-        deposits = [
-            e
-            for e in self.sim.events
-            if now <= e.time <= latest and isinstance(e, ArrivalEvent)
+        # We need to empty all container clusters whose volume will exceed
+        # capacity by the end of the lookahead horizon.
+        return [
+            idx
+            for idx, cluster in enumerate(clusters)
+            if volumes[idx] >= cluster.capacity
         ]
-        for event in deposits:
-            volumes[cluster2idx[event.cluster]] += event.volume
-        capacities = np.array([c.corrected_capacity for c in clusters])
-        required = np.where(volumes >= capacities)
-        return required[0]
