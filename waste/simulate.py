@@ -63,6 +63,34 @@ def parse_args():
     )
     lookahead.add_argument("--max_runtime", type=float, required=True)
 
+    lookaheadwithprize = subparsers.add_parser("lookaheadwithprize")
+    lookaheadwithprize.add_argument(
+        "--weight_thres2", type=float, required=True
+    )
+    lookaheadwithprize.add_argument(
+        "--weight_thres3", type=float, required=True
+    )
+    lookaheadwithprize.add_argument(
+        "--horizon1",
+        required=True,
+        type=lambda val: timedelta(hours=float(val)),
+        help="Lookahead horizon1 in hours.",
+    )
+    lookaheadwithprize.add_argument(
+        "--horizon2",
+        required=True,
+        type=lambda val: timedelta(hours=float(val)),
+        help="Lookahead horizon2 in hours.",
+    )
+    lookaheadwithprize.add_argument(
+        "--horizon3",
+        required=True,
+        type=lambda val: timedelta(hours=float(val)),
+        help="Lookahead horizon3 in hours.",
+    )
+    lookaheadwithprize.add_argument("--max_runtime", type=float, required=True)
+    lookaheadwithprize.add_argument("--rho", type=float, required=True)
+
     prize = subparsers.add_parser("prize")
     prize.add_argument("--rho", type=float, required=True)
     prize.add_argument("--max_runtime", type=float, required=True)
